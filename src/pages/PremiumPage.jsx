@@ -25,8 +25,19 @@ const PremiumPage = ({ userProfile, onActivatePremium, isPremium }) => {
     userProfile?.university?.trim()?.toUpperCase() === "TASUED";
 
   // Dynamic Plans Selection based on university
+  // codeTier tells the backend / admin code generator which table a purchased
+  // plan's codes should live in (3 separate tables per architectural rule).
   const plans = isTASUEDStudent
     ? [
+        {
+          id: "3-days",
+          title: "3-Day Access",
+          price: 500,
+          description: "Budget 3-day full premium pass.",
+          duration: "3 days",
+          popular: false,
+          codeTier: "budget_3d",
+        },
         {
           id: "14-days",
           title: "14-Day Access",
@@ -34,6 +45,7 @@ const PremiumPage = ({ userProfile, onActivatePremium, isPremium }) => {
           description: "Full premium access for 14 days.",
           duration: "14 days",
           popular: false,
+          codeTier: "temp",
         },
         {
           id: "full-semester",
@@ -42,16 +54,27 @@ const PremiumPage = ({ userProfile, onActivatePremium, isPremium }) => {
           description: "Unlimited premium access for the full semester.",
           duration: "Full semester",
           popular: true,
+          codeTier: "full",
         },
       ]
     : [
         {
+          id: "3-days",
+          title: "3-Day Access",
+          price: 200,
+          description: "Budget 3-day full premium pass.",
+          duration: "3 days",
+          popular: false,
+          codeTier: "budget_3d",
+        },
+        {
           id: "14-days",
           title: "14-Day Access",
-          price: 300, // Adjusted price structure as requested (300 / 500 equivalent)
+          price: 300,
           description: "Full premium access for 14 days.",
           duration: "14 days",
           popular: false,
+          codeTier: "temp",
         },
         {
           id: "full-semester",
@@ -60,10 +83,13 @@ const PremiumPage = ({ userProfile, onActivatePremium, isPremium }) => {
           description: "Unlimited premium access for the full semester.",
           duration: "Full semester",
           popular: true,
+          codeTier: "full",
         },
       ];
 
-  const [selectedPlan, setSelectedPlan] = useState(plans[1]);
+  const [selectedPlan, setSelectedPlan] = useState(
+    plans.find((p) => p.popular) || plans[plans.length - 1],
+  );
   const price = selectedPlan.price;
 
   const handleActivate = async (e) => {
