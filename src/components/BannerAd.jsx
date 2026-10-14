@@ -1,100 +1,32 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { FiX, FiVolume2, FiVolumeX, FiExternalLink } from "react-icons/fi";
+import { API_BASE_URL } from "../apiConfig";
 
-// 1. Database with flexible "link" config per ad.
-//    link.type === "whatsapp"  -> opens WhatsApp chat with a prefilled message
-//    link.type === "website"   -> opens any external URL directly (no phone/message needed)
-const AD_DATABASE = [
-  {
-    type: "image",
-    url: "https://res.cloudinary.com/dn5h1cghb/image/upload/v1777905618/Advertise_Here_20260206_152922_0000_bns87b_jm43tr.png",
-    duration: 5,
-    link: {
-      type: "whatsapp",
-      phone: "2347015585397",
-      message:
-        "Hi, I'd like to advertise on Quiz Bolt. Can you share pricing and details?",
-    },
-  },
-  {
-    type: "image",
-    url: "https://res.cloudinary.com/dn5h1cghb/image/upload/v1777905619/Advertise_Here_20260206_152335_0000_lg0smh_tlkppg.png",
-    duration: 5,
-    link: {
-      type: "whatsapp",
-      phone: "2347015585397",
-      message:
-        "Hi, I'd like to advertise on Quiz Bolt. Can you share pricing and details?",
-    },
-  },
-  {
-    type: "image",
-    url: "https://res.cloudinary.com/dn5h1cghb/image/upload/v1782482362/3_wq6dmi.png",
-    duration: 5,
-    link: {
-      type: "whatsapp",
-      phone: "2347015585397",
-      message:
-        "Hello QuizBolt Team,\n\n" +
-        "I would like to request access to a rerun/carryover course.\n\n" +
-        "Your Username: _____\n" +
-        "University: _____\n" +
-        "Rerun Course(s): _____\n\n" +
-        "Thank you.",
-    },
-  },
-  {
-    type: "image",
-    url: "https://res.cloudinary.com/dn5h1cghb/image/upload/v1782200330/2_20260623_054442_0001_utwiar.png",
-    duration: 5,
-    link: {
-      type: "whatsapp",
-      phone: "2349118907839",
-      message:
-        "I'd like to stay informed with updates from Odunaike Olabode Mustapha (PKA Speed Bolt).",
-    },
-  },
-  {
-    type: "image",
-    url: "https://res.cloudinary.com/dn5h1cghb/image/upload/v1777905622/flyer_fcbjfw_t7sksl.png",
-    duration: 5,
-    link: {
-      type: "whatsapp",
-      phone: "2347015585397",
-      message:
-        "Hi, I'm interested in getting a website built. Can you share your pricing and examples of your work?",
-    },
-  },
-  {
-    type: "image",
-    url: "https://res.cloudinary.com/dn5h1cghb/image/upload/v1779707308/WhatsApp_Image_2026-05-24_at_00.04.45_x19cgf.jpg",
-    duration: 5,
-    link: {
-      type: "whatsapp",
-      phone: "2348120390409",
-      message:
-        "Hi, I saw your flyer online and wanted to connect. I'm interested in learning more about your solar panel and inverter setup services.",
-    },
-  },
-  {
-    type: "image",
-    url: "https://res.cloudinary.com/dn5h1cghb/image/upload/v1788168218/PrepUnivFlyer_v03ndf.png",
-    duration: 5,
-    link: {
-      type: "website",
-      url: "https://prepuniv.com",
-    },
-  },
-];
+// ─── Weighted random pick ────────────────────────────────────────────────────
+// Builds a probability pool based on each ad's display_weight so heavier ads
+// appear proportionally more often than a pure 1/N random roll.
+function weightedPick(ads) {
+  if (!ads || ads.length === 0) return null;
+  const totalWeight = ads.reduce(
+    (sum, ad) => sum + (ad.display_weight || 1),
+    0,
+  );
+  let rand = Math.random() * totalWeight;
+  for (const ad of ads) {
+    rand -= ad.display_weight || 1;
+    if (rand <= 0) return ad;
+  }
+  return ads[ads.length - 1];
+}
 
+// ─── Cloudinary responsive resize ───────────────────────────────────────────
 function resizeCloudinaryUrl(url) {
-  if (!url.includes("cloudinary.com")) return url;
+  if (!url || !url.includes("cloudinary.com")) return url;
   if (url.includes("/upload/w_")) return url; // already transformed
 
   let w = 800,
     h = 1131;
   const width = window.innerWidth;
-
   if (width < 768) {
     w = 600;
     h = 849;
@@ -106,62 +38,101 @@ function resizeCloudinaryUrl(url) {
   return url.replace("/upload/", `/upload/w_${w},h_${h},c_fill,q_auto,f_auto/`);
 }
 
-// 2. Resolves the correct href + target/rel for whatever link type the ad uses.
-//    Falls back gracefully (and logs a warning) if an ad has a malformed link.
-function resolveAdLink(link) {
-  if (!link) {
-    console.warn("BannerAd: ad has no `link` config, disabling click-through.");
-    return { href: undefined, isExternalSite: false };
-  }
+// ─── Link resolver ───────────────────────────────────────────────────────────
+function resolveAdLink(ad) {
+  if (!ad) return { href: undefined, isExternalSite: false };
 
-  switch (link.type) {
+  switch (ad.link_type) {
     case "whatsapp": {
-      if (!link.phone) {
-        console.warn("BannerAd: whatsapp link missing `phone`.");
-        return { href: undefined, isExternalSite: false };
-      }
-      const text = encodeURIComponent(link.message || "");
+      if (!ad.whatsapp_phone) return { href: undefined, isExternalSite: false };
+      const text = encodeURIComponent(ad.whatsapp_message || "");
       return {
-        href: `https://wa.me/${link.phone}${text ? `?text=${text}` : ""}`,
+        href: `https://wa.me/${ad.whatsapp_phone}${text ? `?text=${text}` : ""}`,
         isExternalSite: false,
       };
     }
     case "website": {
-      if (!link.url) {
-        console.warn("BannerAd: website link missing `url`.");
-        return { href: undefined, isExternalSite: false };
-      }
-      return { href: link.url, isExternalSite: true };
+      if (!ad.link_url) return { href: undefined, isExternalSite: false };
+      return { href: ad.link_url, isExternalSite: true };
     }
     default:
-      console.warn(`BannerAd: unknown link.type "${link.type}".`);
       return { href: undefined, isExternalSite: false };
   }
 }
 
-const BannerAd = ({ onAdClose }) => {
-  const currentAd = useMemo(() => {
-    const randomIndex = Math.floor(Math.random() * AD_DATABASE.length);
-    return AD_DATABASE[randomIndex];
-  }, []);
+// ─── Fire-and-forget tracking ────────────────────────────────────────────────
+function trackImpression(id) {
+  fetch(`${API_BASE_URL}/api/ads/${id}/impression`, { method: "POST" }).catch(
+    () => {},
+  );
+}
 
-  const [timeLeft, setTimeLeft] = useState(currentAd?.duration || 5);
+function trackClick(id) {
+  fetch(`${API_BASE_URL}/api/ads/${id}/click`, { method: "POST" }).catch(
+    () => {},
+  );
+}
+
+// ─── Session-level ad cache ──────────────────────────────────────────────────
+// Fetched once per session so every BannerAd mount reuses the same list
+// without a network hit.
+let _adsCache = null;
+let _adsFetching = null;
+
+async function getActiveAds() {
+  if (_adsCache) return _adsCache;
+  if (!_adsFetching) {
+    _adsFetching = fetch(`${API_BASE_URL}/api/ads/active`)
+      .then((r) => r.json())
+      .then((data) => {
+        _adsCache = Array.isArray(data) && data.length > 0 ? data : null;
+        return _adsCache;
+      })
+      .catch(() => null);
+  }
+  return _adsFetching;
+}
+
+// Pre-warm the cache as soon as the module loads so the first ad show is instant
+getActiveAds();
+
+// ─── Component ───────────────────────────────────────────────────────────────
+const BannerAd = ({ onAdClose }) => {
+  const [currentAd, setCurrentAd] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(5);
   const [isClosable, setIsClosable] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [isReady, setIsReady] = useState(false);
+  const impressionFired = useRef(false);
+
+  // Pick an ad from the weighted pool on mount
+  useEffect(() => {
+    getActiveAds().then((ads) => {
+      const picked = weightedPick(ads);
+      if (picked) {
+        setCurrentAd(picked);
+        setTimeLeft(picked.duration_secs || 5);
+      }
+    });
+  }, []);
 
   const { href, isExternalSite } = useMemo(
-    () => resolveAdLink(currentAd?.link),
+    () => resolveAdLink(currentAd),
     [currentAd],
   );
 
+  // Countdown — only starts once the media has loaded
   useEffect(() => {
     document.body.style.overflow = "hidden";
 
-    // Only starts counting when the image/video is actually loaded
     if (isReady && timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      // Fire impression once, when the ad becomes ready
+      if (!impressionFired.current && currentAd?.id) {
+        impressionFired.current = true;
+        trackImpression(currentAd.id);
+      }
+      const timer = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
       return () => clearTimeout(timer);
     } else if (isReady && timeLeft === 0) {
       setIsClosable(true);
@@ -170,7 +141,7 @@ const BannerAd = ({ onAdClose }) => {
     return () => {
       document.body.style.overflow = "auto";
     };
-  }, [timeLeft, isReady]);
+  }, [timeLeft, isReady, currentAd]);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -178,12 +149,17 @@ const BannerAd = ({ onAdClose }) => {
     if (onAdClose) onAdClose();
   };
 
+  const handleAdClick = () => {
+    if (href && currentAd?.id) trackClick(currentAd.id);
+  };
+
   if (!isVisible || !currentAd) return null;
 
+  const duration = currentAd.duration_secs || 5;
   const radius = 15;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset =
-    circumference - (timeLeft / currentAd.duration) * circumference;
+    circumference - (timeLeft / duration) * circumference;
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center px-6">
@@ -192,47 +168,49 @@ const BannerAd = ({ onAdClose }) => {
         onClick={isClosable ? handleClose : undefined}
       />
 
-      {/* 3. Responsive Aspect Ratio: A4 on mobile, 16:9 on LG */}
+      {/* Responsive aspect ratio: A4 on mobile, square-ish on desktop */}
       <div className="relative w-full max-w-md aspect-[1/1.414] bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 dark:border-slate-800 animate-in zoom-in-95 duration-500">
-        {/* 4. Clickable Area — routes to WhatsApp or an external website depending on the ad's link type */}
+        {/* Clickable creative area */}
         <a
           href={href}
           target={href ? "_blank" : undefined}
           rel={href ? "noopener noreferrer" : undefined}
           className={`block w-full h-full bg-slate-100 dark:bg-slate-950 relative overflow-hidden ${href ? "cursor-pointer" : "cursor-default"}`}
           onClick={(e) => {
-            if (!href) e.preventDefault();
+            if (!href) {
+              e.preventDefault();
+              return;
+            }
+            handleAdClick();
           }}
         >
-          {/* Loading state spinner */}
+          {/* Loading spinner */}
           {!isReady && (
             <div className="absolute inset-0 flex items-center justify-center z-20">
               <div className="size-8 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
             </div>
           )}
 
-          {currentAd.type === "video" ? (
+          {currentAd.media_type === "video" ? (
             <video
-              src={resizeCloudinaryUrl(currentAd.url)}
+              src={resizeCloudinaryUrl(currentAd.media_url)}
               autoPlay
               muted={isMuted}
               loop
               playsInline
               onCanPlayThrough={() => setIsReady(true)}
-              // 5. Object-contain prevents cropping
               className={`w-full h-full object-contain transition-opacity duration-500 ${isReady ? "opacity-100" : "opacity-0"}`}
             />
           ) : (
             <img
-              src={resizeCloudinaryUrl(currentAd.url)}
-              alt="Sponsored Content"
+              src={resizeCloudinaryUrl(currentAd.media_url)}
+              alt={`Sponsored by ${currentAd.advertiser_name}`}
               onLoad={() => setIsReady(true)}
-              // 5. Object-contain prevents cropping
               className={`w-full h-full object-contain transition-opacity duration-500 ${isReady ? "opacity-100" : "opacity-0"}`}
             />
           )}
 
-          {/* Small badge so users know a website ad opens a link rather than a WhatsApp chat */}
+          {/* "Visit site" badge for website ads */}
           {isExternalSite && isReady && (
             <div className="absolute bottom-6 right-6 flex items-center gap-1 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white text-[10px] font-bold uppercase tracking-wide">
               <FiExternalLink size={12} />
@@ -241,22 +219,28 @@ const BannerAd = ({ onAdClose }) => {
           )}
         </a>
 
-        {currentAd.type === "video" && (
+        {/* Video mute toggle */}
+        {currentAd.media_type === "video" && (
           <button
             onClick={(e) => {
-              e.preventDefault(); // Prevents opening the ad's link
-              setIsMuted(!isMuted);
+              e.preventDefault();
+              setIsMuted((m) => !m);
             }}
             className="absolute bottom-6 right-6 size-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white z-10 active:scale-90 transition-all"
+            aria-label={isMuted ? "Unmute ad" : "Mute ad"}
           >
             {isMuted ? <FiVolumeX size={18} /> : <FiVolume2 size={18} />}
           </button>
         )}
 
+        {/* Countdown / close button */}
         <div className="absolute top-6 right-6 z-10 pointer-events-auto">
           {!isClosable ? (
             <div className="relative size-12 flex items-center justify-center bg-black/40 backdrop-blur-xl rounded-full border border-white/20 shadow-lg">
-              <svg className="absolute inset-0 size-full -rotate-90">
+              <svg
+                className="absolute inset-0 size-full -rotate-90"
+                aria-hidden="true"
+              >
                 <circle
                   cx="24"
                   cy="24"
@@ -277,16 +261,18 @@ const BannerAd = ({ onAdClose }) => {
           ) : (
             <button
               onClick={(e) => {
-                e.preventDefault(); // Prevents opening the ad's link
+                e.preventDefault();
                 handleClose();
               }}
               className="size-12 flex items-center justify-center bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-full shadow-2xl active:scale-90 hover:scale-105 transition-all border border-slate-200 dark:border-slate-700"
+              aria-label="Close ad"
             >
               <FiX size={24} />
             </button>
           )}
         </div>
 
+        {/* Sponsored badge */}
         <div className="absolute bottom-6 left-6 pointer-events-none">
           <div className="px-3 py-1 bg-black/30 backdrop-blur-md rounded-full border border-white/10">
             <span className="text-[10px] font-black text-white/90 uppercase tracking-[0.2em]">

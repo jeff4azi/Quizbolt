@@ -52,6 +52,7 @@ import RouteStateFallback from "./components/RouteStateFallback";
 import LoadingScreen from "./components/LoadingScreen";
 import NotFoundPage from "./pages/NotFoundPage";
 import SubmitReview from "./pages/SubmitReview";
+import AdStatsPage from "./pages/AdStatsPage";
 
 function App() {
   const REFERRAL_STORAGE_KEY = "quizbolt_referral_code";
@@ -119,8 +120,6 @@ function App() {
       return true;
     }
   });
-
-
 
   // FIX: Initialize results logic
   const [results, setResults] = useState({ correct: 0, wrong: 0, answered: 0 });
@@ -263,7 +262,9 @@ function App() {
           }
 
           // Get the current session token from Supabase
-          const { data: { session } } = await supabase.auth.getSession();
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
           const headers = {};
           if (session?.access_token) {
             headers["Authorization"] = `Bearer ${session.access_token}`;
@@ -271,7 +272,7 @@ function App() {
 
           const res = await fetch(
             `${API_BASE_URL}/courses?${params.toString()}`,
-            { headers }
+            { headers },
           );
           const data = await res.json();
 
@@ -573,7 +574,9 @@ function App() {
       try {
         // Save certain items temporarily
         const visitedStatus = localStorage.getItem("visited");
-        const notificationsEnabled = localStorage.getItem("quizbolt_notifications_enabled");
+        const notificationsEnabled = localStorage.getItem(
+          "quizbolt_notifications_enabled",
+        );
 
         // Clear all localStorage
         localStorage.clear();
@@ -583,7 +586,10 @@ function App() {
           localStorage.setItem("visited", visitedStatus);
         }
         if (notificationsEnabled) {
-          localStorage.setItem("quizbolt_notifications_enabled", notificationsEnabled);
+          localStorage.setItem(
+            "quizbolt_notifications_enabled",
+            notificationsEnabled,
+          );
         }
       } catch (err) {
         console.error("Failed to clear localStorage on logout:", err);
@@ -901,7 +907,6 @@ function App() {
                       toggleShowPagination={() =>
                         setShowPagination((prev) => !prev)
                       }
-
                       deleteImage={deleteImage}
                     />,
                   )}
@@ -1022,7 +1027,6 @@ function App() {
                       coursesLoading={coursesLoading}
                       isPremium={isPremium}
                       userProfile={userProfile}
-
                     />,
                   )}
                 </ProtectedRoute>
@@ -1050,6 +1054,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* Advertiser self-serve stats — no nav link, URL only */}
+            <Route path="/ad-stats" element={<AdStatsPage />} />
             {/* Catch-all 404 route */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
