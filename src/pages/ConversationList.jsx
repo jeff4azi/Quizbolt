@@ -67,7 +67,7 @@ const ConversationList = () => {
               onClick={() =>
                 window.history.length > 1 ? navigate(-1) : navigate("/")
               }
-              className="size-10 sm:size-11 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 active:scale-95 transition-transform shrink-0"
+              className="lg:hidden size-10 sm:size-11 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 active:scale-95 transition-transform shrink-0"
               aria-label="Go back"
             >
               <FiArrowLeft size={19} />
