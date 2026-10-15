@@ -88,11 +88,11 @@ const ProfileHeader = ({
         <button
           type="button"
           onClick={() => setIsImageOverlayOpen(true)}
-          className="relative focus:outline-none transition-transform active:scale-95 cursor-pointer group mb-3"
+          className="relative focus:outline-none transition-transform active:scale-95 cursor-pointer group mb-2.5"
           title="Click to view full photo"
           aria-label={`View full profile photo of ${displayName}`}
         >
-          <div className="size-24 rounded-full overflow-hidden ring-4 ring-slate-100 dark:ring-slate-700/60 shadow-sm group-hover:opacity-90 transition-opacity">
+          <div className="size-20 rounded-full overflow-hidden ring-4 ring-slate-100 dark:ring-slate-700/60 shadow-sm group-hover:opacity-90 transition-opacity">
             <Avatar
               avatarUrl={userProfile?.avatar_url}
               size="lg"
@@ -101,43 +101,43 @@ const ProfileHeader = ({
           </div>
           {isPremium && (
             <div
-              className="absolute -top-1.5 -right-1.5 bg-amber-400 p-1.5 rounded-xl border-2 border-white dark:border-slate-900 shadow-sm"
+              className="absolute -top-1 -right-1 bg-amber-400 p-1.5 rounded-xl border-2 border-white dark:border-slate-900 shadow-sm"
               title="Premium Scholar"
             >
-              <FaCrown className="text-white text-[10px]" />
+              <FaCrown className="text-white text-[9px]" />
             </div>
           )}
         </button>
 
         {/* Scholar Name and Handle */}
-        <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
+        <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
           {displayName}
         </h1>
         {username && (
-          <p className="text-xs font-semibold text-slate-400 dark:text-slate-400 mt-0.5">
+          <p className="text-xs font-semibold text-slate-400 dark:text-slate-400">
             @{username}
           </p>
         )}
 
         {/* Badges Row */}
-        <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
+        <div className="flex items-center justify-center gap-1.5 mt-2.5 flex-wrap">
           <span
-            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold ${
+            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
               isPremium
                 ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/40"
                 : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50"
             }`}
           >
-            {isPremium && <FaCrown size={9} />}
+            {isPremium && <FaCrown size={8} />}
             {isPremium ? "Premium" : "Free tier"}
           </span>
 
           {rankConfig && (
             <span
-              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-black text-white bg-gradient-to-r ${rankConfig.gradient} shadow-sm dark:shadow-none`}
+              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black text-white bg-gradient-to-r ${rankConfig.gradient} shadow-sm dark:shadow-none`}
             >
               {rankConfig.hasCrown && (
-                <FaCrown size={9} className="opacity-90" />
+                <FaCrown size={8} className="opacity-90" />
               )}
               <span>{rankConfig.text}</span>
             </span>
@@ -145,14 +145,14 @@ const ProfileHeader = ({
         </div>
 
         {/* Action Buttons Row - dedicated row below identity, never overlapping */}
-        <div className="w-full mt-5 flex items-center gap-2">
+        <div className="w-full mt-4 flex items-center gap-2">
           {isOwnProfile ? (
             <button
               type="button"
               onClick={() => navigate("/profile")}
-              className="w-full h-11 inline-flex items-center justify-center gap-2 px-5 rounded-2xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold shadow-sm dark:shadow-none transition-transform active:scale-[0.98]"
+              className="w-full h-10 inline-flex items-center justify-center gap-2 px-4 rounded-2xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold shadow-sm dark:shadow-none transition-transform active:scale-[0.98]"
             >
-              <FiEdit2 size={14} />
+              <FiEdit2 size={13} />
               <span>Edit profile</span>
             </button>
           ) : (
@@ -160,7 +160,7 @@ const ProfileHeader = ({
               <MessageButton
                 username={username}
                 userProfile={userProfile}
-                className="flex-1 h-11"
+                className="flex-1 h-10"
               />
 
               {/* ⋯ Menu */}
@@ -170,9 +170,9 @@ const ProfileHeader = ({
                   onClick={() => setMenuOpen((prev) => !prev)}
                   aria-label="More options"
                   aria-expanded={menuOpen}
-                  className="size-11 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition-all shadow-sm dark:shadow-none active:scale-95"
+                  className="size-10 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition-all shadow-sm dark:shadow-none active:scale-95"
                 >
-                  <FiMoreHorizontal size={18} />
+                  <FiMoreHorizontal size={17} />
                 </button>
 
                 {menuOpen && (

@@ -417,7 +417,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
           {/* ── LEFT COLUMN (Sticky on desktop) ───────────────────────────── */}
           <aside className="lg:sticky lg:top-24 space-y-5">
             {/* Identity Card */}
-            <div className="bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-3xl p-6 shadow-sm">
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-3xl p-5 sm:p-5.5 shadow-sm">
               <ProfileHeader
                 userProfile={profile}
                 rank={rank}
@@ -426,26 +426,28 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
                 onToast={showToast}
               />
 
-              {/* Academic info (below divider in identity card) */}
-              <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-700/60">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400 mb-3 px-1">
+              {/* Academic info (below divider in identity card) - 2x2 compact grid */}
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/60">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400 mb-2.5 px-1">
                   Academic details
                 </p>
-                <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
                   {academicItems.map((item) => (
                     <div
                       key={item.label}
-                      className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/40 text-xs"
+                      className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center min-w-0"
                     >
-                      <span className="flex items-center gap-2.5 text-slate-500 dark:text-slate-400 font-semibold">
-                        {item.icon && (
-                          <span className="size-7 rounded-xl bg-white dark:bg-slate-700/70 border border-slate-200/60 dark:border-slate-600/50 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
-                            {React.createElement(item.icon, { size: 12 })}
-                          </span>
-                        )}
-                        <span>{item.label}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center gap-1.5 truncate">
+                        {React.createElement(item.icon, {
+                          size: 11,
+                          className: "shrink-0 text-slate-400",
+                        })}
+                        <span className="truncate">{item.label}</span>
                       </span>
-                      <span className="font-bold text-slate-900 dark:text-white max-w-[55%] truncate text-right">
+                      <span
+                        className="font-bold text-xs text-slate-900 dark:text-white truncate mt-0.5"
+                        title={item.value}
+                      >
                         {item.value}
                       </span>
                     </div>
