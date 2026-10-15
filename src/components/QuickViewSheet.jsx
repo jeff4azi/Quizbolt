@@ -206,7 +206,7 @@ const QuickViewSheet = ({
                 >
                   <Avatar
                     avatarUrl={userProfile.avatar_url}
-                    size="md"
+                    size="lg"
                     className="rounded-2xl ring-2 ring-slate-100 dark:ring-slate-800 group-hover:opacity-90 transition-opacity"
                   />
                   {isPremium && (
