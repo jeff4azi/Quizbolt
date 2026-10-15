@@ -66,35 +66,37 @@ const formatBestTime = (t) => {
 };
 
 const ProfilePageSkeleton = () => (
-  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-pulse space-y-6">
-    <div className="h-6 w-24 bg-slate-200 dark:bg-slate-800 rounded-lg" />
-    <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
-      <div className="bg-white dark:bg-slate-800/60 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 space-y-4">
-        <div className="flex items-center gap-4">
-          <div className="size-16 rounded-2xl bg-slate-200 dark:bg-slate-700" />
-          <div className="space-y-2 flex-1">
-            <div className="h-5 w-32 bg-slate-200 dark:bg-slate-700 rounded" />
+  <div className="min-h-[100dvh] bg-[#F8FAFC] dark:bg-[#0F172A] animate-pulse pb-24">
+    <div className="h-16 border-b border-slate-200/70 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 flex items-center px-6">
+      <div className="size-11 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+    </div>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-8">
+        <div className="bg-white dark:bg-slate-800/80 rounded-3xl p-6 border border-slate-200/70 dark:border-slate-700/60 space-y-4">
+          <div className="flex flex-col items-center gap-3">
+            <div className="size-24 rounded-3xl bg-slate-200 dark:bg-slate-700" />
+            <div className="h-5 w-36 bg-slate-200 dark:bg-slate-700 rounded-lg" />
             <div className="h-3 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
           </div>
+          <div className="h-11 bg-slate-200 dark:bg-slate-700 rounded-2xl mt-4" />
+          <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-700/60">
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+          </div>
         </div>
-        <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded-2xl" />
-        <div className="space-y-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded" />
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded" />
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="h-24 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/70 dark:border-slate-700/60"
+              />
+            ))}
+          </div>
+          <div className="h-40 bg-white dark:bg-slate-800/80 rounded-3xl border border-slate-200/70 dark:border-slate-700/60" />
+          <div className="h-40 bg-white dark:bg-slate-800/80 rounded-3xl border border-slate-200/70 dark:border-slate-700/60" />
         </div>
-      </div>
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="h-24 bg-white dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800"
-            />
-          ))}
-        </div>
-        <div className="h-36 bg-white dark:bg-slate-800/60 rounded-3xl border border-slate-100 dark:border-slate-800" />
-        <div className="h-36 bg-white dark:bg-slate-800/60 rounded-3xl border border-slate-100 dark:border-slate-800" />
       </div>
     </div>
   </div>
@@ -375,62 +377,73 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
   ];
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-[100dvh] bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors duration-500 pb-24">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[120] bg-slate-900/95 dark:bg-white/95 text-white dark:text-slate-900 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-xs font-bold backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-200">
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[120] bg-slate-900/95 dark:bg-white/95 text-white dark:text-slate-900 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-xs font-bold backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-200">
           <FiCheckCircle className="text-emerald-400 dark:text-emerald-600 size-4 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-        {/* Navigation & Back Button */}
-        <div className="flex items-center justify-between mb-5">
+      {/* QuizBolt Site Standard Header with Back Button */}
+      <header className="sticky top-0 z-40 border-b border-slate-200/70 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4 lg:px-8">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() =>
+              window.history.length > 1 ? navigate(-1) : navigate("/leaderboard")
+            }
+            className="size-11 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 active:scale-95 transition-transform shrink-0"
             aria-label="Go back"
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-bold shadow-sm transition-all active:scale-95"
           >
-            <FiArrowLeft size={14} />
-            <span>Back</span>
+            <FiArrowLeft size={20} />
           </button>
+          <div className="text-center min-w-0 px-2">
+            <h1 className="text-lg font-black tracking-tight truncate">
+              {profile.full_name || "Scholar"}
+            </h1>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 truncate">
+              {profile.user_name ? `@${profile.user_name}` : "Scholar Profile"}
+            </p>
+          </div>
+          <div className="size-11 shrink-0" />
         </div>
+      </header>
 
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         {/* ── DESKTOP TWO-COLUMN / MOBILE SINGLE COLUMN ────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-8 items-start">
           {/* ── LEFT COLUMN (Sticky on desktop) ───────────────────────────── */}
-          <aside className="lg:sticky lg:top-6 space-y-5">
+          <aside className="lg:sticky lg:top-24 space-y-5">
             {/* Identity Card */}
-            <div className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-3xl p-6 shadow-sm">
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-3xl p-6 shadow-sm">
               <ProfileHeader
                 userProfile={profile}
                 rank={rank}
                 isPremium={isPremium}
                 isOwnProfile={isOwnProfile}
                 onToast={showToast}
-                layout="full"
               />
 
-              {/* Academic info (in left column on desktop) */}
+              {/* Academic info (below divider in identity card) */}
               <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-700/60">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400 mb-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400 mb-3 px-1">
                   Academic details
                 </p>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {academicItems.map((item) => (
                     <div
                       key={item.label}
-                      className="flex items-center justify-between text-xs"
+                      className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/40 text-xs"
                     >
-                      <span className="flex items-center gap-2 text-slate-400 dark:text-slate-400 font-semibold">
-                        {item.icon &&
-                          React.createElement(item.icon, {
-                            size: 13,
-                            className: "shrink-0",
-                          })}
-                        {item.label}
+                      <span className="flex items-center gap-2.5 text-slate-500 dark:text-slate-400 font-semibold">
+                        {item.icon && (
+                          <span className="size-7 rounded-xl bg-white dark:bg-slate-700/70 border border-slate-200/60 dark:border-slate-600/50 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
+                            {React.createElement(item.icon, { size: 12 })}
+                          </span>
+                        )}
+                        <span>{item.label}</span>
                       </span>
                       <span className="font-bold text-slate-900 dark:text-white max-w-[55%] truncate text-right">
                         {item.value}
@@ -497,7 +510,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
                   Best Performance
                 </h2>
                 {rank && (
-                  <span className="text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-800/40">
+                  <span className="text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-800/40">
                     Leaderboard {rank}
                   </span>
                 )}

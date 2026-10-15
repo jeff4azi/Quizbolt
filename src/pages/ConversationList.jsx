@@ -57,7 +57,7 @@ const ConversationList = () => {
   const filteredActive = filterChats(activeChats);
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-[100dvh] bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors duration-500 pb-24">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -74,7 +74,7 @@ const ConversationList = () => {
           <button
             type="button"
             onClick={() => setShowDevControls((p) => !p)}
-            className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40 hover:bg-blue-100 transition-colors"
+            className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
           >
             🛠️ {showDevControls ? "Hide Demo Controls" : "Demo Controls"}
           </button>
@@ -82,7 +82,7 @@ const ConversationList = () => {
 
         {/* Dev Controls Bar */}
         {showDevControls && (
-          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 space-y-2.5 animate-in fade-in duration-150">
+          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/40 space-y-2.5 animate-in fade-in duration-150">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-400">
                 Demo Testing Simulator
@@ -162,7 +162,7 @@ const ConversationList = () => {
                   <div
                     key={conv.username}
                     onClick={() => navigate(`/messages/${conv.username}`)}
-                    className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 to-indigo-50/40 dark:from-blue-950/20 dark:to-indigo-950/10 border border-blue-200/60 dark:border-blue-900/30 hover:border-blue-300 transition-all cursor-pointer shadow-sm active:scale-[0.99] flex items-center justify-between gap-4"
+                    className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 to-indigo-50/40 dark:from-blue-900/20 dark:to-indigo-900/10 border border-blue-200/60 dark:border-blue-900/30 hover:border-blue-300 transition-all cursor-pointer shadow-sm active:scale-[0.99] flex items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-3.5 min-w-0">
                       <div className="relative shrink-0">
@@ -253,13 +253,13 @@ const ConversationList = () => {
                             {conv.fullName}
                           </p>
                           {isSentRequest && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200/50 text-[10px] font-bold shrink-0">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/40 text-[10px] font-bold shrink-0">
                               <FiClock size={10} />
                               Pending
                             </span>
                           )}
                           {isAccepted && (
-                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 text-[10px] font-bold shrink-0">
+                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 text-[10px] font-bold shrink-0">
                               <FiCheck size={10} />
                               Connected
                             </span>

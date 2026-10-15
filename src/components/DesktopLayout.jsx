@@ -121,7 +121,7 @@ const DesktopLayout = ({ children, isPremium, userProfile, isNew }) => {
       - On mobile: plain block, children render normally
       - On desktop: flex row with sidebar + content
     */
-    <div className="lg:flex lg:min-h-screen lg:bg-gray-100 lg:dark:bg-slate-950">
+    <div className="min-h-[100dvh] bg-[#F8FAFC] dark:bg-[#0F172A] lg:flex">
       {/* ── Desktop sidebar (hidden on mobile) ──────────────────────────────── */}
       <aside className="hidden lg:flex lg:flex-col fixed top-0 left-0 h-screen w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 z-40 shadow-sm">
         {/* Logo */}

@@ -103,17 +103,19 @@ const ChatView = () => {
     connectionState === "blocked";
 
   return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-slate-50 dark:bg-slate-950 lg:border-x border-slate-200/70 dark:border-slate-800/60 shadow-xl overflow-hidden">
+    <div className="flex flex-col h-[100dvh] w-full max-w-4xl mx-auto bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 lg:border-x border-slate-200/70 dark:border-slate-800/60 overflow-hidden">
       {/* ── TOP NAV / CHAT HEADER ────────────────────────────────────────── */}
-      <header className="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800/80 px-4 py-3 flex items-center justify-between gap-3 z-20">
+      <header className="shrink-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800 px-4 py-3 flex items-center justify-between gap-3 z-20">
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
-            onClick={() => navigate("/messages")}
+            onClick={() =>
+              window.history.length > 1 ? navigate(-1) : navigate("/messages")
+            }
             aria-label="Back to conversations"
-            className="size-9 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-transform active:scale-90"
+            className="size-11 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center active:scale-95 transition-transform shrink-0"
           >
-            <FiArrowLeft size={16} />
+            <FiArrowLeft size={20} />
           </button>
 
           <Link
@@ -170,7 +172,7 @@ const ChatView = () => {
           <button
             type="button"
             onClick={() => setShowDevControls((p) => !p)}
-            className="text-[11px] font-bold px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/50"
+            className="text-[11px] font-bold px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40"
           >
             🛠️ Demo
           </button>
@@ -185,7 +187,7 @@ const ChatView = () => {
 
       {/* ── DEV CONTROLS BAR ──────────────────────────────────────────────── */}
       {showDevControls && (
-        <div className="shrink-0 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200/70 dark:border-amber-800/50 px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap text-xs animate-in slide-in-from-top-2 duration-150">
+        <div className="shrink-0 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200/70 dark:border-amber-800/50 px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap text-xs animate-in slide-in-from-top-2 duration-150">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-amber-800 dark:text-amber-300">
               Dev Simulator:
@@ -226,7 +228,7 @@ const ChatView = () => {
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center py-16 px-4">
-            <div className="size-16 rounded-3xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4">
+            <div className="size-16 rounded-3xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4">
               <FiMessageCircle size={30} />
             </div>
             <h3 className="text-base font-black text-slate-900 dark:text-white">
@@ -266,7 +268,7 @@ const ChatView = () => {
 
       {/* ── REQUEST RECEIVED BANNER (Accept / Decline) ────────────────────── */}
       {connectionState === "request_received" && (
-        <div className="shrink-0 bg-blue-50 dark:bg-blue-950/50 border-t border-blue-200/80 dark:border-blue-900/40 p-4 animate-in slide-in-from-bottom-2 duration-150">
+        <div className="shrink-0 bg-blue-50 dark:bg-blue-900/30 border-t border-blue-200/80 dark:border-blue-900/40 p-4 animate-in slide-in-from-bottom-2 duration-150">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 max-w-2xl mx-auto">
             <div>
               <p className="text-xs font-black text-slate-900 dark:text-white">
@@ -300,7 +302,7 @@ const ChatView = () => {
 
       {/* ── COMPOSER LOCKED NOTE (request_sent) ───────────────────────────── */}
       {connectionState === "request_sent" && (
-        <div className="shrink-0 bg-amber-50 dark:bg-amber-950/40 border-t border-amber-200/60 dark:border-amber-800/40 px-4 py-3 text-center">
+        <div className="shrink-0 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200/60 dark:border-amber-800/40 px-4 py-3 text-center">
           <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
             You can send more messages once {displayName} accepts.
           </p>
