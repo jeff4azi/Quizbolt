@@ -12,6 +12,8 @@ import {
   IoTimeOutline,
   IoTrophy,
   IoTrophyOutline,
+  IoChatbubbles,
+  IoChatbubblesOutline,
 } from "react-icons/io5";
 import { FaCrown } from "react-icons/fa";
 import Logo from "../images/Logo";
@@ -55,6 +57,7 @@ const DesktopLayout = ({ children, isPremium, userProfile, isNew }) => {
   const historyActive = isActivePath(pathname, "/history");
   const savedActive = isActivePath(pathname, "/bookmarks");
   const leadersActive = isActivePath(pathname, "/leaderboard");
+  const messagesActive = isActivePath(pathname, "/messages");
   const profileActive = isActivePath(pathname, "/profile");
 
   const navItems = [
@@ -98,6 +101,16 @@ const DesktopLayout = ({ children, isPremium, userProfile, isNew }) => {
         <IoTrophy size={20} />
       ) : (
         <IoTrophyOutline size={20} />
+      ),
+    },
+    {
+      label: "Messages",
+      active: messagesActive,
+      onClick: () => go("/messages"),
+      icon: messagesActive ? (
+        <IoChatbubbles size={20} />
+      ) : (
+        <IoChatbubblesOutline size={20} />
       ),
     },
   ];

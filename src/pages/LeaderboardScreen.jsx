@@ -13,7 +13,7 @@ import {
 import { FiCheck } from "react-icons/fi";
 import { supabase } from "../supabaseClient";
 import { withTimeout } from "../utils/withTimeout";
-import ProfileSheet from "../components/ProfileSheet";
+import QuickViewSheet from "../components/QuickViewSheet";
 import Avatar from "../components/Avatar";
 
 // ─── CourseDropdown ──────────────────────────────────────────────────────────
@@ -486,6 +486,7 @@ const LeaderboardScreen = ({
                   onClick={() => {
                     const profile = profiles[entry.userId] || {};
                     setSheetProfile({
+                      id: entry.userId,
                       full_name: entry.fullName,
                       user_name: entry.userName || null,
                       college: profile.college || "TASUED",
@@ -651,7 +652,7 @@ const LeaderboardScreen = ({
         </div>
       )}
 
-      <ProfileSheet
+      <QuickViewSheet
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
         userProfile={sheetProfile}

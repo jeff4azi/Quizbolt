@@ -53,6 +53,9 @@ import LoadingScreen from "./components/LoadingScreen";
 import NotFoundPage from "./pages/NotFoundPage";
 import SubmitReview from "./pages/SubmitReview";
 import AdStatsPage from "./pages/AdStatsPage";
+import ProfilePage from "./pages/ProfilePage";
+import ConversationList from "./pages/ConversationList";
+import ChatView from "./pages/ChatView";
 
 function App() {
   const REFERRAL_STORAGE_KEY = "quizbolt_referral_code";
@@ -849,6 +852,35 @@ function App() {
                       userProfile={userProfile}
                     />,
                   )}
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/u/:username"
+              element={
+                <ProtectedRoute>
+                  {withDesktop(
+                    <ProfilePage
+                      userProfile={userProfile}
+                      courses={availableCourses}
+                    />,
+                  )}
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/messages"
+              element={
+                <ProtectedRoute>
+                  {withDesktop(<ConversationList />)}
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/messages/:username"
+              element={
+                <ProtectedRoute>
+                  {withDesktop(<ChatView />)}
                 </ProtectedRoute>
               }
             />
