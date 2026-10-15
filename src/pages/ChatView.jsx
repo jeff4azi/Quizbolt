@@ -3,13 +3,12 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   FiArrowLeft,
   FiSend,
-  FiCheck,
   FiClock,
   FiUserCheck,
-  FiX,
   FiRotateCcw,
   FiMessageCircle,
 } from "react-icons/fi";
+import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
 import { FaCrown } from "react-icons/fa";
 import Avatar from "../components/Avatar";
 import { useMessaging } from "../hooks/useMessaging";
@@ -19,7 +18,7 @@ import { supabase } from "../supabaseClient";
 const formatMessageTime = (dateStr) => {
   if (!dateStr) return "";
   const d = new Date(dateStr);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
 };
 
 const ChatView = () => {
@@ -32,10 +31,18 @@ const ChatView = () => {
     sendMessage,
     accept,
     decline,
+    markAsRead,
     simulateAccept,
     simulateReply,
     resetDemo,
   } = useMessaging(username);
+
+  // Mark conversation as read whenever this view is active
+  useEffect(() => {
+    if (username && markAsRead) {
+      markAsRead();
+    }
+  }, [username, markAsRead, currentConv?.messages?.length]);
 
   const [input, setInput] = useState("");
   const [profileInfo, setProfileInfo] = useState(null);
@@ -248,17 +255,44 @@ const ChatView = () => {
                 className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
               >
                 <div
-                  className={`max-w-[82%] sm:max-w-md px-4 py-3 rounded-2xl text-xs sm:text-sm font-medium shadow-sm leading-relaxed ${
+                  className={`relative max-w-[85%] sm:max-w-md px-3.5 pt-2.5 pb-2 rounded-2xl text-xs sm:text-sm shadow-sm leading-relaxed ${
                     isMe
                       ? "bg-blue-600 text-white rounded-tr-xs shadow-sm dark:shadow-none"
-                      : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-tl-xs border border-slate-100 dark:border-slate-700/60"
+                      : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-tl-xs border border-slate-200/70 dark:border-slate-700/60"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                  <p className="whitespace-pre-wrap break-words inline font-medium">
+                    {msg.text}
+                  </p>
+
+                  {/* Inline timestamp & status ticks inside the bubble */}
+                  <span
+                    className={`inline-flex items-center gap-1 float-right mt-1 ml-3 select-none text-[10px] font-medium leading-none ${
+                      isMe
+                        ? "text-blue-100/80"
+                        : "text-slate-400 dark:text-slate-400"
+                    }`}
+                  >
+                    <span>{formatMessageTime(msg.timestamp)}</span>
+                    {isMe && (
+                      <span className="inline-flex items-center shrink-0">
+                        {msg.status === "sent" ? (
+                          <IoCheckmark
+                            size={14}
+                            className="text-blue-200"
+                            title="Sent"
+                          />
+                        ) : (
+                          <IoCheckmarkDone
+                            size={15}
+                            className="text-sky-200"
+                            title="Delivered / Read"
+                          />
+                        )}
+                      </span>
+                    )}
+                  </span>
                 </div>
-                <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 px-1 mt-1">
-                  {formatMessageTime(msg.timestamp)}
-                </span>
               </div>
             );
           })

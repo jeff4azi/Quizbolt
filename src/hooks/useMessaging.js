@@ -7,6 +7,7 @@ import {
   acceptRequest as acceptReq,
   declineRequest as declineReq,
   blockUser as blockUsr,
+  markConversationAsRead as markAsReadFn,
   subscribeToMessaging,
   simulateAccept as simAccept,
   simulateReply as simReply,
@@ -68,6 +69,9 @@ export const useMessaging = (username = null) => {
     accept,
     decline,
     block,
+    markAsRead: useCallback(() => {
+      if (username) markAsReadFn(username);
+    }, [username]),
     simulateAccept: () => simAccept(username),
     simulateReply: (text) => simReply(username, text),
     simulateIncomingRequest: (user, msg) => simIncoming(user, msg),

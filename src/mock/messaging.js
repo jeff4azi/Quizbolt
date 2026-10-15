@@ -15,12 +15,14 @@ const SEED_CONVERSATIONS = [
     isPremium: true,
     connectionState: "request_received",
     unread: true,
+    unreadCount: 1,
     lastActivity: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
     messages: [
       {
         id: "msg-seed-1",
         sender: "them",
         text: "Hey! Saw your score on the leaderboard, do you have any tips for CSC 301?",
+        status: "delivered",
         timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
       },
     ],
@@ -36,24 +38,28 @@ const SEED_CONVERSATIONS = [
     isPremium: true,
     connectionState: "accepted",
     unread: false,
+    unreadCount: 0,
     lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     messages: [
       {
         id: "msg-seed-2",
         sender: "them",
         text: "Are you prepping for the mock exam this weekend?",
+        status: "delivered",
         timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
       },
       {
         id: "msg-seed-3",
         sender: "me",
         text: "Yes, currently revising past questions on Quiz Bolt!",
+        status: "delivered",
         timestamp: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(),
       },
       {
         id: "msg-seed-4",
         sender: "them",
         text: "Awesome! Let's compare scores later tonight.",
+        status: "delivered",
         timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
       },
     ],
@@ -69,12 +75,14 @@ const SEED_CONVERSATIONS = [
     isPremium: false,
     connectionState: "request_sent",
     unread: false,
+    unreadCount: 0,
     lastActivity: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
     messages: [
       {
         id: "msg-seed-5",
         sender: "me",
         text: "Hey Chidi, great run on the leaderboard! How did you tackle the speed round?",
+        status: "delivered",
         timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
       },
     ],
@@ -350,6 +358,22 @@ export const simulateIncomingRequest = (userData, messageText) => {
   return conv;
 };
 
+export const markConversationAsRead = (username) => {
+  if (!username) return;
+  const list = loadStoredConversations();
+  const lower = username.toLowerCase();
+  const conv = list.find(
+    (c) =>
+      c.username?.toLowerCase() === lower ||
+      c.userId?.toLowerCase() === lower
+  );
+  if (conv && (conv.unread || conv.unreadCount > 0)) {
+    conv.unread = false;
+    conv.unreadCount = 0;
+    saveStoredConversations(list);
+  }
+};
+
 export const simulateReply = (username, replyText) => {
   const list = loadStoredConversations();
   const lower = username.toLowerCase();
@@ -371,9 +395,12 @@ export const simulateReply = (username, replyText) => {
     text:
       replyText ||
       "Thanks for reaching out! Happy to connect and share notes.",
+    status: "delivered",
     timestamp: new Date().toISOString(),
   });
   conv.lastActivity = new Date().toISOString();
+  conv.unread = true;
+  conv.unreadCount = (conv.unreadCount || 0) + 1;
   saveStoredConversations(list);
   return conv;
 };
@@ -407,6 +434,7 @@ if (typeof window !== "undefined") {
     acceptRequest,
     declineRequest,
     blockUser,
+    markConversationAsRead,
     simulateIncomingRequest,
     simulateReply,
     simulateAccept,
