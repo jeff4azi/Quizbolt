@@ -8,6 +8,7 @@ import {
   declineRequest as declineReq,
   blockUser as blockUsr,
   markConversationAsRead as markAsReadFn,
+  getTotalUnreadCount,
   subscribeToMessaging,
   simulateAccept as simAccept,
   simulateReply as simReply,
@@ -17,6 +18,9 @@ import {
 
 export const useMessaging = (username = null) => {
   const [conversations, setConversations] = useState(() => getConversations());
+  const [totalUnreadCount, setTotalUnreadCount] = useState(() =>
+    getTotalUnreadCount()
+  );
   const [currentConv, setCurrentConv] = useState(() =>
     username ? getConversationByUsername(username) : null
   );
@@ -24,6 +28,7 @@ export const useMessaging = (username = null) => {
   useEffect(() => {
     const sync = () => {
       setConversations(getConversations());
+      setTotalUnreadCount(getTotalUnreadCount());
       if (username) {
         setCurrentConv(getConversationByUsername(username));
       }
@@ -63,6 +68,7 @@ export const useMessaging = (username = null) => {
 
   return {
     conversations,
+    totalUnreadCount,
     currentConv,
     connectionState,
     sendMessage,

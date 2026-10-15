@@ -51,21 +51,28 @@ const MobileNavItem = ({ label, icon, active, onClick, highlight }) => (
 );
 
 // ── Desktop sidebar item ────────────────────────────────────────────────────
-const SidebarNavItem = ({ label, icon, active, onClick, highlight }) => (
+const SidebarNavItem = ({ label, icon, active, onClick, highlight, badge }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
       active || highlight
         ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
         : "text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50 hover:text-slate-800 dark:hover:text-slate-200"
     } ${highlight ? "ring-1 ring-blue-400/50" : ""}`}
     aria-current={active ? "page" : undefined}
   >
-    <div className="relative shrink-0 size-9 flex items-center justify-center w-[40px]">
-      {icon}
+    <div className="flex items-center gap-3 min-w-0">
+      <div className="relative shrink-0 size-9 flex items-center justify-center w-[40px]">
+        {icon}
+      </div>
+      <span className="truncate">{label}</span>
     </div>
-    <span>{label}</span>
+    {badge != null && badge > 0 && (
+      <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-black shrink-0 shadow-sm animate-pulse">
+        {badge}
+      </span>
+    )}
   </button>
 );
 

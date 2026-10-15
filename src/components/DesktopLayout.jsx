@@ -21,6 +21,7 @@ import Avatar from "./Avatar";
 import ConfirmOverlay from "./ConfirmOverlay";
 import NewUserCourseHint, { isNewUserHintVisible } from "./NewUserCourseHint";
 import { FeedBoltSidebarLink } from "./FeedBoltBanner";
+import { useMessaging } from "../hooks/useMessaging";
 
 /**
  * DesktopLayout wraps protected pages.
@@ -37,6 +38,7 @@ const DesktopLayout = ({ children, isPremium, userProfile, isNew }) => {
   const location = useLocation();
   const pathname = location?.pathname || "/";
   const [premiumOverlayOpen, setPremiumOverlayOpen] = useState(false);
+  const { totalUnreadCount } = useMessaging();
 
   const go = (path) => navigate(path);
 
@@ -106,6 +108,7 @@ const DesktopLayout = ({ children, isPremium, userProfile, isNew }) => {
     {
       label: "Messages",
       active: messagesActive,
+      badge: totalUnreadCount,
       onClick: () => go("/messages"),
       icon: messagesActive ? (
         <IoChatbubbles size={20} />

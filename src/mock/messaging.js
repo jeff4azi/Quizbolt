@@ -1,9 +1,53 @@
 // Mock messaging layer for Quiz Bolt demo
 // Manages local state and mock conversations store without backend/realtime calls.
 
-const STORAGE_KEY = "quizbolt_mock_conversations_v1";
+const STORAGE_KEY = "quizbolt_mock_conversations_v3";
 
 const SEED_CONVERSATIONS = [
+  {
+    username: "aminay",
+    userId: "mock-user-2",
+    fullName: "Amina Yusuf",
+    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+    university: "UNILAG",
+    department: "Economics",
+    year: 4,
+    isPremium: true,
+    connectionState: "accepted",
+    unread: true,
+    unreadCount: 2,
+    lastActivity: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    messages: [
+      {
+        id: "msg-seed-2",
+        sender: "them",
+        text: "Are you prepping for the mock exam this weekend?",
+        status: "delivered",
+        timestamp: new Date(Date.now() - 28 * 60 * 60 * 1000).toISOString(), // Yesterday
+      },
+      {
+        id: "msg-seed-3",
+        sender: "me",
+        text: "Yes, currently revising past questions on Quiz Bolt!",
+        status: "delivered",
+        timestamp: new Date(Date.now() - 27 * 60 * 60 * 1000).toISOString(), // Yesterday
+      },
+      {
+        id: "msg-seed-4",
+        sender: "them",
+        text: "How did your revision go? Any difficult sections?",
+        status: "delivered",
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // Today
+      },
+      {
+        id: "msg-seed-5",
+        sender: "them",
+        text: "Let me know when you're free so we can compare scores!",
+        status: "delivered",
+        timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(), // Today
+      },
+    ],
+  },
   {
     username: "tundeb",
     userId: "mock-user-1",
@@ -16,51 +60,14 @@ const SEED_CONVERSATIONS = [
     connectionState: "request_received",
     unread: true,
     unreadCount: 1,
-    lastActivity: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+    lastActivity: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
     messages: [
       {
         id: "msg-seed-1",
         sender: "them",
         text: "Hey! Saw your score on the leaderboard, do you have any tips for CSC 301?",
         status: "delivered",
-        timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-      },
-    ],
-  },
-  {
-    username: "aminay",
-    userId: "mock-user-2",
-    fullName: "Amina Yusuf",
-    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
-    university: "UNILAG",
-    department: "Economics",
-    year: 4,
-    isPremium: true,
-    connectionState: "accepted",
-    unread: false,
-    unreadCount: 0,
-    lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    messages: [
-      {
-        id: "msg-seed-2",
-        sender: "them",
-        text: "Are you prepping for the mock exam this weekend?",
-        status: "delivered",
-        timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "msg-seed-3",
-        sender: "me",
-        text: "Yes, currently revising past questions on Quiz Bolt!",
-        status: "delivered",
-        timestamp: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "msg-seed-4",
-        sender: "them",
-        text: "Awesome! Let's compare scores later tonight.",
-        status: "delivered",
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        timestamp: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
       },
     ],
   },
@@ -76,14 +83,14 @@ const SEED_CONVERSATIONS = [
     connectionState: "request_sent",
     unread: false,
     unreadCount: 0,
-    lastActivity: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+    lastActivity: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
     messages: [
       {
-        id: "msg-seed-5",
+        id: "msg-seed-6",
         sender: "me",
         text: "Hey Chidi, great run on the leaderboard! How did you tackle the speed round?",
         status: "delivered",
-        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
       },
     ],
   },
@@ -136,6 +143,16 @@ export const subscribeToMessaging = (listener) => {
 
 export const getConversations = () => {
   return loadStoredConversations();
+};
+
+export const getTotalUnreadCount = () => {
+  const list = loadStoredConversations();
+  return list.reduce((acc, conv) => {
+    if (conv.unread) {
+      return acc + (conv.unreadCount || 1);
+    }
+    return acc;
+  }, 0);
 };
 
 export const getConversationByUsername = (username) => {
@@ -430,6 +447,7 @@ if (typeof window !== "undefined") {
     getConversations,
     getConversationByUsername,
     getConnectionState,
+    getTotalUnreadCount,
     sendMessage,
     acceptRequest,
     declineRequest,

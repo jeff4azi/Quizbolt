@@ -7,6 +7,7 @@ import {
   FiUserCheck,
   FiRotateCcw,
   FiMessageCircle,
+  FiCheck,
 } from "react-icons/fi";
 import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
 import { FaCrown } from "react-icons/fa";
@@ -19,6 +20,36 @@ const formatMessageTime = (dateStr) => {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+};
+
+const getDateSeparatorLabel = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  const now = new Date();
+
+  const startOfDay = (date) =>
+    new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+
+  const diffDays = Math.round(
+    (startOfDay(now) - startOfDay(d)) / (1000 * 60 * 60 * 24)
+  );
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays > 1 && diffDays < 7) {
+    return d.toLocaleDateString([], { weekday: "long" });
+  }
+  return d.toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+    year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+  });
+};
+
+const getMessageDateKey = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 };
 
 const ChatView = () => {
@@ -247,53 +278,70 @@ const ChatView = () => {
             </p>
           </div>
         ) : (
-          messages.map((msg) => {
+          messages.map((msg, index) => {
             const isMe = msg.sender === "me";
-            return (
-              <div
-                key={msg.id}
-                className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
-              >
-                <div
-                  className={`relative max-w-[85%] sm:max-w-md px-3.5 pt-2.5 pb-2 rounded-2xl text-xs sm:text-sm shadow-sm leading-relaxed ${
-                    isMe
-                      ? "bg-blue-600 text-white rounded-tr-xs shadow-sm dark:shadow-none"
-                      : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-tl-xs border border-slate-200/70 dark:border-slate-700/60"
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap break-words inline font-medium">
-                    {msg.text}
-                  </p>
+            const currentDateKey = getMessageDateKey(msg.timestamp);
+            const prevDateKey =
+              index > 0 ? getMessageDateKey(messages[index - 1].timestamp) : null;
+            const showDateSeparator = currentDateKey !== prevDateKey;
+            const dateLabel = showDateSeparator
+              ? getDateSeparatorLabel(msg.timestamp)
+              : null;
 
-                  {/* Inline timestamp & status ticks inside the bubble */}
-                  <span
-                    className={`inline-flex items-center gap-1 float-right mt-1 ml-3 select-none text-[10px] font-medium leading-none ${
+            return (
+              <React.Fragment key={msg.id || index}>
+                {showDateSeparator && dateLabel && (
+                  <div className="flex items-center justify-center my-3 select-none">
+                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shadow-xs border border-slate-300/40 dark:border-slate-700/60">
+                      {dateLabel}
+                    </span>
+                  </div>
+                )}
+
+                <div
+                  className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
+                >
+                  <div
+                    className={`relative max-w-[85%] sm:max-w-md px-3.5 pt-2.5 pb-2 rounded-2xl text-xs sm:text-sm shadow-sm leading-relaxed ${
                       isMe
-                        ? "text-blue-100/80"
-                        : "text-slate-400 dark:text-slate-400"
+                        ? "bg-blue-600 text-white rounded-tr-xs shadow-sm dark:shadow-none"
+                        : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-tl-xs border border-slate-200/70 dark:border-slate-700/60"
                     }`}
                   >
-                    <span>{formatMessageTime(msg.timestamp)}</span>
-                    {isMe && (
-                      <span className="inline-flex items-center shrink-0">
-                        {msg.status === "sent" ? (
-                          <IoCheckmark
-                            size={14}
-                            className="text-blue-200"
-                            title="Sent"
-                          />
-                        ) : (
-                          <IoCheckmarkDone
-                            size={15}
-                            className="text-sky-200"
-                            title="Delivered / Read"
-                          />
-                        )}
-                      </span>
-                    )}
-                  </span>
+                    <p className="whitespace-pre-wrap break-words inline font-medium">
+                      {msg.text}
+                    </p>
+
+                    {/* Inline timestamp & status ticks inside the bubble */}
+                    <span
+                      className={`inline-flex items-center gap-1 float-right mt-1 ml-3 select-none text-[10px] font-medium leading-none ${
+                        isMe
+                          ? "text-blue-100/80"
+                          : "text-slate-400 dark:text-slate-400"
+                      }`}
+                    >
+                      <span>{formatMessageTime(msg.timestamp)}</span>
+                      {isMe && (
+                        <span className="inline-flex items-center shrink-0">
+                          {msg.status === "sent" ? (
+                            <IoCheckmark
+                              size={14}
+                              className="text-blue-200"
+                              title="Sent"
+                            />
+                          ) : (
+                            <IoCheckmarkDone
+                              size={15}
+                              className="text-sky-200"
+                              title="Delivered / Read"
+                            />
+                          )}
+                        </span>
+                      )}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </React.Fragment>
             );
           })
         )}

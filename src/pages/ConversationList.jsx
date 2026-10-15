@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  FiArrowLeft,
   FiMessageSquare,
   FiChevronRight,
   FiRotateCcw,
+  FiUserPlus,
   FiSearch,
 } from "react-icons/fi";
 import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
@@ -56,16 +58,28 @@ const ConversationList = () => {
 
   return (
     <div className="min-h-[100dvh] bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors duration-500 pb-24">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Messages
-            </h1>
-            <p className="text-xs font-semibold text-slate-400 dark:text-slate-400">
-              Demo conversations and connection requests
-            </p>
+      {/* QuizBolt Site Standard Header with Back Button */}
+      <header className="sticky top-0 z-40 border-b border-slate-200/70 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3.5 sm:px-6">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                window.history.length > 1 ? navigate(-1) : navigate("/")
+              }
+              className="size-10 sm:size-11 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 active:scale-95 transition-transform shrink-0"
+              aria-label="Go back"
+            >
+              <FiArrowLeft size={19} />
+            </button>
+            <div>
+              <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                Messages
+              </h1>
+              <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-400">
+                Demo conversations
+              </p>
+            </div>
           </div>
 
           {/* Dev Demo Controls Toggle */}
@@ -74,9 +88,12 @@ const ConversationList = () => {
             onClick={() => setShowDevControls((p) => !p)}
             className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
           >
-            🛠️ {showDevControls ? "Hide Demo Controls" : "Demo Controls"}
+            🛠️ {showDevControls ? "Hide Demo" : "Demo"}
           </button>
         </div>
+      </header>
+
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-5 space-y-5">
 
         {/* Dev Controls Bar */}
         {showDevControls && (
@@ -153,7 +170,8 @@ const ConversationList = () => {
 
             <div className="rounded-3xl bg-white dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-700/40 overflow-hidden shadow-sm">
               {filteredRequests.map((conv) => {
-                const lastMsg = conv.messages[conv.messages.length - 1];
+                const msgs = Array.isArray(conv.messages) ? conv.messages : [];
+                const lastMsg = msgs[msgs.length - 1];
                 return (
                   <div
                     key={conv.username}
@@ -222,7 +240,8 @@ const ConversationList = () => {
           ) : (
             <div className="rounded-3xl bg-white dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-700/40 overflow-hidden shadow-sm">
               {filteredActive.map((conv) => {
-                const lastMsg = conv.messages[conv.messages.length - 1];
+                const msgs = Array.isArray(conv.messages) ? conv.messages : [];
+                const lastMsg = msgs[msgs.length - 1];
                 const isMe = lastMsg?.sender === "me";
                 const hasUnread = Boolean(
                   conv.unread &&

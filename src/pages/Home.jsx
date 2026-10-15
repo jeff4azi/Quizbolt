@@ -13,6 +13,9 @@ import testIcon from "../images/test.webp";
 import matchIcon from "../images/match.webp";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 
+import { useMessaging } from "../hooks/useMessaging";
+import { IoChatbubblesOutline } from "react-icons/io5";
+
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { FreeMode } from "swiper/modules";
@@ -225,6 +228,7 @@ const Home = ({
 }) => {
   useDocumentTitle("Home | QuizBolt");
   const navigate = useNavigate();
+  const { totalUnreadCount } = useMessaging();
   const cachedDashboard = useMemo(
     () => readHomeDashboardCache(userProfile?.id),
     [userProfile?.id],
@@ -569,6 +573,22 @@ const Home = ({
               </span>
             </div>
           )}
+
+          {/* Mobile Messages Icon Button */}
+          <button
+            type="button"
+            onClick={() => navigate("/messages")}
+            className="relative p-2 rounded-xl bg-white dark:bg-slate-800/80 border border-gray-200/80 dark:border-slate-700/60 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700/60 active:scale-95 transition-all shadow-sm"
+            aria-label="Messages"
+            title="Messages"
+          >
+            <IoChatbubblesOutline size={18} className="text-slate-700 dark:text-slate-200" />
+            {totalUnreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-gray-50 dark:ring-slate-900 shadow-sm">
+                {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
+              </span>
+            )}
+          </button>
 
           <button
             type="button"
