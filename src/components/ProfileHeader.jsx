@@ -92,7 +92,7 @@ const ProfileHeader = ({
           title="Click to view full photo"
           aria-label={`View full profile photo of ${displayName}`}
         >
-          <div className="size-24 rounded-3xl overflow-hidden ring-4 ring-slate-100 dark:ring-slate-700/60 shadow-sm group-hover:opacity-90 transition-opacity">
+          <div className="size-24 rounded-full overflow-hidden ring-4 ring-slate-100 dark:ring-slate-700/60 shadow-sm group-hover:opacity-90 transition-opacity">
             <Avatar
               avatarUrl={userProfile?.avatar_url}
               size="lg"
