@@ -186,7 +186,6 @@ const ConversationList = () => {
                             <FaCrown className="text-white text-[8px]" />
                           </div>
                         )}
-                        <span className="absolute -bottom-0.5 -right-0.5 size-3 bg-blue-600 rounded-full ring-2 ring-white dark:ring-slate-800" />
                       </div>
 
                       <div className="min-w-0 flex-1">
@@ -262,9 +261,6 @@ const ConversationList = () => {
                           <div className="absolute -top-1 -right-1 bg-amber-400 p-1 rounded-lg border border-white dark:border-slate-900 shadow-xs">
                             <FaCrown className="text-white text-[8px]" />
                           </div>
-                        )}
-                        {hasUnread && (
-                          <span className="absolute -bottom-0.5 -right-0.5 size-3 bg-blue-600 rounded-full ring-2 ring-white dark:ring-slate-800 animate-pulse" />
                         )}
                       </div>
 
