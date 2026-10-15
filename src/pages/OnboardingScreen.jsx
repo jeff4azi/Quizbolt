@@ -155,22 +155,46 @@ const OnboardingScreen = ({ onProfileReady }) => {
         avatarUrl = avatarUrl.replace(/s\d+-c/, "s400-c"); // higher quality
       }
 
-      // Create user_name as slug (lowercase, no spaces, no special chars)
-      const userName = fullName
+      // Create user_name base slug (lowercase, alphanumeric only)
+      const baseSlug = fullName
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "") // Remove non-alphanumeric chars
-        .trim();
+        .replace(/[^a-z0-9]+/g, "")
+        .trim() || "scholar";
+
+      // Generate a unique username: always append random digits and verify
+      // against the database in a loop until we find one that is free.
+      const generateUniqueUsername = async (base) => {
+        let candidate;
+        let attempts = 0;
+        do {
+          // Append 2–4 random digits so every new account gets a unique handle
+          const digits = String(Math.floor(Math.random() * 9000) + 1000); // 1000–9999
+          candidate = base + digits;
+          attempts++;
+
+          // Check whether this username is already taken (case-insensitive)
+          const { count } = await supabase
+            .from("profiles")
+            .select("id", { count: "exact", head: true })
+            .ilike("user_name", candidate);
+
+          if ((count ?? 0) === 0) break; // username is free — use it
+        } while (attempts < 20); // safety cap; extremely unlikely to need more
+        return candidate;
+      };
+
+      const userName = await generateUniqueUsername(baseSlug);
 
       // 3. Save onboarding data + create user_name from full_name
       const referralCodeRaw = formData.referralCode?.trim() || "";
       // Only accept referral codes in format QB-XXXX (QB- followed by 4 uppercase alphanumeric characters)
       const referralCodeRegex = /^QB-[A-Z0-9]{4}$/;
       const referralCode = referralCodeRegex.test(referralCodeRaw) ? referralCodeRaw : null;
-      
+
       const { error: upsertError } = await supabase.from("profiles").upsert({
         id: user.id,
         full_name: fullName,
-        user_name: userName, // Store slugified name
+        user_name: userName, // Store slugified name with unique suffix
         university: formData.university.toUpperCase(),
         college: formData.college,
         department: formData.department,

@@ -34,6 +34,7 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
   const telegramGroupUrl = "";
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [premiumAccess, setPremiumAccess] = useState(null);
   const [rerunCourses, setRerunCourses] = useState([]);
   const [rerunCoursesLoading, setRerunCoursesLoading] = useState(false);
@@ -237,11 +238,14 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
     }
 
     try {
+      setSaveError(null);
       setIsSaving(true);
       await onUpdateProfile(formData);
       setIsEditing(false);
     } catch (err) {
       console.error("Failed to save profile:", err.message);
+      setSaveError(err.message || "Failed to save. Please try again.");
+      // Keep isEditing=true so the user can correct the field
     } finally {
       setIsSaving(false);
     }
@@ -456,7 +460,14 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
                 <button
                   type="button"
                   disabled={isSaving}
-                  onClick={isEditing ? handleSave : () => setIsEditing(true)}
+                  onClick={
+                    isEditing
+                      ? handleSave
+                      : () => {
+                          setSaveError(null);
+                          setIsEditing(true);
+                        }
+                  }
                   className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black text-white transition-all active:scale-95 ${
                     isSaving
                       ? "bg-green-600/80"
@@ -475,6 +486,25 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
                   {isSaving ? "Saving" : isEditing ? "Save" : "Edit"}
                 </button>
               </div>
+
+              {/* Inline save error banner */}
+              {saveError && (
+                <div className="mx-5 mt-3 flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-400">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="mt-0.5 size-4 shrink-0"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-.75-4.75a.75.75 0 0 0 1.5 0v-4.5a.75.75 0 0 0-1.5 0v4.5Zm.75-7.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>{saveError}</span>
+                </div>
+              )}
 
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {fieldRows.map(
@@ -503,9 +533,10 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
                         <input
                           type="text"
                           value={formData[key]}
-                          onChange={(e) =>
-                            setFormData({ ...formData, [key]: e.target.value })
-                          }
+                          onChange={(e) => {
+                            setSaveError(null);
+                            setFormData({ ...formData, [key]: e.target.value });
+                          }}
                           className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-600/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                           placeholder={placeholder}
                         />

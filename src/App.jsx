@@ -620,8 +620,31 @@ function App() {
 
       // Determine next values, falling back to existing profile data
       const nextFullName = full_name ?? userProfile?.full_name ?? "";
-      const nextUserName = user_name ?? userProfile?.user_name ?? "";
+      // Always store usernames in lowercase
+      const nextUserName = (user_name ?? userProfile?.user_name ?? "").toLowerCase();
       const nextDepartment = department ?? userProfile?.department ?? "";
+
+      // If the username is changing, verify it's not already taken by someone else
+      if (
+        nextUserName &&
+        nextUserName.toLowerCase() !== (userProfile?.user_name ?? "").toLowerCase()
+      ) {
+        const { count: takenCount } = await withTimeout(
+          supabase
+            .from("profiles")
+            .select("id", { count: "exact", head: true })
+            .ilike("user_name", nextUserName)
+            .neq("id", user.id),
+          10000,
+          "Username check timed out. Please try again.",
+        );
+
+        if ((takenCount ?? 0) > 0) {
+          throw new Error(
+            "That username is already taken. Please choose a different one.",
+          );
+        }
+      }
 
       // Upsert profile fields in profiles table (include other known fields for safety)
       const { error: upsertError } = await withTimeout(
