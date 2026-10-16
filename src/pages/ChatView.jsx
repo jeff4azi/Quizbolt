@@ -131,6 +131,76 @@ const ReplyBar = ({ replyingTo, displayName, onCancel }) => {
   );
 };
 
+/* ─── ChatSkeleton (shown while loading chat and profile data) ────────────── */
+const ChatSkeleton = ({ onBack }) => {
+  return (
+    <div className="flex flex-col h-[100dvh] w-full max-w-4xl mx-auto bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 lg:border-x border-slate-200/70 dark:border-slate-800/60 overflow-hidden relative">
+      {/* Header Skeleton */}
+      <header className="shrink-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800 px-4 py-3 flex items-center justify-between gap-3 z-20">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Back to conversations"
+            className="size-11 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+          >
+            <FiArrowLeft size={20} />
+          </button>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="size-9 rounded-full bg-slate-200 dark:bg-slate-800 animate-pulse shrink-0" />
+            <div className="space-y-1.5 min-w-0">
+              <div className="h-3.5 w-28 sm:w-36 rounded-md bg-slate-200 dark:bg-slate-800 animate-pulse" />
+              <div className="h-2.5 w-16 sm:w-20 rounded-md bg-slate-200/70 dark:bg-slate-800/70 animate-pulse" />
+            </div>
+          </div>
+        </div>
+        <div className="size-10 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 animate-pulse shrink-0" />
+      </header>
+
+      {/* Messages Feed Skeleton */}
+      <div className="flex-1 overflow-hidden p-4 sm:p-6 pb-28 sm:pb-36 space-y-3">
+        {/* Date separator pill in center */}
+        <div className="flex justify-center my-2">
+          <div className="h-5 w-20 rounded-full bg-slate-200/80 dark:bg-slate-800/80 animate-pulse" />
+        </div>
+
+        {/* Staggered message bubbles */}
+        <div className="flex justify-start">
+          <div className="h-10 w-44 rounded-2xl rounded-tl-xs bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 animate-pulse shadow-xs" />
+        </div>
+
+        <div className="flex justify-start">
+          <div className="h-16 w-64 rounded-2xl rounded-tl-xs bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 animate-pulse shadow-xs" />
+        </div>
+
+        <div className="flex justify-end">
+          <div className="h-11 w-52 rounded-2xl rounded-tr-xs bg-blue-500/25 dark:bg-blue-600/30 animate-pulse shadow-xs" />
+        </div>
+
+        <div className="flex justify-start">
+          <div className="h-10 w-36 rounded-2xl rounded-tl-xs bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 animate-pulse shadow-xs" />
+        </div>
+
+        <div className="flex justify-end">
+          <div className="h-14 w-60 rounded-2xl rounded-tr-xs bg-blue-500/25 dark:bg-blue-600/30 animate-pulse shadow-xs" />
+        </div>
+
+        <div className="flex justify-end">
+          <div className="h-9 w-28 rounded-2xl rounded-tr-xs bg-blue-500/25 dark:bg-blue-600/30 animate-pulse shadow-xs" />
+        </div>
+      </div>
+
+      {/* Floating Composer Skeleton */}
+      <div className="fixed inset-x-0 bottom-3 z-30 pointer-events-none px-3 sm:px-4 max-w-4xl mx-auto">
+        <div className="max-w-3xl mx-auto bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-800 shadow-xl rounded-3xl p-1.5 flex items-center justify-between gap-3 animate-pulse">
+          <div className="h-4 w-36 bg-slate-200/70 dark:bg-slate-800/70 rounded-full ml-3" />
+          <div className="size-10 rounded-full bg-slate-200/80 dark:bg-slate-800 mr-0.5" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ─── ChatView ────────────────────────────────────────────────────────────── */
 const ChatView = () => {
   const { username } = useParams();
@@ -145,6 +215,7 @@ const ChatView = () => {
     block,
     markAsRead,
     report,
+    chatLoading,
   } = useMessaging(username);
 
   // Mark conversation as read whenever this view is active
@@ -156,6 +227,7 @@ const ChatView = () => {
   const [replyingTo, setReplyingTo] = useState(null); // { id, text, sender }
   const [selectedMsgId, setSelectedMsgId] = useState(null); // which message pill is currently tapped
   const [profileInfo, setProfileInfo] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -206,9 +278,14 @@ const ChatView = () => {
   // Fetch basic profile info
   useEffect(() => {
     if (!username) return;
-    fetchProfileByUsernameOrId(username).then((data) => {
-      if (data) setProfileInfo(data);
-    });
+    setProfileLoading(true);
+    fetchProfileByUsernameOrId(username)
+      .then((data) => {
+        if (data) setProfileInfo(data);
+      })
+      .finally(() => {
+        setProfileLoading(false);
+      });
   }, [username]);
 
   // Click outside listener for kebab menu
@@ -308,6 +385,18 @@ const ChatView = () => {
     connectionState === "blocked";
 
   const isMobile = isMobileDevice();
+
+  const isInitialLoading = chatLoading || (!currentConv && profileLoading);
+
+  if (isInitialLoading) {
+    return (
+      <ChatSkeleton
+        onBack={() =>
+          window.history.length > 1 ? navigate(-1) : navigate("/messages")
+        }
+      />
+    );
+  }
 
   return (
     <>

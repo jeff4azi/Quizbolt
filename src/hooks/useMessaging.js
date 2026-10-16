@@ -21,10 +21,19 @@ export const useMessaging = (username = null) => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [chatLoading, setChatLoading] = useState(Boolean(username));
   const [targetProfile, setTargetProfile] = useState(null);
   const [currentMessages, setCurrentMessages] = useState([]);
 
   const activeConnRef = useRef(null);
+
+  useEffect(() => {
+    if (username) {
+      setChatLoading(true);
+    } else {
+      setChatLoading(false);
+    }
+  }, [username]);
 
   // 1. Resolve current user ID
   useEffect(() => {
@@ -132,9 +141,16 @@ export const useMessaging = (username = null) => {
         const profile = await fetchProfileByUsernameOrId(username);
         if (profile && isMounted) {
           setTargetProfile(profile);
+          // If conversations are already loaded and no connection exists, loading is complete
+          if (!loading) {
+            setChatLoading(false);
+          }
+        } else if (isMounted) {
+          setChatLoading(false);
         }
       } catch (err) {
         console.error("Error resolving profile for chat:", err);
+        if (isMounted) setChatLoading(false);
       }
     };
 
@@ -143,7 +159,7 @@ export const useMessaging = (username = null) => {
     return () => {
       isMounted = false;
     };
-  }, [username, conversations]);
+  }, [username, conversations, loading]);
 
   // Find active conversation from conversations list or target profile
   const matchedConv = conversations.find((c) => {
@@ -183,6 +199,7 @@ export const useMessaging = (username = null) => {
         // 1. Fetch latest messages from DB
         const latestMsgs = await getMessages(connectionId, currentUserId);
         if (!isMounted) return;
+        setChatLoading(false);
 
         // 2. Check if messages have changed or if read status updated
         setCurrentMessages((prev) => {
@@ -374,6 +391,7 @@ export const useMessaging = (username = null) => {
     currentConv,
     connectionState,
     loading,
+    chatLoading,
     sendMessage,
     accept,
     decline,
