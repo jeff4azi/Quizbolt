@@ -1,5 +1,47 @@
 import { supabase } from "../supabaseClient";
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Robustly fetches a profile by either username (case-insensitive) or UUID id.
+ * Prevents PostgreSQL 22P02 "invalid input syntax for type uuid" error.
+ */
+export const fetchProfileByUsernameOrId = async (identifier) => {
+  if (!identifier) return null;
+  const clean = String(identifier).trim();
+
+  try {
+    // 1. Try finding by case-insensitive user_name
+    const { data: byUsername } = await supabase
+      .from("profiles")
+      .select(
+        "id, full_name, user_name, avatar_url, university, department, year, is_premium"
+      )
+      .ilike("user_name", clean)
+      .maybeSingle();
+
+    if (byUsername) return byUsername;
+
+    // 2. If it's a valid UUID, try finding by id
+    if (UUID_REGEX.test(clean)) {
+      const { data: byId } = await supabase
+        .from("profiles")
+        .select(
+          "id, full_name, user_name, avatar_url, university, department, year, is_premium"
+        )
+        .eq("id", clean)
+        .maybeSingle();
+
+      if (byId) return byId;
+    }
+  } catch (err) {
+    console.error("Error fetching profile by identifier:", err);
+  }
+
+  return null;
+};
+
 /**
  * messagingService.js
  * Real backend Supabase service for QuizBolt direct messaging, requests, and moderation.

@@ -79,7 +79,6 @@ const Avatar = ({
           loading={lazy ? "lazy" : "eager"}
           onError={handleError}
           className="w-full h-full object-cover"
-          crossOrigin="anonymous"
           referrerPolicy="no-referrer"
         />
       </div>

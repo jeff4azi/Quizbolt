@@ -51,7 +51,6 @@ const ImageOverlayModal = ({ isOpen, onClose, avatarUrl, fullName }) => {
           alt={`${fullName || "User"}'s profile picture`}
           className="w-full h-full object-cover select-none"
           loading="eager"
-          crossOrigin="anonymous"
           referrerPolicy="no-referrer"
           onError={handleError}
         />

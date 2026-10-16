@@ -20,6 +20,7 @@ import { usePresence } from "../hooks/usePresence";
 import ReportModal from "../components/ReportModal";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import { supabase } from "../supabaseClient";
+import { fetchProfileByUsernameOrId } from "../services/messagingService";
 
 const formatMessageTime = (dateStr) => {
   if (!dateStr) return "";
@@ -101,20 +102,14 @@ const ChatView = () => {
 
   useDocumentTitle(`Chat with ${displayName} | QuizBolt`);
 
-  // Fetch basic profile info if not in store
+  // Fetch basic profile info
   useEffect(() => {
-    if (currentConv) return;
     if (!username) return;
 
-    supabase
-      .from("profiles")
-      .select("id, full_name, user_name, avatar_url, is_premium")
-      .or(`user_name.eq.${username},id.eq.${username}`)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setProfileInfo(data);
-      });
-  }, [username, currentConv]);
+    fetchProfileByUsernameOrId(username).then((data) => {
+      if (data) setProfileInfo(data);
+    });
+  }, [username]);
 
   // Click outside listener for kebab menu
   useEffect(() => {
@@ -207,19 +202,33 @@ const ChatView = () => {
                 avatarUrl={avatarUrl}
                 size="sm"
                 isOnline={userIsOnline}
-                className="rounded-2xl ring-1 ring-slate-200 dark:ring-slate-700"
+                className="rounded-full ring-2 ring-slate-100 dark:ring-slate-800 group-hover:opacity-90 transition-opacity"
               />
               {isPremium && (
-                <div className="absolute -top-1 -right-1 bg-amber-400 p-0.5 rounded-full border border-white dark:border-slate-900">
-                  <FaCrown className="text-white text-[7px]" />
+                <div
+                  className="absolute -top-1 -right-1 bg-amber-400 p-1 rounded-full border-2 border-white dark:border-slate-900 shadow-sm z-10"
+                  title="Premium Scholar"
+                >
+                  <FaCrown className="text-white text-[8px]" />
                 </div>
               )}
             </div>
 
             <div className="min-w-0">
-              <h1 className="text-sm font-black text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {displayName}
-              </h1>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h1 className="text-sm font-black text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {displayName}
+                </h1>
+                {isPremium && (
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/15 text-[10px] font-black text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0"
+                    title="Premium Scholar"
+                  >
+                    <FaCrown className="text-[9px]" />
+                    PRO
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-400">
                 <span>@{username}</span>
                 <span>•</span>

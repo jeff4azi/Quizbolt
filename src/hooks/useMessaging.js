@@ -14,6 +14,7 @@ import {
   subscribeToIncoming,
   createReport,
   findConnection,
+  fetchProfileByUsernameOrId,
 } from "../services/messagingService";
 
 export const useMessaging = (username = null) => {
@@ -110,12 +111,7 @@ export const useMessaging = (username = null) => {
 
       // Otherwise fetch profile from Supabase
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, full_name, user_name, avatar_url, university, department, year, is_premium")
-          .or(`user_name.eq.${username},id.eq.${username}`)
-          .maybeSingle();
-
+        const profile = await fetchProfileByUsernameOrId(username);
         if (profile && isMounted) {
           setTargetProfile(profile);
         }
