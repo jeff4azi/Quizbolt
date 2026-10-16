@@ -56,8 +56,12 @@ import AdStatsPage from "./pages/AdStatsPage";
 import ProfilePage from "./pages/ProfilePage";
 import ConversationList from "./pages/ConversationList";
 import ChatView from "./pages/ChatView";
+import { usePresence } from "./hooks/usePresence";
 
 function App() {
+  // Global presence heartbeat across the entire application (exam, flashcards, home, etc.)
+  usePresence();
+
   const REFERRAL_STORAGE_KEY = "quizbolt_referral_code";
 
   // Capture referral code from URL (e.g. https://quizbolt.site?ref=QB-T4LD)

@@ -1,36 +1,69 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../supabaseClient";
 
 /**
  * usePresence hook
  * Lightweight presence without consuming Supabase Realtime channels.
- * - Heartbeats current user via `upsert_presence()` RPC every 60s.
+ * - Heartbeats current user via `upsert_presence()` RPC every 50s.
+ * - Also heartbeats on window focus & document visibility change.
  * - Polls presence for `watchUserIds` every 30s.
  * - Considered online if last_seen > NOW() - 90 seconds.
  */
 export const usePresence = (watchUserIds = []) => {
   const [onlineIds, setOnlineIds] = useState(new Set());
+  const lastHeartbeatRef = useRef(0);
 
-  // 1. Heartbeat current user
+  // 1. Heartbeat current user globally
   useEffect(() => {
     let mounted = true;
 
-    const heartbeat = async () => {
+    const sendHeartbeat = async () => {
+      // Throttle heartbeats to at most once per 20 seconds
+      const now = Date.now();
+      if (now - lastHeartbeatRef.current < 20_000) return;
+      lastHeartbeatRef.current = now;
+
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) return;
-        await supabase.rpc("upsert_presence");
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.user?.id) return;
+
+        // Try RPC first
+        const { error } = await supabase.rpc("upsert_presence");
+        if (error) {
+          // Direct upsert fallback
+          await supabase.from("user_presence").upsert({
+            user_id: session.user.id,
+            last_seen: new Date().toISOString(),
+          });
+        }
       } catch (err) {
         // Non-critical background failure, ignore
       }
     };
 
-    heartbeat();
-    const interval = setInterval(heartbeat, 60_000);
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 50_000);
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        sendHeartbeat();
+      }
+    };
+
+    const onFocus = () => {
+      sendHeartbeat();
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
 
     return () => {
       mounted = false;
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
     };
   }, []);
 
