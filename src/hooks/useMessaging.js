@@ -280,7 +280,7 @@ export const useMessaging = (username = null) => {
 
   // Send message handler
   const sendMessage = useCallback(
-    async (text) => {
+    async (text, replyToId = null) => {
       if (!text?.trim() || !currentUserId || !targetUserId) return null;
 
       try {
@@ -291,13 +291,13 @@ export const useMessaging = (username = null) => {
           const conn = await getOrCreateConnection(currentUserId, targetUserId);
           if (!conn) throw new Error("Could not initialize connection");
           activeConnId = conn.id;
-          await sendFirstMessage(activeConnId, currentUserId, text);
+          await sendFirstMessage(activeConnId, currentUserId, text, targetUserId, replyToId);
         } else {
           // If request_received, sending a reply automatically accepts the request!
           if (connectionState === "request_received") {
             await acceptConnection(activeConnId);
           }
-          await sendMsg(activeConnId, currentUserId, text);
+          await sendMsg(activeConnId, currentUserId, text, targetUserId, replyToId);
         }
 
         await refreshActiveMessages();

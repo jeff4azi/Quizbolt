@@ -1,5 +1,18 @@
 import { supabase } from "../supabaseClient";
 
+// Supabase Edge Function URL for send-message + push dispatch
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const EDGE_FN_URL = `${SUPABASE_URL}/functions/v1/send-message`;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+/**
+ * Gets the current session JWT for edge function auth.
+ */
+const getAuthHeader = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? `Bearer ${session.access_token}` : null;
+};
+
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -102,18 +115,52 @@ export const getOrCreateConnection = async (myId, theirId) => {
 
 /**
  * Inserts first message when initiating a request.
+ * Routes through Supabase Edge Function so server-side push notification fires,
+ * with graceful fallback to direct insert if edge function is unreachable.
  */
-export const sendFirstMessage = async (connectionId, myId, text) => {
-  if (!connectionId || !myId || !text?.trim()) return null;
+export const sendFirstMessage = async (connectionId, myId, text, recipientId, replyToId = null) => {
+  if (!myId || !text?.trim() || !recipientId) return null;
+
+  try {
+    const authHeader = await getAuthHeader();
+    if (authHeader) {
+      const res = await fetch(EDGE_FN_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader,
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          connectionId: connectionId || null,
+          recipientId,
+          text: text.trim(),
+          replyToId: replyToId || null,
+        }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        return result.message || null;
+      }
+      console.warn("Edge function send-message returned non-200, falling back to direct insert");
+    }
+  } catch (err) {
+    console.warn("Edge function send-message call failed, falling back to direct insert:", err);
+  }
+
+  // Fallback: direct insert via Supabase
+  const insertPayload = {
+    connection_id: connectionId,
+    sender_id: myId,
+    text: text.trim(),
+    status: "sent",
+  };
+  if (replyToId) insertPayload.reply_to_id = replyToId;
 
   const { data, error } = await supabase
     .from("messages")
-    .insert({
-      connection_id: connectionId,
-      sender_id: myId,
-      text: text.trim(),
-      status: "sent",
-    })
+    .insert(insertPayload)
     .select()
     .single();
 
@@ -122,29 +169,64 @@ export const sendFirstMessage = async (connectionId, myId, text) => {
     throw error;
   }
 
-  // Touch connection updated_at
-  await supabase
-    .from("connections")
-    .update({ updated_at: new Date().toISOString() })
-    .eq("id", connectionId);
+  if (connectionId) {
+    await supabase
+      .from("connections")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", connectionId);
+  }
 
   return data;
 };
 
 /**
  * Regular send message in an accepted conversation.
+ * Routes through Supabase Edge Function so server-side push notification fires,
+ * with graceful fallback to direct insert if edge function is unreachable.
  */
-export const sendMessage = async (connectionId, myId, text) => {
-  if (!connectionId || !myId || !text?.trim()) return null;
+export const sendMessage = async (connectionId, myId, text, recipientId, replyToId = null) => {
+  if (!connectionId || !myId || !text?.trim() || !recipientId) return null;
+
+  try {
+    const authHeader = await getAuthHeader();
+    if (authHeader) {
+      const res = await fetch(EDGE_FN_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader,
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          connectionId,
+          recipientId,
+          text: text.trim(),
+          replyToId: replyToId || null,
+        }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        return result.message || null;
+      }
+      console.warn("Edge function send-message returned non-200, falling back to direct insert");
+    }
+  } catch (err) {
+    console.warn("Edge function send-message call failed, falling back to direct insert:", err);
+  }
+
+  // Fallback: direct insert via Supabase
+  const insertPayload = {
+    connection_id: connectionId,
+    sender_id: myId,
+    text: text.trim(),
+    status: "sent",
+  };
+  if (replyToId) insertPayload.reply_to_id = replyToId;
 
   const { data, error } = await supabase
     .from("messages")
-    .insert({
-      connection_id: connectionId,
-      sender_id: myId,
-      text: text.trim(),
-      status: "sent",
-    })
+    .insert(insertPayload)
     .select()
     .single();
 
@@ -339,7 +421,7 @@ export const getMyConnections = async (myId) => {
   const connectionIds = conns.map((c) => c.id);
   const { data: messages, error: msgErr } = await supabase
     .from("messages")
-    .select("id, connection_id, sender_id, text, status, created_at")
+    .select("id, connection_id, sender_id, text, status, created_at, reply_to_id")
     .in("connection_id", connectionIds)
     .order("created_at", { ascending: true });
 
@@ -374,14 +456,23 @@ export const getMyConnections = async (myId) => {
       (m) => m.sender_id !== myId && m.status !== "read"
     ).length;
 
-    const formattedMsgs = connMsgs.map((m) => ({
-      id: m.id,
-      sender: m.sender_id === myId ? "me" : "them",
-      senderId: m.sender_id,
-      text: m.text,
-      status: m.status,
-      timestamp: m.created_at,
-    }));
+    // Quick id→row map for reply preview text within this connection's msgs
+    const connMsgMap = new Map(connMsgs.map((m) => [m.id, m]));
+
+    const formattedMsgs = connMsgs.map((m) => {
+      const replyRef = m.reply_to_id ? connMsgMap.get(m.reply_to_id) : null;
+      return {
+        id: m.id,
+        sender: m.sender_id === myId ? "me" : "them",
+        senderId: m.sender_id,
+        text: m.text,
+        status: m.status,
+        timestamp: m.created_at,
+        replyToId: m.reply_to_id || null,
+        replyToText: replyRef?.text || null,
+        replyToSender: replyRef ? (replyRef.sender_id === myId ? "me" : "them") : null,
+      };
+    });
 
     return {
       connectionId: c.id,
@@ -414,7 +505,7 @@ export const getMessages = async (connectionId, myId, limit = 50) => {
 
   const { data, error } = await supabase
     .from("messages")
-    .select("id, connection_id, sender_id, text, status, created_at")
+    .select("id, connection_id, sender_id, text, status, created_at, reply_to_id")
     .eq("connection_id", connectionId)
     .order("created_at", { ascending: true })
     .limit(limit);
@@ -424,14 +515,25 @@ export const getMessages = async (connectionId, myId, limit = 50) => {
     return [];
   }
 
-  return (data || []).map((m) => ({
-    id: m.id,
-    sender: m.sender_id === myId ? "me" : "them",
-    senderId: m.sender_id,
-    text: m.text,
-    status: m.status,
-    timestamp: m.created_at,
-  }));
+  const rows = data || [];
+
+  // Build a quick id→text/sender map for quote preview
+  const idMap = new Map(rows.map((m) => [m.id, { text: m.text, senderId: m.sender_id }]));
+
+  return rows.map((m) => {
+    const replyRef = m.reply_to_id ? idMap.get(m.reply_to_id) : null;
+    return {
+      id: m.id,
+      sender: m.sender_id === myId ? "me" : "them",
+      senderId: m.sender_id,
+      text: m.text,
+      status: m.status,
+      timestamp: m.created_at,
+      replyToId: m.reply_to_id || null,
+      replyToText: replyRef?.text || null,
+      replyToSender: replyRef ? (replyRef.senderId === myId ? "me" : "them") : null,
+    };
+  });
 };
 
 /**
