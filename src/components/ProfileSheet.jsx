@@ -14,6 +14,7 @@ import {
 } from "react-icons/fi";
 import Avatar from "./Avatar";
 import { supabase } from "../supabaseClient";
+import { usePresence } from "../hooks/usePresence";
 
 const getRelativeStudyLabel = (dateStr) => {
   if (!dateStr) return null;
@@ -54,6 +55,8 @@ const isValidStreak = (lastStudyDate, currentStreak) => {
 
 const ProfileSheet = ({ isOpen, onClose, userProfile, isPremium, stats }) => {
   const [isImageOverlayOpen, setIsImageOverlayOpen] = useState(false);
+  const { isOnline } = usePresence(userProfile?.id ? [userProfile.id] : []);
+  const userIsOnline = userProfile?.id ? isOnline(userProfile.id) : false;
   const [courseTitle, setCourseTitle] = useState(null);
 
   useEffect(() => {
@@ -126,10 +129,11 @@ const ProfileSheet = ({ isOpen, onClose, userProfile, isPremium, stats }) => {
             <Avatar
               avatarUrl={userProfile?.avatar_url}
               size="lg"
-              className="rounded-[1.1rem] shadow-sm"
+              isOnline={userIsOnline}
+              className="rounded-full ring-2 ring-slate-100 dark:ring-slate-800 shadow-sm"
             />
             {isPremium && (
-              <div className="absolute -top-1.5 -right-1.5 bg-amber-400 p-1.5 rounded-lg border-2 border-gray-50 dark:border-slate-900">
+              <div className="absolute -top-1.5 -right-1.5 bg-amber-400 p-1.5 rounded-lg border-2 border-gray-50 dark:border-slate-900 z-20">
                 <FaCrown className="text-white text-[12px]" />
               </div>
             )}
@@ -138,11 +142,19 @@ const ProfileSheet = ({ isOpen, onClose, userProfile, isPremium, stats }) => {
             <h3 className="text-lg font-black text-slate-900 dark:text-white truncate leading-tight">
               {userProfile?.full_name || "Scholar"}
             </h3>
-            {userProfile?.user_name && (
-              <p className="text-xs text-slate-400 dark:text-slate-500 mb-1.5">
-                @{userProfile.user_name}
-              </p>
-            )}
+            <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+              {userProfile?.user_name && (
+                <p className="text-xs text-slate-400 dark:text-slate-500">
+                  @{userProfile.user_name}
+                </p>
+              )}
+              {userIsOnline && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-500">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Online
+                </span>
+              )}
+            </div>
             <span
               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                 isPremium

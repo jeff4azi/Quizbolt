@@ -505,6 +505,7 @@ const LeaderboardScreen = ({
                       current_streak: profile.currentStreak,
                       best_streak: profile.bestStreak,
                       last_study_date: profile.lastStudyDate,
+                      isCurrentUser: entry.userId === userProfile?.id,
                     });
                     setSheetStats({
                       rank: `#${index + 1}`,
@@ -754,10 +755,18 @@ const LeaderboardRow = ({
           >
             {badgeIcon ? badgeIcon : <span>#{rank}</span>}
           </div>
-          <div
-            className={`relative ${isCurrentUser ? "ring-2 ring-blue-400 dark:ring-blue-500 rounded-full" : ""}`}
-          >
-            <Avatar avatarUrl={avatarUrl} size="sm" lazy={true} isOnline={isOnline} />
+          <div className="relative shrink-0 flex items-center justify-center">
+            <Avatar
+              avatarUrl={avatarUrl}
+              size="sm"
+              lazy={true}
+              isOnline={isOnline}
+              className={
+                isCurrentUser
+                  ? "ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 ring-offset-blue-50 dark:ring-offset-slate-900"
+                  : ""
+              }
+            />
           </div>
         </div>
         <div className="min-w-0">

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaCrown, FaFire } from "react-icons/fa";
-import { FiX, FiAward, FiArrowRight } from "react-icons/fi";
+import { FiX, FiAward, FiArrowRight, FiEdit2 } from "react-icons/fi";
 import Avatar from "./Avatar";
 import MessageButton from "./MessageButton";
 import ImageOverlayModal from "./ImageOverlayModal";
+import { usePresence } from "../hooks/usePresence";
+import { supabase } from "../supabaseClient";
 
 const isValidStreak = (lastStudyDate, currentStreak) => {
   if (!lastStudyDate || !currentStreak) return 0;
@@ -32,6 +34,22 @@ const QuickViewSheet = ({
   const modalRef = useRef(null);
   const previousActiveElementRef = useRef(null);
   const [isImageOverlayOpen, setIsImageOverlayOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.id) {
+        setCurrentUserId(session.user.id);
+      }
+    });
+  }, []);
+
+  const isCurrentUser =
+    userProfile?.isCurrentUser === true ||
+    (currentUserId && userProfile?.id === currentUserId);
+
+  const { isOnline } = usePresence(userProfile?.id ? [userProfile.id] : []);
+  const userIsOnline = isCurrentUser || (userProfile?.id ? isOnline(userProfile.id) : false);
 
   // Focus trap & Escape listener
   useEffect(() => {
@@ -207,7 +225,8 @@ const QuickViewSheet = ({
                   <Avatar
                     avatarUrl={userProfile.avatar_url}
                     size="lg"
-                    className="rounded-2xl ring-2 ring-slate-100 dark:ring-slate-800 group-hover:opacity-90 transition-opacity"
+                    isOnline={userIsOnline}
+                    className="rounded-full ring-2 ring-slate-100 dark:ring-slate-800 group-hover:opacity-90 transition-opacity"
                   />
                   {isPremium && (
                     <div
@@ -226,11 +245,19 @@ const QuickViewSheet = ({
                   >
                     {displayName}
                   </h3>
-                  {username && (
-                    <p className="text-xs font-semibold text-slate-400 dark:text-slate-400 truncate">
-                      @{username}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {username && (
+                      <p className="text-xs font-semibold text-slate-400 dark:text-slate-400 truncate">
+                        @{username}
+                      </p>
+                    )}
+                    {userIsOnline && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-500">
+                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Online
+                      </span>
+                    )}
+                  </div>
 
                   <div className="mt-1.5">
                     <span
@@ -309,14 +336,28 @@ const QuickViewSheet = ({
               </div>
             </div>
 
-            {/* Two buttons: Primary "Connect" / "Message" & Secondary "View profile" */}
+            {/* Two buttons: Primary ("Edit profile" when you, "Connect"/"Message" when someone else) & Secondary "View profile" */}
             <div className="grid grid-cols-2 gap-3 pt-2">
-              <MessageButton
-                username={username}
-                userProfile={userProfile}
-                className="w-full h-11 text-xs"
-                onAfterClick={onClose}
-              />
+              {isCurrentUser ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigate("/profile");
+                  }}
+                  className="w-full h-11 inline-flex items-center justify-center gap-2 px-4 rounded-2xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold shadow-sm dark:shadow-none transition-transform active:scale-[0.98]"
+                >
+                  <FiEdit2 size={13} />
+                  <span>Edit profile</span>
+                </button>
+              ) : (
+                <MessageButton
+                  username={username}
+                  userProfile={userProfile}
+                  className="w-full h-11 text-xs"
+                  onAfterClick={onClose}
+                />
+              )}
 
               <button
                 type="button"

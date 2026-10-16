@@ -4,12 +4,22 @@ import React, { useState, useEffect } from "react";
 export const DEFAULT_AVATAR_URL =
   "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png";
 
-const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-
 const sizeMap = {
   sm: { w: 50, h: 50 },
   md: { w: 100, h: 100 },
   lg: { w: 400, h: 400 },
+};
+
+const sizeClasses = {
+  sm: "size-10",
+  md: "size-14",
+  lg: "size-20 sm:size-24",
+};
+
+const dotClasses = {
+  sm: "size-2.5 border-[1.5px]",
+  md: "size-3.5 border-2",
+  lg: "size-4 sm:size-5 border-2",
 };
 
 const buildTransformedUrl = (url, sizeKey) => {
@@ -55,31 +65,27 @@ const Avatar = ({
     }
   };
 
-  const dotSizeClass =
-    size === "lg" ? "size-4 border-2" : size === "md" ? "size-3.5 border-2" : "size-2.5 border-[1.5px]";
+  const dimension = sizeClasses[size] || "size-10";
+  const dotSize = dotClasses[size] || dotClasses.sm;
 
   return (
-    <div className={`relative inline-block shrink-0 ${className}`}>
-      <div className={`rounded-full overflow-hidden ${className}`}>
+    <div
+      className={`relative inline-flex items-center justify-center shrink-0 rounded-full ${dimension} ${className}`}
+    >
+      <div className="w-full h-full rounded-full overflow-hidden">
         <img
           src={transformedUrl}
           alt={alt}
           loading={lazy ? "lazy" : "eager"}
           onError={handleError}
-          className={`object-cover ${
-            size === "lg"
-              ? "w-24 h-24"
-              : size === "md"
-                ? "w-14 h-14"
-                : "w-10 h-10"
-          } ${className}`}
+          className="w-full h-full object-cover"
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
         />
       </div>
       {isOnline && (
         <span
-          className={`absolute bottom-0 right-0 rounded-full bg-emerald-500 border-white dark:border-slate-900 shadow-sm ${dotSizeClass}`}
+          className={`absolute bottom-0 right-0 rounded-full bg-emerald-500 border-white dark:border-slate-900 shadow-sm ${dotSize} z-10 pointer-events-none`}
           title="Online now"
           aria-label="Online"
         />

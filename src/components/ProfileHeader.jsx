@@ -5,6 +5,7 @@ import { FiMoreHorizontal, FiShield, FiSlash, FiEdit2 } from "react-icons/fi";
 import Avatar from "./Avatar";
 import MessageButton from "./MessageButton";
 import ImageOverlayModal from "./ImageOverlayModal";
+import { usePresence } from "../hooks/usePresence";
 
 const getRankConfig = (rank) => {
   if (!rank) return null;
@@ -71,6 +72,9 @@ const ProfileHeader = ({
   const displayName = userProfile?.full_name || "Scholar";
   const username = userProfile?.user_name || userProfile?.id;
 
+  const { isOnline } = usePresence(userProfile?.id ? [userProfile.id] : []);
+  const userIsOnline = isOwnProfile || (userProfile?.id ? isOnline(userProfile.id) : false);
+
   const handleReport = () => {
     setMenuOpen(false);
     if (onToast) onToast("User reported. Thank you for keeping Quiz Bolt safe.");
@@ -92,16 +96,15 @@ const ProfileHeader = ({
           title="Click to view full photo"
           aria-label={`View full profile photo of ${displayName}`}
         >
-          <div className="size-20 rounded-full overflow-hidden ring-4 ring-slate-100 dark:ring-slate-700/60 shadow-sm group-hover:opacity-90 transition-opacity">
-            <Avatar
-              avatarUrl={userProfile?.avatar_url}
-              size="lg"
-              className="w-full h-full object-cover"
-            />
-          </div>
+          <Avatar
+            avatarUrl={userProfile?.avatar_url}
+            size="lg"
+            isOnline={userIsOnline}
+            className="ring-4 ring-slate-100 dark:ring-slate-700/60 shadow-sm group-hover:opacity-90 transition-opacity"
+          />
           {isPremium && (
             <div
-              className="absolute -top-1 -right-1 bg-amber-400 p-1.5 rounded-xl border-2 border-white dark:border-slate-900 shadow-sm"
+              className="absolute -top-1 -right-1 bg-amber-400 p-1.5 rounded-xl border-2 border-white dark:border-slate-900 shadow-sm z-20"
               title="Premium Scholar"
             >
               <FaCrown className="text-white text-[9px]" />
@@ -113,11 +116,18 @@ const ProfileHeader = ({
         <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
           {displayName}
         </h1>
-        {username && (
-          <p className="text-xs font-semibold text-slate-400 dark:text-slate-400">
-            @{username}
-          </p>
-        )}
+        <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-400 dark:text-slate-400 mt-0.5">
+          {username && <span>@{username}</span>}
+          {userIsOnline && (
+            <>
+              {username && <span>•</span>}
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-500">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Online
+              </span>
+            </>
+          )}
+        </div>
 
         {/* Badges Row */}
         <div className="flex items-center justify-center gap-1.5 mt-2.5 flex-wrap">
