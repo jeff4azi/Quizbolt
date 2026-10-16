@@ -285,7 +285,7 @@ const ChatView = () => {
 
   return (
     <>
-      {/* Flash animation */}
+      {/* Flash animation & scrollbar hiding */}
       <style>{`
         @keyframes replyFlash {
           0%   { background-color: transparent; }
@@ -294,6 +294,17 @@ const ChatView = () => {
           100% { background-color: transparent; }
         }
         .reply-flash { animation: replyFlash 1.1s ease; border-radius: 16px; }
+
+        /* Hide scrollbar across all browsers */
+        .no-scrollbar::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
       `}</style>
 
       <div
@@ -323,7 +334,7 @@ const ChatView = () => {
                 />
                 {isPremium && (
                   <div
-                    className="absolute -top-1 -right-1 bg-amber-400 p-1 rounded-full border-2 border-white dark:border-slate-900 shadow-sm z-10"
+                    className="absolute -top-1 -right-2 bg-amber-400 p-1 rounded-full border-2 border-white dark:border-slate-900 shadow-sm z-10"
                     title="Premium Scholar"
                   >
                     <FaCrown className="text-white text-[8px]" />
@@ -336,15 +347,6 @@ const ChatView = () => {
                   <h1 className="text-sm font-black text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {displayName}
                   </h1>
-                  {isPremium && (
-                    <span
-                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/15 text-[10px] font-black text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0"
-                      title="Premium Scholar"
-                    >
-                      <FaCrown className="text-[9px]" />
-                      PRO
-                    </span>
-                  )}
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-400">
                   <span>@{username}</span>
@@ -649,8 +651,8 @@ const ChatView = () => {
                   ? "Send your one message request to connect..."
                   : "Type a message..."
               }
-              className="flex-1 min-h-[44px] max-h-[120px] px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto leading-relaxed"
-              style={{ scrollbarWidth: "thin" }}
+              className="flex-1 min-h-[44px] max-h-[120px] px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto leading-relaxed no-scrollbar"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             />
 
             <button
