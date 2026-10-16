@@ -386,6 +386,7 @@ export const useMessaging = (username = null) => {
   );
 
   return {
+    currentUserId,
     conversations,
     totalUnreadCount,
     currentConv,

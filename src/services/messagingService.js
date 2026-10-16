@@ -56,6 +56,41 @@ export const fetchProfileByUsernameOrId = async (identifier) => {
 };
 
 /**
+ * Searches users across the platform by username or full name in real time.
+ * Excludes the current user if provided.
+ */
+export const searchUsers = async (query, currentUserId = null, limit = 25) => {
+  if (!query || !query.trim()) return [];
+  const clean = query.trim().replace(/^@/, "");
+  if (!clean) return [];
+
+  try {
+    let q = supabase
+      .from("profiles")
+      .select(
+        "id, full_name, user_name, avatar_url, university, department, year, is_premium"
+      )
+      .or(`user_name.ilike.%${clean}%,full_name.ilike.%${clean}%`)
+      .order("user_name", { ascending: true })
+      .limit(limit);
+
+    if (currentUserId) {
+      q = q.neq("id", currentUserId);
+    }
+
+    const { data, error } = await q;
+    if (error) {
+      console.error("Error searching users:", error);
+      return [];
+    }
+    return data || [];
+  } catch (err) {
+    console.error("User search failed:", err);
+    return [];
+  }
+};
+
+/**
  * messagingService.js
  * Real backend Supabase service for QuizBolt direct messaging, requests, and moderation.
  */
