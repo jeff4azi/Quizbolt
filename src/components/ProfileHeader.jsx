@@ -5,7 +5,10 @@ import { FiMoreHorizontal, FiShield, FiSlash, FiEdit2 } from "react-icons/fi";
 import Avatar from "./Avatar";
 import MessageButton from "./MessageButton";
 import ImageOverlayModal from "./ImageOverlayModal";
+import ReportModal from "./ReportModal";
 import { usePresence } from "../hooks/usePresence";
+import { supabase } from "../supabaseClient";
+import { createReport, blockUser } from "../services/messagingService";
 
 const getRankConfig = (rank) => {
   if (!rank) return null;
@@ -48,7 +51,27 @@ const ProfileHeader = ({
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isImageOverlayOpen, setIsImageOverlayOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const menuRef = useRef(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.id) {
+        setCurrentUserId(session.user.id);
+      }
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setCurrentUserId(session?.user?.id || null);
+      }
+    );
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -77,12 +100,57 @@ const ProfileHeader = ({
 
   const handleReport = () => {
     setMenuOpen(false);
-    if (onToast) onToast("User reported. Thank you for keeping Quiz Bolt safe.");
+    if (!currentUserId) {
+      if (onToast) onToast("Please log in to report a user.");
+      return;
+    }
+    setIsReportModalOpen(true);
   };
 
-  const handleBlock = () => {
+  const handleSubmitReport = async ({ reason, description, blockToo }) => {
+    if (!currentUserId || !userProfile?.id) return;
+    try {
+      await createReport({
+        reporterId: currentUserId,
+        reportedId: userProfile.id,
+        reason,
+        description,
+        blockToo,
+      });
+      if (onToast) {
+        onToast(
+          blockToo
+            ? `@${username} has been reported and blocked.`
+            : "Report submitted. Thank you for keeping QuizBolt safe."
+        );
+      }
+    } catch (err) {
+      console.error("Failed to report user:", err);
+      if (onToast) onToast("Failed to submit report. Please try again.");
+    }
+  };
+
+  const handleBlock = async () => {
     setMenuOpen(false);
-    if (onToast) onToast(`@${username} has been blocked.`);
+    if (!currentUserId) {
+      if (onToast) onToast("Please log in to block a user.");
+      return;
+    }
+    if (
+      !window.confirm(
+        `Are you sure you want to block @${username}? They won't be able to message you.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await blockUser(currentUserId, userProfile?.id);
+      if (onToast) onToast(`@${username} has been blocked.`);
+    } catch (err) {
+      console.error("Failed to block user:", err);
+      if (onToast) onToast("Failed to block user. Please try again.");
+    }
   };
 
   return (
@@ -222,6 +290,15 @@ const ProfileHeader = ({
         onClose={() => setIsImageOverlayOpen(false)}
         avatarUrl={userProfile?.avatar_url}
         fullName={displayName}
+      />
+
+      {/* Report User Modal */}
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        username={username}
+        displayName={displayName}
+        onSubmitReport={handleSubmitReport}
       />
     </>
   );
