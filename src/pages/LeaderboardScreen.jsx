@@ -493,6 +493,12 @@ const LeaderboardScreen = ({
                   isOnline={isOnline(entry.userId)}
                   onClick={() => {
                     const profile = profiles[entry.userId] || {};
+                    const courseMatch = (courses || []).find(
+                      (c) =>
+                        (c.id ?? c.course_id) === entry.bestCourseId ||
+                        c.name?.toLowerCase() === entry.bestCourseId?.toLowerCase() ||
+                        c.code?.toLowerCase() === entry.bestCourseId?.toLowerCase()
+                    );
                     setSheetProfile({
                       id: entry.userId,
                       full_name: entry.fullName,
@@ -512,6 +518,12 @@ const LeaderboardScreen = ({
                       bestScore: `${entry.bestPercent}%`,
                       bestTime: entry.bestTimeSeconds,
                       bestCourseId: entry.bestCourseId ?? null,
+                      bestCourseCode:
+                        courseMatch?.name ||
+                        courseMatch?.code ||
+                        entry.bestCourseId ||
+                        null,
+                      bestCourseTitle: courseMatch?.title || null,
                       bestTotalQuestions: entry.bestTotalQuestions ?? null,
                     });
                     setSheetIsPremium(entry.isPremium);

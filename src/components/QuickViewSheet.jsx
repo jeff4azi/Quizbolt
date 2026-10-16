@@ -35,6 +35,7 @@ const QuickViewSheet = ({
   const previousActiveElementRef = useRef(null);
   const [isImageOverlayOpen, setIsImageOverlayOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [fetchedCourseTitle, setFetchedCourseTitle] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -43,6 +44,25 @@ const QuickViewSheet = ({
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (!isOpen || !stats?.bestCourseId) {
+      setFetchedCourseTitle(null);
+      return;
+    }
+    setFetchedCourseTitle(null);
+
+    supabase
+      .from("courses_meta")
+      .select("title")
+      .ilike("course_code", stats.bestCourseId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.title) {
+          setFetchedCourseTitle(data.title);
+        }
+      });
+  }, [isOpen, stats?.bestCourseId]);
 
   const isCurrentUser =
     userProfile?.isCurrentUser === true ||
@@ -158,6 +178,13 @@ const QuickViewSheet = ({
   );
   const bestStreak = userProfile.best_streak || 0;
   const bestScore = stats?.bestScore || "—";
+
+  const rawCourse = stats?.bestCourseCode || stats?.bestCourseId || null;
+  const effectiveCourseCode = rawCourse
+    ? rawCourse.replace(/([A-Za-z]+)(\d+)/, "$1 $2").toUpperCase()
+    : null;
+  const effectiveCourseTitle =
+    stats?.bestCourseTitle || fetchedCourseTitle || null;
 
   const handleViewProfile = () => {
     onClose();
@@ -304,15 +331,27 @@ const QuickViewSheet = ({
               </p>
             </div>
 
-            {/* One row of 3 stats: best score, current streak, best streak */}
+            {/* One row of 3 stats: best score (with course code), current streak, best streak */}
             <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 p-3">
-              <div className="flex flex-col items-center text-center px-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">
+              <div className="flex flex-col items-center justify-center text-center px-1 min-w-0">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-0.5">
                   Best Score
                 </span>
-                <span className="text-base font-black text-slate-900 dark:text-white">
+                <span className="text-base font-black text-slate-900 dark:text-white leading-tight">
                   {bestScore}
                 </span>
+                {effectiveCourseCode && (
+                  <span
+                    className="text-[10px] font-bold text-slate-400 dark:text-slate-400 truncate max-w-full mt-0.5 tracking-tight"
+                    title={
+                      effectiveCourseTitle
+                        ? `${effectiveCourseCode} — ${effectiveCourseTitle}`
+                        : effectiveCourseCode
+                    }
+                  >
+                    {effectiveCourseCode}
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-col items-center text-center px-1">
