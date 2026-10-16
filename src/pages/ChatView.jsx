@@ -110,12 +110,12 @@ const ReplyBar = ({ replyingTo, displayName, onCancel }) => {
       : replyingTo.text;
 
   return (
-    <div className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200/80 dark:border-slate-700/60 animate-in slide-in-from-bottom-1 duration-150">
-      <div className="flex-1 min-w-0 border-l-4 border-blue-500 pl-3">
+    <div className="flex items-center gap-2 px-3 py-2 mb-1.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border-l-4 border-blue-500 animate-in slide-in-from-bottom-1 duration-150">
+      <div className="flex-1 min-w-0 pl-1">
         <p className="text-[10px] font-black text-blue-500 dark:text-blue-400 mb-0.5">
           Replying to {replyingTo.sender === "me" ? "yourself" : displayName}
         </p>
-        <p className="text-xs text-slate-600 dark:text-slate-300 truncate leading-snug">
+        <p className="text-xs text-slate-600 dark:text-slate-300 truncate leading-snug font-medium">
           {truncated}
         </p>
       </div>
@@ -123,9 +123,9 @@ const ReplyBar = ({ replyingTo, displayName, onCancel }) => {
         type="button"
         onClick={onCancel}
         aria-label="Cancel reply"
-        className="shrink-0 size-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+        className="shrink-0 size-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
       >
-        <FiX size={15} />
+        <FiX size={14} />
       </button>
     </div>
   );
@@ -159,11 +159,37 @@ const ChatView = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [kbHeight, setKbHeight] = useState(0);
   const menuRef = useRef(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   // Map of message id → DOM ref for scroll-to
   const msgRefs = useRef({});
+
+  // Mobile virtual keyboard height tracking via visualViewport
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handler = () => {
+      const height = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKbHeight(height);
+    };
+    vv.addEventListener("resize", handler);
+    vv.addEventListener("scroll", handler);
+    return () => {
+      vv.removeEventListener("resize", handler);
+      vv.removeEventListener("scroll", handler);
+    };
+  }, []);
+
+  // Auto-scroll to bottom when mobile keyboard pops up
+  useEffect(() => {
+    if (kbHeight > 0) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 50);
+    }
+  }, [kbHeight]);
 
   const displayName =
     currentConv?.fullName || profileInfo?.full_name || username || "Scholar";
@@ -437,7 +463,7 @@ const ChatView = () => {
 
         {/* ── MESSAGES FEED ─────────────────────────────────────────────────── */}
         <div
-          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-1.5"
+          className="flex-1 overflow-y-auto p-4 sm:p-6 pb-28 sm:pb-36 space-y-1.5"
           onClick={() => setSelectedMsgId(null)}
         >
           {messages.length === 0 ? (
@@ -569,109 +595,121 @@ const ChatView = () => {
               );
             })
           )}
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} className="h-4" />
         </div>
 
-        {/* ── REQUEST RECEIVED BANNER ────────────────────────────────────────── */}
-        {connectionState === "request_received" && (
-          <div className="shrink-0 bg-blue-50 dark:bg-blue-900/30 border-t border-blue-200/80 dark:border-blue-900/40 p-4 animate-in slide-in-from-bottom-2 duration-150">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 max-w-2xl mx-auto">
-              <div>
-                <p className="text-xs font-black text-slate-900 dark:text-white">
-                  {displayName} wants to connect with you
-                </p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Accepting allows both of you to chat freely. Replying also accepts.
+        {/* ── FLOATING COMPOSER UNIT ────────────────────────────────────────── */}
+        <div
+          className="fixed inset-x-0 z-30 pointer-events-none px-3 sm:px-4 max-w-4xl mx-auto transition-all duration-150"
+          style={{
+            bottom: kbHeight > 0 ? `${kbHeight + 8}px` : "12px",
+          }}
+        >
+          <div className="pointer-events-auto flex flex-col gap-2 max-w-3xl mx-auto">
+            {/* ── REQUEST RECEIVED BANNER ────────────────────────────────────────── */}
+            {connectionState === "request_received" && (
+              <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-blue-200/80 dark:border-blue-900/60 p-3.5 rounded-2xl shadow-xl animate-in slide-in-from-bottom-2 duration-150">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black text-slate-900 dark:text-white">
+                      {displayName} wants to connect with you
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Accepting allows both of you to chat freely. Replying also accepts.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                    <button
+                      type="button"
+                      onClick={decline}
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 transition-colors"
+                    >
+                      Decline
+                    </button>
+                    <button
+                      type="button"
+                      onClick={accept}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition-transform active:scale-95"
+                    >
+                      <FiUserCheck size={14} />
+                      <span>Accept</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── COMPOSER LOCKED NOTE ───────────────────────────────────────────── */}
+            {connectionState === "request_sent" && (
+              <div className="bg-amber-500/15 dark:bg-amber-900/30 backdrop-blur-xl border border-amber-500/30 px-4 py-2.5 rounded-2xl text-center shadow-lg">
+                <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
+                  You can send more messages once {displayName} accepts your request.
                 </p>
               </div>
+            )}
 
-              <div className="flex items-center gap-2 self-end sm:self-center">
+            {/* ── BLOCKED NOTE ──────────────────────────────────────────────────── */}
+            {connectionState === "blocked" && (
+              <div className="bg-rose-500/15 dark:bg-rose-950/40 backdrop-blur-xl border border-rose-500/30 px-4 py-2.5 rounded-2xl text-center shadow-lg">
+                <p className="text-xs font-bold text-rose-800 dark:text-rose-300">
+                  Messaging is unavailable because this user is blocked.
+                </p>
+              </div>
+            )}
+
+            {/* ── FLOATING COMPOSER CAPSULE ───────────────────────────────────── */}
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 shadow-2xl rounded-3xl p-1.5 transition-all">
+              {/* Floating Reply Bar inside the pill */}
+              <ReplyBar
+                replyingTo={replyingTo}
+                displayName={displayName}
+                onCancel={() => {
+                  setReplyingTo(null);
+                  setSelectedMsgId(null);
+                }}
+              />
+
+              {/* Textarea + Send button */}
+              <div className="flex items-end gap-2">
+                <textarea
+                  ref={inputRef}
+                  rows={1}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={isComposerDisabled || isSending}
+                  placeholder={
+                    isComposerDisabled
+                      ? "Composer locked pending accept..."
+                      : connectionState === "none"
+                      ? "Send your one message request to connect..."
+                      : "Type a message..."
+                  }
+                  className="flex-1 min-h-[42px] max-h-[120px] px-3.5 py-2.5 bg-transparent text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto leading-relaxed no-scrollbar"
+                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                />
+
                 <button
                   type="button"
-                  onClick={decline}
-                  className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 transition-colors"
+                  onClick={handleSend}
+                  disabled={isComposerDisabled || !input.trim() || isSending}
+                  aria-label="Send message"
+                  className="size-10 rounded-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 flex items-center justify-center transition-all shadow-md active:scale-95 shrink-0 self-end m-0.5"
                 >
-                  Decline
-                </button>
-                <button
-                  type="button"
-                  onClick={accept}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm dark:shadow-none transition-transform active:scale-95"
-                >
-                  <FiUserCheck size={14} />
-                  <span>Accept</span>
+                  <FiSend size={15} />
                 </button>
               </div>
             </div>
+
+            {/* Desktop hint */}
+            {!isMobile && input.length > 0 && (
+              <p className="text-center text-[10px] text-slate-400 dark:text-slate-500 select-none">
+                Enter to send · Shift+Enter for new line
+              </p>
+            )}
           </div>
-        )}
-
-        {/* ── COMPOSER LOCKED NOTE ───────────────────────────────────────────── */}
-        {connectionState === "request_sent" && (
-          <div className="shrink-0 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200/60 dark:border-amber-800/40 px-4 py-3 text-center">
-            <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
-              You can send more messages once {displayName} accepts your request.
-            </p>
-          </div>
-        )}
-
-        {/* ── BLOCKED NOTE ──────────────────────────────────────────────────── */}
-        {connectionState === "blocked" && (
-          <div className="shrink-0 bg-rose-50 dark:bg-rose-950/20 border-t border-rose-200/60 dark:border-rose-900/40 px-4 py-3 text-center">
-            <p className="text-xs font-bold text-rose-800 dark:text-rose-300">
-              Messaging is unavailable because this user is blocked.
-            </p>
-          </div>
-        )}
-
-        {/* ── REPLY BAR ─────────────────────────────────────────────────────── */}
-        <ReplyBar
-          replyingTo={replyingTo}
-          displayName={displayName}
-          onCancel={() => {
-            setReplyingTo(null);
-            setSelectedMsgId(null);
-          }}
-        />
-
-        {/* ── COMPOSER FOOTER ───────────────────────────────────────────────── */}
-        <footer className="shrink-0 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800/80 p-3 sm:p-4">
-          <div className="flex items-end gap-2 max-w-3xl mx-auto">
-            <textarea
-              ref={inputRef}
-              rows={1}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isComposerDisabled || isSending}
-              placeholder={
-                isComposerDisabled
-                  ? "Composer locked pending accept..."
-                  : connectionState === "none"
-                  ? "Send your one message request to connect..."
-                  : "Type a message..."
-              }
-              className="flex-1 min-h-[44px] max-h-[120px] px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto leading-relaxed no-scrollbar"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            />
-
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={isComposerDisabled || !input.trim() || isSending}
-              aria-label="Send message"
-              className="size-11 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 flex items-center justify-center transition-all shadow-sm dark:shadow-none active:scale-95 shrink-0 self-end"
-            >
-              <FiSend size={15} />
-            </button>
-          </div>
-          {/* Desktop hint */}
-          {!isMobile && input.length > 0 && (
-            <p className="text-center text-[10px] text-slate-400 dark:text-slate-600 mt-1.5 select-none">
-              Enter to send · Shift+Enter for new line
-            </p>
-          )}
-        </footer>
+        </div>
 
         {/* ── REPORT MODAL ──────────────────────────────────────────────────── */}
         <ReportModal
