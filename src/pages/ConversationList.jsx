@@ -1,17 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiArrowLeft,
   FiMessageSquare,
   FiChevronRight,
-  FiRotateCcw,
-  FiUserPlus,
   FiSearch,
 } from "react-icons/fi";
 import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
 import { FaCrown } from "react-icons/fa";
 import Avatar from "../components/Avatar";
 import { useMessaging } from "../hooks/useMessaging";
+import { usePresence } from "../hooks/usePresence";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const formatTimeAgo = (dateStr) => {
@@ -30,9 +29,15 @@ const formatTimeAgo = (dateStr) => {
 const ConversationList = () => {
   useDocumentTitle("Messages | QuizBolt");
   const navigate = useNavigate();
-  const { conversations, simulateIncomingRequest, resetDemo } = useMessaging();
+  const { conversations, loading } = useMessaging();
   const [search, setSearch] = useState("");
-  const [showDevControls, setShowDevControls] = useState(false);
+
+  // Extract all partner IDs to track online presence
+  const partnerUserIds = useMemo(
+    () => conversations.map((c) => c.userId).filter(Boolean),
+    [conversations]
+  );
+  const { isOnline } = usePresence(partnerUserIds);
 
   // Categorize conversations
   const requests = conversations.filter(
@@ -77,67 +82,14 @@ const ConversationList = () => {
                 Messages
               </h1>
               <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-400">
-                Demo conversations
+                Direct messages & connections
               </p>
             </div>
           </div>
-
-          {/* Dev Demo Controls Toggle */}
-          <button
-            type="button"
-            onClick={() => setShowDevControls((p) => !p)}
-            className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-          >
-            🛠️ {showDevControls ? "Hide Demo" : "Demo"}
-          </button>
         </div>
       </header>
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-5 space-y-5">
-
-        {/* Dev Controls Bar */}
-        {showDevControls && (
-          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/40 space-y-2.5 animate-in fade-in duration-150">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-400">
-                Demo Testing Simulator
-              </span>
-              <button
-                type="button"
-                onClick={resetDemo}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-400 hover:underline"
-              >
-                <FiRotateCcw size={12} />
-                <span>Reset mock data</span>
-              </button>
-            </div>
-            <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
-              Trigger demo scenarios instantly to test requests, locked composers, and accepted chats:
-            </p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() =>
-                  simulateIncomingRequest(
-                    {
-                      username: "kemi_o",
-                      fullName: "Kemi Olufemi",
-                      university: "OAU",
-                      department: "Law",
-                      year: 3,
-                    },
-                    "Hey! Saw your streak on the leaderboard, would you like to review past questions together?"
-                  )
-                }
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-amber-900 dark:text-amber-200 text-[11px] font-bold border border-amber-200 shadow-sm active:scale-95"
-              >
-                <FiUserPlus size={12} />
-                <span>Simulate new incoming request</span>
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Search */}
         <div className="relative">
           <FiSearch
@@ -172,6 +124,8 @@ const ConversationList = () => {
               {filteredRequests.map((conv) => {
                 const msgs = Array.isArray(conv.messages) ? conv.messages : [];
                 const lastMsg = msgs[msgs.length - 1];
+                const online = isOnline(conv.userId);
+
                 return (
                   <div
                     key={conv.username}
@@ -180,7 +134,11 @@ const ConversationList = () => {
                   >
                     <div className="flex items-center gap-3.5 min-w-0 flex-1">
                       <div className="relative shrink-0">
-                        <Avatar avatarUrl={conv.avatarUrl} size="md" />
+                        <Avatar
+                          avatarUrl={conv.avatarUrl}
+                          size="md"
+                          isOnline={online}
+                        />
                         {conv.isPremium && (
                           <div className="absolute -top-1 -right-1 bg-amber-400 p-1 rounded-lg border border-white dark:border-slate-900 shadow-xs">
                             <FaCrown className="text-white text-[8px]" />
@@ -224,7 +182,12 @@ const ConversationList = () => {
             Conversations
           </h2>
 
-          {filteredActive.length === 0 ? (
+          {loading ? (
+            <div className="py-12 text-center bg-white dark:bg-slate-800/40 rounded-3xl border border-slate-200/70 dark:border-slate-800/60 p-6 shadow-sm">
+              <div className="size-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin mx-auto mb-3" />
+              <p className="text-xs text-slate-400">Loading your conversations...</p>
+            </div>
+          ) : filteredActive.length === 0 ? (
             <div className="py-12 text-center bg-white dark:bg-slate-800/40 rounded-3xl border border-slate-200/70 dark:border-slate-800/60 p-6 shadow-sm">
               <div className="size-12 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 mx-auto mb-3">
                 <FiMessageSquare size={20} />
@@ -247,6 +210,7 @@ const ConversationList = () => {
                     (conv.unreadCount > 0 ||
                       conv.connectionState === "request_received")
                 );
+                const online = isOnline(conv.userId);
 
                 return (
                   <div
@@ -256,7 +220,11 @@ const ConversationList = () => {
                   >
                     <div className="flex items-center gap-3.5 min-w-0 flex-1">
                       <div className="relative shrink-0">
-                        <Avatar avatarUrl={conv.avatarUrl} size="md" />
+                        <Avatar
+                          avatarUrl={conv.avatarUrl}
+                          size="md"
+                          isOnline={online}
+                        />
                         {conv.isPremium && (
                           <div className="absolute -top-1 -right-1 bg-amber-400 p-1 rounded-lg border border-white dark:border-slate-900 shadow-xs">
                             <FaCrown className="text-white text-[8px]" />

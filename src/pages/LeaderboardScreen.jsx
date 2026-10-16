@@ -15,6 +15,7 @@ import { supabase } from "../supabaseClient";
 import { withTimeout } from "../utils/withTimeout";
 import QuickViewSheet from "../components/QuickViewSheet";
 import Avatar from "../components/Avatar";
+import { usePresence } from "../hooks/usePresence";
 
 // ─── CourseDropdown ──────────────────────────────────────────────────────────
 const CourseDropdown = ({ options, selected, onSelect }) => {
@@ -385,6 +386,12 @@ const LeaderboardScreen = ({
     return `${mins}m ${secs}s`;
   };
 
+  const leaderboardUserIds = useMemo(
+    () => leaderboardEntries.map((e) => e.userId).filter(Boolean),
+    [leaderboardEntries]
+  );
+  const { isOnline } = usePresence(leaderboardUserIds);
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors duration-500">
       {/* Header */}
@@ -483,6 +490,7 @@ const LeaderboardScreen = ({
                   avgTime={formatTime(entry.avgTimeSeconds)}
                   university={entry.university}
                   isCurrentUser={entry.userId === userProfile?.id}
+                  isOnline={isOnline(entry.userId)}
                   onClick={() => {
                     const profile = profiles[entry.userId] || {};
                     setSheetProfile({
@@ -689,6 +697,7 @@ const LeaderboardRow = ({
   attempts,
   avgTime,
   isCurrentUser = false,
+  isOnline = false,
   onClick,
 }) => {
   const isTop1 = rank === 1;
@@ -748,7 +757,7 @@ const LeaderboardRow = ({
           <div
             className={`relative ${isCurrentUser ? "ring-2 ring-blue-400 dark:ring-blue-500 rounded-full" : ""}`}
           >
-            <Avatar avatarUrl={avatarUrl} size="sm" lazy={true} />
+            <Avatar avatarUrl={avatarUrl} size="sm" lazy={true} isOnline={isOnline} />
           </div>
         </div>
         <div className="min-w-0">

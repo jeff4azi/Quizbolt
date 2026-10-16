@@ -1,0 +1,478 @@
+import { supabase } from "../supabaseClient";
+
+/**
+ * messagingService.js
+ * Real backend Supabase service for QuizBolt direct messaging, requests, and moderation.
+ */
+
+export const getCurrentUserId = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id || null;
+};
+
+/**
+ * Finds existing connection between userA and userB regardless of who requested.
+ */
+export const findConnection = async (userA, userB) => {
+  if (!userA || !userB) return null;
+  const { data, error } = await supabase
+    .from("connections")
+    .select("*")
+    .or(
+      `and(requester_id.eq.${userA},receiver_id.eq.${userB}),and(requester_id.eq.${userB},receiver_id.eq.${userA})`
+    )
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error finding connection:", error);
+    return null;
+  }
+  return data;
+};
+
+/**
+ * Gets or creates a connection row.
+ */
+export const getOrCreateConnection = async (myId, theirId) => {
+  if (!myId || !theirId) return null;
+  if (myId === theirId) return null;
+
+  const existing = await findConnection(myId, theirId);
+  if (existing) return existing;
+
+  const { data, error } = await supabase
+    .from("connections")
+    .insert({
+      requester_id: myId,
+      receiver_id: theirId,
+      state: "request_sent",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    // If unique constraint race condition hit, fetch again
+    console.warn("Connection insert notice (may already exist):", error.message);
+    return await findConnection(myId, theirId);
+  }
+  return data;
+};
+
+/**
+ * Inserts first message when initiating a request.
+ */
+export const sendFirstMessage = async (connectionId, myId, text) => {
+  if (!connectionId || !myId || !text?.trim()) return null;
+
+  const { data, error } = await supabase
+    .from("messages")
+    .insert({
+      connection_id: connectionId,
+      sender_id: myId,
+      text: text.trim(),
+      status: "sent",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error sending first message:", error);
+    throw error;
+  }
+
+  // Touch connection updated_at
+  await supabase
+    .from("connections")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", connectionId);
+
+  return data;
+};
+
+/**
+ * Regular send message in an accepted conversation.
+ */
+export const sendMessage = async (connectionId, myId, text) => {
+  if (!connectionId || !myId || !text?.trim()) return null;
+
+  const { data, error } = await supabase
+    .from("messages")
+    .insert({
+      connection_id: connectionId,
+      sender_id: myId,
+      text: text.trim(),
+      status: "sent",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error sending message:", error);
+    throw error;
+  }
+
+  await supabase
+    .from("connections")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", connectionId);
+
+  return data;
+};
+
+/**
+ * Accepts a connection request.
+ */
+export const acceptConnection = async (connectionId) => {
+  if (!connectionId) return null;
+  const { data, error } = await supabase
+    .from("connections")
+    .update({
+      state: "accepted",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error accepting connection:", error);
+    throw error;
+  }
+  return data;
+};
+
+/**
+ * Declines a connection request.
+ */
+export const declineConnection = async (connectionId) => {
+  if (!connectionId) return null;
+  const { data, error } = await supabase
+    .from("connections")
+    .update({
+      state: "declined",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error declining connection:", error);
+    throw error;
+  }
+  return data;
+};
+
+/**
+ * Blocks a user.
+ */
+export const blockUser = async (myId, theirUserId, connectionId = null) => {
+  if (!myId || !theirUserId) return null;
+
+  if (connectionId) {
+    const { data, error } = await supabase
+      .from("connections")
+      .update({
+        state: "blocked",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", connectionId)
+      .select()
+      .single();
+
+    if (error) console.error("Error blocking via connection ID:", error);
+    return data;
+  }
+
+  // If no connectionId, find or create one with state = 'blocked'
+  const existing = await findConnection(myId, theirUserId);
+  if (existing) {
+    const { data, error } = await supabase
+      .from("connections")
+      .update({
+        state: "blocked",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existing.id)
+      .select()
+      .single();
+
+    if (error) console.error("Error updating connection to blocked:", error);
+    return data;
+  }
+
+  const { data, error } = await supabase
+    .from("connections")
+    .insert({
+      requester_id: myId,
+      receiver_id: theirUserId,
+      state: "blocked",
+    })
+    .select()
+    .single();
+
+  if (error) console.error("Error creating blocked connection:", error);
+  return data;
+};
+
+/**
+ * Creates a report in public.reports.
+ */
+export const createReport = async ({
+  reporterId,
+  reportedId,
+  reason,
+  description = "",
+  blockToo = false,
+  connectionId = null,
+}) => {
+  if (!reporterId || !reportedId || !reason) return null;
+
+  const { data, error } = await supabase
+    .from("reports")
+    .upsert(
+      {
+        reporter_id: reporterId,
+        reported_id: reportedId,
+        reason,
+        description: description.trim(),
+        status: "pending",
+        created_at: new Date().toISOString(),
+      },
+      { onConflict: "reporter_id,reported_id" }
+    )
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating report:", error);
+    throw error;
+  }
+
+  if (blockToo) {
+    await blockUser(reporterId, reportedId, connectionId);
+  }
+
+  return data;
+};
+
+/**
+ * Fetches all connections for current user, hydrated with other user's profile and latest messages.
+ */
+export const getMyConnections = async (myId) => {
+  if (!myId) return [];
+
+  const { data: conns, error: connErr } = await supabase
+    .from("connections")
+    .select("*")
+    .or(`requester_id.eq.${myId},receiver_id.eq.${myId}`)
+    .order("updated_at", { ascending: false });
+
+  if (connErr) {
+    console.error("Error loading connections:", connErr);
+    return [];
+  }
+  if (!conns || conns.length === 0) return [];
+
+  // Gather other user IDs
+  const otherUserIds = Array.from(
+    new Set(
+      conns.map((c) => (c.requester_id === myId ? c.receiver_id : c.requester_id))
+    )
+  );
+
+  // Batch fetch profiles
+  const { data: profiles, error: profErr } = await supabase
+    .from("profiles")
+    .select("id, full_name, user_name, avatar_url, university, department, year, is_premium")
+    .in("id", otherUserIds);
+
+  if (profErr) {
+    console.error("Error fetching partner profiles:", profErr);
+  }
+
+  const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+
+  // Batch fetch recent messages for all connections to get last activity & unread count
+  const connectionIds = conns.map((c) => c.id);
+  const { data: messages, error: msgErr } = await supabase
+    .from("messages")
+    .select("id, connection_id, sender_id, text, status, created_at")
+    .in("connection_id", connectionIds)
+    .order("created_at", { ascending: true });
+
+  if (msgErr) {
+    console.error("Error fetching messages for connections:", msgErr);
+  }
+
+  const msgsByConn = new Map();
+  (messages || []).forEach((m) => {
+    if (!msgsByConn.has(m.connection_id)) {
+      msgsByConn.set(m.connection_id, []);
+    }
+    msgsByConn.get(m.connection_id).push(m);
+  });
+
+  // Construct UI conversation models
+  const conversations = conns.map((c) => {
+    const isRequester = c.requester_id === myId;
+    const partnerId = isRequester ? c.receiver_id : c.requester_id;
+    const profile = profileMap.get(partnerId) || {};
+    const connMsgs = msgsByConn.get(c.id) || [];
+    const lastMsg = connMsgs[connMsgs.length - 1];
+
+    // Compute effective connection state for viewer
+    let effectiveState = c.state;
+    if (c.state === "request_sent") {
+      effectiveState = isRequester ? "request_sent" : "request_received";
+    }
+
+    // Count unread messages (sent by them, status != 'read')
+    const unreadCount = connMsgs.filter(
+      (m) => m.sender_id !== myId && m.status !== "read"
+    ).length;
+
+    const formattedMsgs = connMsgs.map((m) => ({
+      id: m.id,
+      sender: m.sender_id === myId ? "me" : "them",
+      senderId: m.sender_id,
+      text: m.text,
+      status: m.status,
+      timestamp: m.created_at,
+    }));
+
+    return {
+      connectionId: c.id,
+      userId: partnerId,
+      username: profile.user_name || partnerId,
+      fullName: profile.full_name || profile.user_name || "Scholar",
+      avatarUrl: profile.avatar_url || null,
+      university: profile.university || "University",
+      department: profile.department || "General Studies",
+      year: profile.year || 1,
+      isPremium: Boolean(profile.is_premium),
+      connectionState: effectiveState,
+      rawState: c.state,
+      isRequester,
+      unread: unreadCount > 0 || effectiveState === "request_received",
+      unreadCount,
+      lastActivity: lastMsg?.created_at || c.updated_at || c.created_at,
+      messages: formattedMsgs,
+    };
+  });
+
+  return conversations;
+};
+
+/**
+ * Fetches messages for a specific connection.
+ */
+export const getMessages = async (connectionId, myId, limit = 50) => {
+  if (!connectionId) return [];
+
+  const { data, error } = await supabase
+    .from("messages")
+    .select("id, connection_id, sender_id, text, status, created_at")
+    .eq("connection_id", connectionId)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    console.error("Error loading messages:", error);
+    return [];
+  }
+
+  return (data || []).map((m) => ({
+    id: m.id,
+    sender: m.sender_id === myId ? "me" : "them",
+    senderId: m.sender_id,
+    text: m.text,
+    status: m.status,
+    timestamp: m.created_at,
+  }));
+};
+
+/**
+ * Marks messages in a connection as read.
+ */
+export const markRead = async (connectionId, myId) => {
+  if (!connectionId || !myId) return;
+
+  const { error } = await supabase
+    .from("messages")
+    .update({ status: "read" })
+    .eq("connection_id", connectionId)
+    .neq("sender_id", myId)
+    .neq("status", "read");
+
+  if (error) {
+    console.error("Error marking messages read:", error);
+  }
+};
+
+/**
+ * Realtime subscription to messages for the active open chat.
+ * Uses a single channel scoped to connection_id.
+ */
+export const subscribeToMessages = (connectionId, onMessage) => {
+  if (!connectionId) return () => {};
+
+  const channel = supabase
+    .channel(`messages:${connectionId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "messages",
+        filter: `connection_id=eq.${connectionId}`,
+      },
+      (payload) => {
+        if (onMessage) onMessage(payload);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
+
+/**
+ * Realtime subscription to connections table for notifications/badge updates.
+ */
+export const subscribeToIncoming = (myId, onConnectionChange) => {
+  if (!myId) return () => {};
+
+  const channel = supabase
+    .channel(`connections:${myId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "connections",
+        filter: `receiver_id=eq.${myId}`,
+      },
+      (payload) => {
+        if (onConnectionChange) onConnectionChange(payload);
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "connections",
+        filter: `requester_id=eq.${myId}`,
+      },
+      (payload) => {
+        if (onConnectionChange) onConnectionChange(payload);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};

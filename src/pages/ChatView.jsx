@@ -5,14 +5,19 @@ import {
   FiSend,
   FiClock,
   FiUserCheck,
-  FiRotateCcw,
   FiMessageCircle,
   FiCheck,
+  FiMoreVertical,
+  FiSlash,
+  FiFlag,
+  FiUser,
 } from "react-icons/fi";
 import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
 import { FaCrown } from "react-icons/fa";
 import Avatar from "../components/Avatar";
 import { useMessaging } from "../hooks/useMessaging";
+import { usePresence } from "../hooks/usePresence";
+import ReportModal from "../components/ReportModal";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import { supabase } from "../supabaseClient";
 
@@ -62,10 +67,9 @@ const ChatView = () => {
     sendMessage,
     accept,
     decline,
+    block,
     markAsRead,
-    simulateAccept,
-    simulateReply,
-    resetDemo,
+    report,
   } = useMessaging(username);
 
   // Mark conversation as read whenever this view is active
@@ -77,7 +81,10 @@ const ChatView = () => {
 
   const [input, setInput] = useState("");
   const [profileInfo, setProfileInfo] = useState(null);
-  const [showDevControls, setShowDevControls] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const menuRef = useRef(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -86,10 +93,15 @@ const ChatView = () => {
   const avatarUrl = currentConv?.avatarUrl || profileInfo?.avatar_url || null;
   const isPremium =
     currentConv?.isPremium ?? profileInfo?.is_premium ?? false;
+  const partnerUserId = currentConv?.userId || profileInfo?.id || null;
+
+  // Real presence status
+  const { isOnline } = usePresence(partnerUserId ? [partnerUserId] : []);
+  const userIsOnline = partnerUserId ? isOnline(partnerUserId) : false;
 
   useDocumentTitle(`Chat with ${displayName} | QuizBolt`);
 
-  // Fetch basic profile info if not in mock store
+  // Fetch basic profile info if not in store
   useEffect(() => {
     if (currentConv) return;
     if (!username) return;
@@ -104,6 +116,21 @@ const ChatView = () => {
       });
   }, [username, currentConv]);
 
+  // Click outside listener for kebab menu
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [menuOpen]);
+
   // Auto scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -113,24 +140,39 @@ const ChatView = () => {
     scrollToBottom();
   }, [currentConv?.messages]);
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e?.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isSending) return;
 
-    // Send the message
-    sendMessage(input.trim());
+    const textToSend = input.trim();
     setInput("");
+    setIsSending(true);
 
-    // Keep focus
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 50);
+    try {
+      await sendMessage(textToSend);
+    } catch (err) {
+      console.error("Message send error:", err);
+      // Restore input on failure
+      setInput(textToSend);
+    } finally {
+      setIsSending(false);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+    }
   };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleBlockUser = async () => {
+    if (window.confirm(`Are you sure you want to block @${username}?`)) {
+      setMenuOpen(false);
+      await block();
     }
   };
 
@@ -164,6 +206,7 @@ const ChatView = () => {
               <Avatar
                 avatarUrl={avatarUrl}
                 size="sm"
+                isOnline={userIsOnline}
                 className="rounded-2xl ring-1 ring-slate-200 dark:ring-slate-700"
               />
               {isPremium && (
@@ -180,87 +223,92 @@ const ChatView = () => {
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-400">
                 <span>@{username}</span>
                 <span>•</span>
-                {connectionState === "accepted" && (
+                {userIsOnline ? (
+                  <span className="text-emerald-500 font-bold flex items-center gap-1">
+                    <span className="size-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                    Online
+                  </span>
+                ) : connectionState === "accepted" ? (
                   <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
                     <FiCheck size={10} />
                     Connected
                   </span>
-                )}
-                {connectionState === "request_sent" && (
+                ) : connectionState === "request_sent" ? (
                   <span className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-0.5">
                     <FiClock size={10} />
                     Request pending
                   </span>
-                )}
-                {connectionState === "request_received" && (
+                ) : connectionState === "request_received" ? (
                   <span className="text-blue-600 dark:text-blue-400 font-semibold">
                     Message request
                   </span>
-                )}
-                {connectionState === "none" && (
-                  <span>New connection</span>
+                ) : connectionState === "blocked" ? (
+                  <span className="text-rose-500 font-semibold">Blocked</span>
+                ) : (
+                  <span>Offline</span>
                 )}
               </div>
             </div>
           </Link>
         </div>
 
-        {/* Header Action: Dev Controls Toggle & View Profile */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setShowDevControls((p) => !p)}
-            className="text-[11px] font-bold px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40"
-          >
-            🛠️ Demo
-          </button>
+        {/* Header Actions: Profile link & Kebab menu */}
+        <div className="flex items-center gap-1.5 shrink-0" ref={menuRef}>
           <Link
             to={`/u/${username}`}
-            className="hidden sm:inline-flex text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="hidden sm:inline-flex text-xs font-bold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             Profile
           </Link>
-        </div>
-      </header>
 
-      {/* ── DEV CONTROLS BAR ──────────────────────────────────────────────── */}
-      {showDevControls && (
-        <div className="shrink-0 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200/70 dark:border-amber-800/50 px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap text-xs animate-in slide-in-from-top-2 duration-150">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-amber-800 dark:text-amber-300">
-              Dev Simulator:
-            </span>
-            {connectionState === "request_sent" && (
-              <button
-                type="button"
-                onClick={() => simulateAccept()}
-                className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold text-[11px] shadow-sm active:scale-95"
-              >
-                Simulate {displayName} Accepts
-              </button>
-            )}
+          <div className="relative">
             <button
               type="button"
-              onClick={() =>
-                simulateReply(
-                  "Hey! Thanks for connecting. I'd love to study together!"
-                )
-              }
-              className="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold text-[11px] shadow-sm active:scale-95"
+              onClick={() => setMenuOpen((p) => !p)}
+              aria-label="More chat options"
+              className="size-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-750 transition"
             >
-              Simulate {displayName} Replies
+              <FiMoreVertical size={18} />
             </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100">
+                <Link
+                  to={`/u/${username}`}
+                  onClick={() => setMenuOpen(false)}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition"
+                >
+                  <FiUser className="size-4 text-slate-400" />
+                  <span>View Profile</span>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setReportModalOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition text-left"
+                >
+                  <FiFlag className="size-4 shrink-0" />
+                  <span>Report @{username}</span>
+                </button>
+
+                {connectionState !== "blocked" && (
+                  <button
+                    type="button"
+                    onClick={handleBlockUser}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition text-left"
+                  >
+                    <FiSlash className="size-4 text-slate-400 shrink-0" />
+                    <span>Block User</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={resetDemo}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-400 hover:underline"
-          >
-            <FiRotateCcw size={11} />
-            <span>Reset Demo</span>
-          </button>
         </div>
-      )}
+      </header>
 
       {/* ── MESSAGES FEED ─────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
@@ -273,7 +321,7 @@ const ChatView = () => {
               Connect with {displayName}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">
-              You can send 1 message to initiate a request. Once {displayName}{" "}
+              You can send 1 message to initiate a connection request. Once {displayName}{" "}
               accepts, full chatting will unlock for both of you.
             </p>
           </div>
@@ -312,7 +360,7 @@ const ChatView = () => {
                       {msg.text}
                     </p>
 
-                    {/* Inline timestamp & status ticks inside the bubble */}
+                    {/* Inline timestamp & status ticks inside bubble */}
                     <span
                       className={`inline-flex items-center gap-1 float-right mt-1 ml-3 select-none text-[10px] font-medium leading-none ${
                         isMe
@@ -386,7 +434,16 @@ const ChatView = () => {
       {connectionState === "request_sent" && (
         <div className="shrink-0 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200/60 dark:border-amber-800/40 px-4 py-3 text-center">
           <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
-            You can send more messages once {displayName} accepts.
+            You can send more messages once {displayName} accepts your request.
+          </p>
+        </div>
+      )}
+
+      {/* ── BLOCKED NOTE ─────────────────────────────────────────────────── */}
+      {connectionState === "blocked" && (
+        <div className="shrink-0 bg-rose-50 dark:bg-rose-950/20 border-t border-rose-200/60 dark:border-rose-900/40 px-4 py-3 text-center">
+          <p className="text-xs font-bold text-rose-800 dark:text-rose-300">
+            Messaging is unavailable because this user is blocked.
           </p>
         </div>
       )}
@@ -403,7 +460,7 @@ const ChatView = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={isComposerDisabled}
+            disabled={isComposerDisabled || isSending}
             placeholder={
               isComposerDisabled
                 ? "Composer locked pending accept..."
@@ -416,7 +473,7 @@ const ChatView = () => {
 
           <button
             type="submit"
-            disabled={isComposerDisabled || !input.trim()}
+            disabled={isComposerDisabled || !input.trim() || isSending}
             aria-label="Send message"
             className="size-11 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 flex items-center justify-center transition-all shadow-sm dark:shadow-none active:scale-95"
           >
@@ -424,6 +481,15 @@ const ChatView = () => {
           </button>
         </form>
       </footer>
+
+      {/* ── REPORT MODAL ─────────────────────────────────────────────────── */}
+      <ReportModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        username={username}
+        displayName={displayName}
+        onSubmitReport={report}
+      />
     </div>
   );
 };
