@@ -19,7 +19,6 @@ import { supabase } from "../supabaseClient";
 import { withTimeout } from "../utils/withTimeout";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import ProfileHeader from "../components/ProfileHeader";
-import StatCard from "../components/StatCard";
 
 const getRelativeStudyLabel = (dateStr) => {
   if (!dateStr) return null;
@@ -403,7 +402,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
             <h1 className="text-lg font-black tracking-tight truncate">
               {profile.full_name || "Scholar"}
             </h1>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 truncate">
+            <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 truncate">
               {profile.user_name ? `@${profile.user_name}` : "Scholar Profile"}
             </p>
           </div>
@@ -458,163 +457,167 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
           </aside>
 
           {/* ── RIGHT COLUMN (Sections stacked) ───────────────────────────── */}
-          <main className="space-y-6">
-            {/* 1. Stats Overview */}
-            <section aria-labelledby="stats-overview-title">
+          <main className="space-y-5">
+
+            {/* 1. Study Activity — Hero Banner (most engaging, leads the page) */}
+            <section aria-labelledby="study-activity-title">
               <h2
-                id="stats-overview-title"
+                id="study-activity-title"
                 className="text-xs font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400 mb-3 px-1"
               >
-                Stats Overview
+                Study Activity
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {statsOverview.bestScore && (
-                  <StatCard
-                    label="Best Score"
-                    value={statsOverview.bestScore}
-                    icon={FiAward}
-                  />
-                )}
-                {statsOverview.quizzesTaken != null && (
-                  <StatCard
-                    label="Quizzes Taken"
-                    value={statsOverview.quizzesTaken}
-                    icon={FiList}
-                  />
-                )}
-                {statsOverview.totalQuestionsAnswered != null && (
-                  <StatCard
-                    label="Questions"
-                    value={statsOverview.totalQuestionsAnswered}
-                    icon={FiClock}
-                  />
-                )}
-                {statsOverview.averageScore && (
-                  <StatCard
-                    label="Average Score"
-                    value={statsOverview.averageScore}
-                    icon={FiAward}
-                  />
-                )}
-              </div>
-            </section>
-
-            {/* 2. Best Performance Card */}
-            <section
-              aria-labelledby="best-perf-title"
-              className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-3xl overflow-hidden shadow-sm"
-            >
-              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
-                <h2
-                  id="best-perf-title"
-                  className="text-xs font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400"
-                >
-                  Best Performance
-                </h2>
-                {rank && (
-                  <span className="text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-800/40">
-                    Leaderboard {rank}
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700/60 p-5">
-                <div className="flex flex-col gap-1 pr-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
-                    Score
-                  </span>
-                  <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                    {statsOverview.bestScore || "—"}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1 px-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
-                    Time
-                  </span>
-                  <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white truncate">
-                    {formatBestTime(statsOverview.bestTime)}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1 pl-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
-                    Questions
-                  </span>
-                  <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                    {statsOverview.bestTotalQuestions || "—"}
-                  </span>
-                </div>
-              </div>
-
-              {statsOverview.bestCourseId && (
-                <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/60 flex items-center gap-3.5">
-                  <div className="size-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                    <FiBook size={18} />
+              <div className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-3xl overflow-hidden shadow-sm">
+                {/* Streak hero row */}
+                <div className="flex items-stretch divide-x divide-slate-100 dark:divide-slate-700/60">
+                  {/* Current Streak — featured */}
+                  <div className="flex-1 flex flex-col items-center justify-center gap-1.5 px-4 py-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/10">
+                    <div className="flex items-center gap-1.5">
+                      <FaFire className="text-orange-500 size-5" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-600 dark:text-orange-400">
+                        Current Streak
+                      </span>
+                    </div>
+                    <span className="text-4xl font-black text-slate-900 dark:text-white leading-none">
+                      {currentStreak}
+                    </span>
+                    <span className="text-[11px] font-bold text-orange-500 dark:text-orange-400">
+                      {currentStreak === 1 ? "day" : "days"}
+                    </span>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
-                      Best Course
-                    </p>
-                    <p className="text-sm font-black text-slate-900 dark:text-white truncate">
-                      {statsOverview.bestCourseId?.replace(
-                        /([A-Za-z]+)(\d+)/,
-                        "$1 $2"
-                      )}
-                      {courseTitle && (
-                        <span className="font-medium text-slate-500 dark:text-slate-400">
-                          {" "}
-                          — {courseTitle}
-                        </span>
-                      )}
-                    </p>
+
+                  {/* Best Streak */}
+                  <div className="flex-1 flex flex-col items-center justify-center gap-1.5 px-4 py-6">
+                    <div className="flex items-center gap-1.5">
+                      <FiAward className="text-amber-500 size-4" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">
+                        Best Streak
+                      </span>
+                    </div>
+                    <span className="text-4xl font-black text-slate-900 dark:text-white leading-none">
+                      {bestStreak}
+                    </span>
+                    <span className="text-[11px] font-bold text-amber-500 dark:text-amber-400">
+                      {bestStreak === 1 ? "day" : "days"}
+                    </span>
                   </div>
                 </div>
-              )}
-            </section>
 
-            {/* 3. Study Activity Card */}
-            <section
-              aria-labelledby="study-activity-title"
-              className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-3xl overflow-hidden shadow-sm"
-            >
-              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700/60">
-                <h2
-                  id="study-activity-title"
-                  className="text-xs font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400"
-                >
-                  Study Activity
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700/60 p-5">
-                <div className="flex flex-col gap-1 pr-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center gap-1">
-                    <FaFire className="text-orange-500 size-3" />
-                    Current streak
-                  </span>
-                  <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                    {currentStreak} {currentStreak === 1 ? "day" : "days"}
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-1 px-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center gap-1">
-                    <FiAward className="text-amber-500 size-3" />
-                    Best streak
-                  </span>
-                  <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                    {bestStreak} {bestStreak === 1 ? "day" : "days"}
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-1 pl-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center gap-1">
-                    <FiClock className="text-slate-400 size-3" />
+                {/* Last studied footer */}
+                <div className="flex items-center gap-2.5 px-5 py-3 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/60">
+                  <FiClock className="text-slate-400 size-3.5 shrink-0" />
+                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
                     Last studied
                   </span>
-                  <span className="text-base sm:text-xl font-black text-slate-900 dark:text-white truncate">
+                  <span className="ml-auto text-sm font-black text-slate-700 dark:text-slate-200">
                     {lastStudiedLabel}
                   </span>
                 </div>
+              </div>
+            </section>
+
+            {/* 2. Performance — merged stats + best result */}
+            <section aria-labelledby="performance-title">
+              <h2
+                id="performance-title"
+                className="text-xs font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400 mb-3 px-1"
+              >
+                Performance
+              </h2>
+              <div className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-3xl overflow-hidden shadow-sm">
+
+                {/* Key metrics row */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-700/60">
+                  <div className="flex flex-col gap-1 px-5 py-4">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <FiAward className="text-blue-500 size-3 shrink-0" />
+                      Best Score
+                    </span>
+                    <span className="text-2xl font-black text-slate-900 dark:text-white">
+                      {statsOverview.bestScore || "—"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 px-5 py-4">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <FiList className="text-purple-500 size-3 shrink-0" />
+                      Quizzes
+                    </span>
+                    <span className="text-2xl font-black text-slate-900 dark:text-white">
+                      {statsOverview.quizzesTaken ?? "—"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 px-5 py-4">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <FiClock className="text-teal-500 size-3 shrink-0" />
+                      Avg Score
+                    </span>
+                    <span className="text-2xl font-black text-slate-900 dark:text-white">
+                      {statsOverview.averageScore || "—"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 px-5 py-4">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <FiAlertCircle className="text-rose-400 size-3 shrink-0" />
+                      Questions
+                    </span>
+                    <span className="text-2xl font-black text-slate-900 dark:text-white">
+                      {statsOverview.totalQuestionsAnswered ?? "—"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Best attempt divider row */}
+                {(statsOverview.bestScore || statsOverview.bestTime || statsOverview.bestTotalQuestions) && (
+                  <>
+                    <div className="px-5 py-2.5 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/60 flex items-center gap-2">
+                      <FiAward className="text-amber-500 size-3.5 shrink-0" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                        Best Attempt
+                      </span>
+                      {rank && (
+                        <span className="ml-auto text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-800/40">
+                          Leaderboard {rank}
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700/60 px-5 py-4">
+                      <div className="flex flex-col gap-0.5 pr-4">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Score</span>
+                        <span className="text-xl font-black text-slate-900 dark:text-white">{statsOverview.bestScore || "—"}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5 px-4">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Time</span>
+                        <span className="text-xl font-black text-slate-900 dark:text-white truncate">{formatBestTime(statsOverview.bestTime)}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5 pl-4">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Questions</span>
+                        <span className="text-xl font-black text-slate-900 dark:text-white">{statsOverview.bestTotalQuestions || "—"}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Best course footer */}
+                {statsOverview.bestCourseId && (
+                  <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/60 flex items-center gap-3">
+                    <div className="size-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                      <FiBook size={16} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Best Course
+                      </p>
+                      <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                        {statsOverview.bestCourseId?.replace(/([A-Za-z]+)(\d+)/, "$1 $2")}
+                        {courseTitle && (
+                          <span className="font-medium text-slate-500 dark:text-slate-400">
+                            {" "}— {courseTitle}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
           </main>
