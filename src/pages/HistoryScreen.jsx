@@ -20,6 +20,11 @@ import {
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import {
+  fetchActiveCoursesForUser,
+  getActiveCourseCodeSet,
+  isCourseInActiveList,
+} from "../utils/activeCourses";
+import {
   LineChart,
   Line,
   XAxis,
@@ -73,11 +78,17 @@ const isValidStreak = (lastStudyDate, currentStreak) => {
   return 0;
 };
 
-const HistoryScreen = ({ isPremium, setQuestionType }) => {
+const HistoryScreen = ({
+  isPremium,
+  setQuestionType,
+  courses = [],
+  userProfile,
+}) => {
   useDocumentTitle("Study History | QuizBolt");
   const { profile, loading: profileLoading } = useProfile();
   const [historyData, setHistoryData] = useState([]);
   const [allAttempts, setAllAttempts] = useState([]);
+  const [activeCoursesList, setActiveCoursesList] = useState(courses || []);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOverlayOpen, setOverlayOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -85,6 +96,26 @@ const HistoryScreen = ({ isPremium, setQuestionType }) => {
   const [chartTab, setChartTab] = useState("score");
 
   const navigate = useNavigate();
+
+  // Load and sync active courses
+  useEffect(() => {
+    if (courses && courses.length > 0) {
+      setActiveCoursesList(courses);
+      return;
+    }
+    const currentProfile = userProfile || profile;
+    if (currentProfile?.university) {
+      fetchActiveCoursesForUser(currentProfile).then((fetched) => {
+        if (fetched && fetched.length > 0) {
+          setActiveCoursesList(fetched);
+        }
+      });
+    }
+  }, [courses, userProfile, profile]);
+
+  const activeCourseCodes = useMemo(() => {
+    return getActiveCourseCodeSet(activeCoursesList);
+  }, [activeCoursesList]);
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -226,7 +257,15 @@ const HistoryScreen = ({ isPremium, setQuestionType }) => {
 
   /* ----------------------- INSIGHTS: top + worst course ------------------- */
   const courseInsights = useMemo(() => {
-    const filtered = historyData.filter((h) => !h.is_retake);
+    // Best and worst course insights are restricted strictly to active courses
+    // (from active semester in user's university & current year/level, plus overrides)
+    if (!activeCourseCodes || activeCourseCodes.size === 0) {
+      return { top: null, worst: null };
+    }
+
+    const filtered = historyData.filter(
+      (h) => !h.is_retake && isCourseInActiveList(h.course_id, activeCourseCodes)
+    );
     const map = {};
     filtered.forEach((h) => {
       if (!h.course_id || !h.total_questions) return;
@@ -245,7 +284,7 @@ const HistoryScreen = ({ isPremium, setQuestionType }) => {
       top: entries[0] || null,
       worst: entries[entries.length - 1] || null,
     };
-  }, [historyData]);
+  }, [historyData, activeCourseCodes]);
 
   /* ----------------------- MODE SPLIT ------------------------------------- */
   const modeSplit = useMemo(() => {
@@ -674,12 +713,15 @@ const HistoryScreen = ({ isPremium, setQuestionType }) => {
               </p>
             </div>
 
-                {/* Top course */}
+                {/* Best course */}
                 {courseInsights.top && (
                   <InsightCard
                     icon={<FiTarget size={13} />}
-                    label="Top subject"
-                    value={courseInsights.top.id}
+                    label="Best course"
+                    value={
+                      courseInsights.top.id?.replace(/([A-Za-z]+)(\d+)/, "$1 $2") ||
+                      courseInsights.top.id
+                    }
                     sub={`Avg. ${courseInsights.top.avg}% · ${courseInsights.top.count} exam${courseInsights.top.count > 1 ? "s" : ""}`}
                     colorClass="text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
                   />
@@ -691,7 +733,10 @@ const HistoryScreen = ({ isPremium, setQuestionType }) => {
                     <InsightCard
                       icon={<FiAlertCircle size={13} />}
                       label="Needs work"
-                      value={courseInsights.worst.id}
+                      value={
+                        courseInsights.worst.id?.replace(/([A-Za-z]+)(\d+)/, "$1 $2") ||
+                        courseInsights.worst.id
+                      }
                       sub={`Avg. ${courseInsights.worst.avg}% — try retaking`}
                       colorClass="text-red-500 bg-red-50 dark:bg-red-900/20"
                     />

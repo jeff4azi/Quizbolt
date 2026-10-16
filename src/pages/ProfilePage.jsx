@@ -19,6 +19,12 @@ import { supabase } from "../supabaseClient";
 import { withTimeout } from "../utils/withTimeout";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import ProfileHeader from "../components/ProfileHeader";
+import {
+  fetchActiveCoursesForUser,
+  getActiveCourseCodeSet,
+  isCourseInActiveList,
+  normalizeCourseCode,
+} from "../utils/activeCourses";
 
 const getRelativeStudyLabel = (dateStr) => {
   if (!dateStr) return null;
@@ -117,9 +123,29 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
     location.state?.isPremium ?? location.state?.profile?.is_premium ?? false
   );
   const [attempts, setAttempts] = useState([]);
+  const [activeCoursesList, setActiveCoursesList] = useState([]);
   const [courseTitle, setCourseTitle] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Load and sync active courses for this profile
+  useEffect(() => {
+    // If viewing own profile and availableCourses were provided by App
+    if (profile?.id && viewerProfile?.id === profile.id && courses && courses.length > 0) {
+      setActiveCoursesList(courses);
+      return;
+    }
+
+    if (profile?.university) {
+      fetchActiveCoursesForUser(profile).then((fetched) => {
+        setActiveCoursesList(fetched || []);
+      });
+    }
+  }, [profile, viewerProfile, courses]);
+
+  const activeCourseCodes = useMemo(() => {
+    return getActiveCourseCodeSet(activeCoursesList);
+  }, [activeCoursesList]);
 
   const showToast = useCallback((msg) => {
     setToastMessage(msg);
@@ -201,15 +227,20 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
   // Derive stats from attempts
   const statsOverview = useMemo(() => {
     if (!attempts || attempts.length === 0) {
-      // Fallback to location stats if available
+      // Fallback to location stats if available and active
       if (location.state?.stats) {
+        const locBestCourse = location.state.stats.bestCourseId;
+        const isLocCourseActive = isCourseInActiveList(
+          locBestCourse,
+          activeCourseCodes
+        );
         return {
           bestScore: location.state.stats.bestScore,
           quizzesTaken: 1,
           totalQuestionsAnswered: location.state.stats.bestTotalQuestions,
           averageScore: location.state.stats.bestScore,
           bestTime: location.state.stats.bestTime,
-          bestCourseId: location.state.stats.bestCourseId,
+          bestCourseId: isLocCourseActive ? locBestCourse : null,
           bestTotalQuestions: location.state.stats.bestTotalQuestions,
         };
       }
@@ -229,6 +260,10 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
     let bestPercent = -1;
     let bestAttempt = null;
 
+    // Track best attempt strictly among active courses
+    let bestActivePercent = -1;
+    let bestActiveAttempt = null;
+
     attempts.forEach((a) => {
       const qCount = Number(a.total_questions) || 0;
       const score = Number(a.score) || 0;
@@ -238,15 +273,29 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
         const percent = (score / qCount) * 100;
         totalScorePercent += percent;
 
+        // Overall best attempt (for overall best score/time stats)
         if (percent > bestPercent) {
           bestPercent = percent;
           bestAttempt = a;
         } else if (percent === bestPercent && bestAttempt) {
-          // tie breaker by time taken
           const timeA = Number(a.time_taken) || Infinity;
           const timeBest = Number(bestAttempt.time_taken) || Infinity;
           if (timeA < timeBest) {
             bestAttempt = a;
+          }
+        }
+
+        // Active courses best attempt (strictly for Best Course)
+        if (isCourseInActiveList(a.course_id, activeCourseCodes)) {
+          if (percent > bestActivePercent) {
+            bestActivePercent = percent;
+            bestActiveAttempt = a;
+          } else if (percent === bestActivePercent && bestActiveAttempt) {
+            const timeA = Number(a.time_taken) || Infinity;
+            const timeBest = Number(bestActiveAttempt.time_taken) || Infinity;
+            if (timeA < timeBest) {
+              bestActiveAttempt = a;
+            }
           }
         }
       }
@@ -264,12 +313,11 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
       totalQuestionsAnswered: totalQuestions > 0 ? totalQuestions : null,
       averageScore,
       bestTime: bestAttempt?.time_taken ?? location.state?.stats?.bestTime,
-      bestCourseId:
-        bestAttempt?.course_id ?? location.state?.stats?.bestCourseId,
+      bestCourseId: bestActiveAttempt?.course_id ?? null,
       bestTotalQuestions:
         bestAttempt?.total_questions ?? location.state?.stats?.bestTotalQuestions,
     };
-  }, [attempts, location.state]);
+  }, [attempts, activeCourseCodes, location.state]);
 
   // Lookup best course title
   useEffect(() => {
@@ -279,23 +327,30 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
       return;
     }
 
-    // Try finding in passed courses first
-    const found = courses.find(
-      (c) => (c.id ?? c.course_id ?? c.code) === courseId
+    const normId = normalizeCourseCode(courseId);
+
+    // Try finding in activeCoursesList or passed courses first
+    const pool = [...activeCoursesList, ...courses];
+    const found = pool.find(
+      (c) =>
+        normalizeCourseCode(c.id) === normId ||
+        normalizeCourseCode(c.course_code) === normId ||
+        normalizeCourseCode(c.code) === normId ||
+        normalizeCourseCode(c.name) === normId
     );
     if (found?.name || found?.title) {
-      setCourseTitle(found.name || found.title);
+      setCourseTitle(found.title || found.name);
       return;
     }
 
     supabase
       .from("courses_meta")
       .select("title")
-      .eq("course_code", courseId)
+      .ilike("course_code", courseId)
       .maybeSingle()
       .then(({ data }) => setCourseTitle(data?.title ?? null))
       .catch(() => setCourseTitle(null));
-  }, [statsOverview.bestCourseId, courses]);
+  }, [statsOverview.bestCourseId, activeCoursesList, courses]);
 
   if (loading && !profile) {
     return <ProfilePageSkeleton />;
