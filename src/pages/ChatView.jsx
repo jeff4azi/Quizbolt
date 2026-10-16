@@ -234,34 +234,34 @@ const ChatView = () => {
   const [kbHeight, setKbHeight] = useState(0);
   const menuRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const feedContainerRef = useRef(null);
   const inputRef = useRef(null);
+  const hasInitiallyScrolledRef = useRef(false);
+  const prevMessagesLengthRef = useRef(0);
   // Map of message id → DOM ref for scroll-to
   const msgRefs = useRef({});
 
+  // Reset scroll ref when conversation changes
+  useEffect(() => {
+    hasInitiallyScrolledRef.current = false;
+    prevMessagesLengthRef.current = 0;
+  }, [username]);
+
   // Mobile virtual keyboard height tracking via visualViewport
+  // ONLY listen to resize — NEVER listen to scroll (which causes jitter when scrolling chat)
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     const handler = () => {
-      const height = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      setKbHeight(height);
+      const diff = Math.round(window.innerHeight - vv.height);
+      // Virtual keyboard on mobile is > 100px. Ignore tiny URL bar changes (< 80px)
+      setKbHeight(diff > 80 ? diff : 0);
     };
     vv.addEventListener("resize", handler);
-    vv.addEventListener("scroll", handler);
     return () => {
       vv.removeEventListener("resize", handler);
-      vv.removeEventListener("scroll", handler);
     };
   }, []);
-
-  // Auto-scroll to bottom when mobile keyboard pops up
-  useEffect(() => {
-    if (kbHeight > 0) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 50);
-    }
-  }, [kbHeight]);
 
   const displayName =
     currentConv?.fullName || profileInfo?.full_name || username || "Scholar";
@@ -298,9 +298,33 @@ const ChatView = () => {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [menuOpen]);
 
-  // Auto scroll to bottom
+  // Smart scroll to bottom: jump on first load, don't force down when user scrolled up
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const msgs = currentConv?.messages || [];
+    if (msgs.length === 0) return;
+
+    // On initial load of conversation: jump directly to bottom once without smooth animation
+    if (!hasInitiallyScrolledRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+      hasInitiallyScrolledRef.current = true;
+      prevMessagesLengthRef.current = msgs.length;
+      return;
+    }
+
+    // When a new message arrives:
+    if (msgs.length > prevMessagesLengthRef.current) {
+      const lastMsg = msgs[msgs.length - 1];
+      const container = feedContainerRef.current;
+      // If sent by me, or if user is already within 150px of the bottom:
+      const isNearBottom =
+        container &&
+        container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+
+      if (lastMsg?.sender === "me" || isNearBottom) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+      prevMessagesLengthRef.current = msgs.length;
+    }
   }, [currentConv?.messages]);
 
   // Auto-resize textarea
@@ -552,7 +576,9 @@ const ChatView = () => {
 
         {/* ── MESSAGES FEED ─────────────────────────────────────────────────── */}
         <div
-          className="flex-1 overflow-y-auto p-4 sm:p-6 pb-28 sm:pb-36 space-y-1.5"
+          ref={feedContainerRef}
+          className="flex-1 overflow-y-auto overscroll-y-contain p-4 sm:p-6 pb-28 sm:pb-36 space-y-1.5"
+          style={{ WebkitOverflowScrolling: "touch" }}
           onClick={() => setSelectedMsgId(null)}
         >
           {messages.length === 0 ? (
@@ -689,7 +715,7 @@ const ChatView = () => {
 
         {/* ── FLOATING COMPOSER UNIT ────────────────────────────────────────── */}
         <div
-          className="fixed inset-x-0 z-30 pointer-events-none px-3 sm:px-4 max-w-4xl mx-auto transition-all duration-150"
+          className="fixed inset-x-0 z-30 pointer-events-none px-3 sm:px-4 max-w-4xl mx-auto transition-[bottom] duration-150 ease-out"
           style={{
             bottom: kbHeight > 0 ? `${kbHeight + 8}px` : "12px",
           }}
@@ -767,6 +793,11 @@ const ChatView = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                    }, 200);
+                  }}
                   disabled={isComposerDisabled || isSending}
                   placeholder={
                     isComposerDisabled
