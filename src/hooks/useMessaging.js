@@ -64,13 +64,31 @@ export const useMessaging = (username = null) => {
     refreshConversations();
   }, [refreshConversations]);
 
-  // 3. Realtime subscription on incoming connections
+  // 3. Periodic conversation refresh & window focus listener (0 Realtime WebSockets used)
   useEffect(() => {
     if (!currentUserId) return;
-    const unsub = subscribeToIncoming(currentUserId, () => {
-      refreshConversations();
-    });
-    return () => unsub();
+
+    const handleFocus = () => {
+      if (document.visibilityState === "visible") {
+        refreshConversations();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+
+    // Refresh every 30s while active
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        refreshConversations();
+      }
+    }, 30000);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+      clearInterval(timer);
+    };
   }, [currentUserId, refreshConversations]);
 
   // 4. Resolve target user profile & connection if username provided
@@ -141,7 +159,9 @@ export const useMessaging = (username = null) => {
   const connectionId = matchedConv?.connectionId || null;
   const targetUserId = targetProfile?.id || matchedConv?.userId || null;
 
-  // 5. Load and subscribe to messages for active open chat
+  // 5. Smart active chat polling (3-second lightweight REST sync)
+  // Runs ONLY when actively viewing this open chat, AND only when tab is visible.
+  // Consumes 0 Realtime WebSocket connections!
   const refreshActiveMessages = useCallback(async () => {
     if (!connectionId || !currentUserId) return;
     const msgs = await getMessages(connectionId, currentUserId);
@@ -154,16 +174,74 @@ export const useMessaging = (username = null) => {
       return;
     }
 
-    refreshActiveMessages();
-    markRead(connectionId, currentUserId);
+    let isMounted = true;
 
-    const unsub = subscribeToMessages(connectionId, () => {
-      refreshActiveMessages();
-      refreshConversations();
-    });
+    const performSync = async () => {
+      if (document.visibilityState !== "visible") return;
 
-    return () => unsub();
-  }, [connectionId, currentUserId, refreshActiveMessages, refreshConversations]);
+      try {
+        // 1. Fetch latest messages from DB
+        const latestMsgs = await getMessages(connectionId, currentUserId);
+        if (!isMounted) return;
+
+        // 2. Check if messages have changed or if read status updated
+        setCurrentMessages((prev) => {
+          if (prev.length !== latestMsgs.length) return latestMsgs;
+          const hasDiff = prev.some((m, idx) => {
+            const next = latestMsgs[idx];
+            return (
+              !next ||
+              m.id !== next.id ||
+              m.status !== next.status ||
+              m.text !== next.text
+            );
+          });
+          return hasDiff ? latestMsgs : prev;
+        });
+
+        // 3. If there are incoming unread messages from "them", mark them read
+        const hasUnreadIncoming = latestMsgs.some(
+          (m) => m.sender === "them" && m.status !== "read"
+        );
+        if (hasUnreadIncoming) {
+          await markRead(connectionId, currentUserId);
+          if (isMounted) {
+            setCurrentMessages((prev) =>
+              prev.map((m) =>
+                m.sender === "them" ? { ...m, status: "read" } : m
+              )
+            );
+            refreshConversations();
+          }
+        }
+      } catch (err) {
+        console.error("Chat sync error:", err);
+      }
+    };
+
+    // Initial sync
+    performSync();
+
+    // 3-second active sync interval while chat is open
+    const interval = setInterval(performSync, 3000);
+
+    // Sync immediately when tab is focused or becomes visible
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        performSync();
+      }
+    };
+
+    window.addEventListener("focus", handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener("focus", handleVisibility);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [connectionId, currentUserId, matchedConv, refreshConversations]);
 
   // Construct currentConv UI model
   const currentConv = matchedConv

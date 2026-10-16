@@ -438,83 +438,33 @@ export const getMessages = async (connectionId, myId, limit = 50) => {
  * Marks messages in a connection as read.
  */
 export const markRead = async (connectionId, myId) => {
-  if (!connectionId || !myId) return;
+  if (!connectionId || !myId) return 0;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("messages")
     .update({ status: "read" })
     .eq("connection_id", connectionId)
     .neq("sender_id", myId)
-    .neq("status", "read");
+    .neq("status", "read")
+    .select("id");
 
   if (error) {
     console.error("Error marking messages read:", error);
+    return 0;
   }
+  return data?.length || 0;
 };
 
 /**
- * Realtime subscription to messages for the active open chat.
- * Uses a single channel scoped to connection_id.
+ * Lightweight stub: we use smart active polling instead of WebSockets to avoid hitting Supabase 200-connection limit.
  */
-export const subscribeToMessages = (connectionId, onMessage) => {
-  if (!connectionId) return () => {};
-
-  const channel = supabase
-    .channel(`messages:${connectionId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "messages",
-        filter: `connection_id=eq.${connectionId}`,
-      },
-      (payload) => {
-        if (onMessage) onMessage(payload);
-      }
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
+export const subscribeToMessages = () => {
+  return () => {};
 };
 
 /**
- * Realtime subscription to connections table for notifications/badge updates.
+ * Lightweight stub: connections refresh via visibility and active polling (0 WebSockets consumed).
  */
-export const subscribeToIncoming = (myId, onConnectionChange) => {
-  if (!myId) return () => {};
-
-  const channel = supabase
-    .channel(`connections:${myId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "connections",
-        filter: `receiver_id=eq.${myId}`,
-      },
-      (payload) => {
-        if (onConnectionChange) onConnectionChange(payload);
-      }
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "connections",
-        filter: `requester_id=eq.${myId}`,
-      },
-      (payload) => {
-        if (onConnectionChange) onConnectionChange(payload);
-      }
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
+export const subscribeToIncoming = () => {
+  return () => {};
 };
