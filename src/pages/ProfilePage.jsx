@@ -30,9 +30,10 @@ const getRelativeStudyLabel = (dateStr) => {
   if (!dateStr) return null;
   const date = new Date(dateStr);
   const now = new Date();
-  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const startOfDay = (d) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const diffDays = Math.round(
-    (startOfDay(now) - startOfDay(date)) / (1000 * 60 * 60 * 24)
+    (startOfDay(now) - startOfDay(date)) / (1000 * 60 * 60 * 24),
   );
 
   if (diffDays === 0) return "Today";
@@ -68,6 +69,24 @@ const formatBestTime = (t) => {
   const mins = Math.floor(t / 60);
   const secs = t % 60;
   return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+};
+
+// Matches the leaderboard's week-start logic so the profile's
+// "Best Attempt (This Week)" is identical to what the leaderboard shows.
+const getCurrentWeekStartIso = () => {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sunday
+  const diff = day; // how many days since Sunday
+  const weekStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - diff,
+    0,
+    0,
+    0,
+    0,
+  );
+  return weekStart.toISOString();
 };
 
 const ProfilePageSkeleton = () => (
@@ -113,25 +132,31 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
   const location = useLocation();
 
   useDocumentTitle(
-    username ? `@${username} | QuizBolt Profile` : "Scholar Profile | QuizBolt"
+    username ? `@${username} | QuizBolt Profile` : "Scholar Profile | QuizBolt",
   );
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(location.state?.profile || null);
   const rank = location.state?.rank || location.state?.stats?.rank || null;
   const [isPremium, setIsPremium] = useState(
-    location.state?.isPremium ?? location.state?.profile?.is_premium ?? false
+    location.state?.isPremium ?? location.state?.profile?.is_premium ?? false,
   );
   const [attempts, setAttempts] = useState([]);
   const [activeCoursesList, setActiveCoursesList] = useState([]);
   const [courseTitle, setCourseTitle] = useState(null);
+  const [weeklyCourseTitle, setWeeklyCourseTitle] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
   // Load and sync active courses for this profile
   useEffect(() => {
     // If viewing own profile and availableCourses were provided by App
-    if (profile?.id && viewerProfile?.id === profile.id && courses && courses.length > 0) {
+    if (
+      profile?.id &&
+      viewerProfile?.id === profile.id &&
+      courses &&
+      courses.length > 0
+    ) {
       setActiveCoursesList(courses);
       return;
     }
@@ -166,12 +191,12 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
         supabase
           .from("profiles")
           .select(
-            "id, full_name, user_name, year, college, is_premium, avatar_url, department, university, current_streak, best_streak, last_study_date, created_at"
+            "id, full_name, user_name, year, college, is_premium, avatar_url, department, university, current_streak, best_streak, last_study_date, created_at",
           )
           .ilike("user_name", username)
           .maybeSingle(),
         12000,
-        "Loading scholar profile timed out."
+        "Loading scholar profile timed out.",
       );
 
       // If not found by username, check if username param is a user id
@@ -179,7 +204,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
         const { data: byIdData } = await supabase
           .from("profiles")
           .select(
-            "id, full_name, user_name, year, college, is_premium, avatar_url, department, university, current_streak, best_streak, last_study_date, created_at"
+            "id, full_name, user_name, year, college, is_premium, avatar_url, department, university, current_streak, best_streak, last_study_date, created_at",
           )
           .eq("id", username)
           .maybeSingle();
@@ -201,12 +226,12 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
         supabase
           .from("exam_attempts")
           .select(
-            "id, course_id, score, total_questions, time_taken, date_taken, is_retake, university, type"
+            "id, course_id, score, total_questions, time_taken, date_taken, is_retake, university, type",
           )
           .eq("user_id", profileData.id)
           .eq("is_retake", false),
         12000,
-        "Loading attempts timed out."
+        "Loading attempts timed out.",
       );
 
       setAttempts(attemptsData || []);
@@ -232,7 +257,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
         const locBestCourse = location.state.stats.bestCourseId;
         const isLocCourseActive = isCourseInActiveList(
           locBestCourse,
-          activeCourseCodes
+          activeCourseCodes,
         );
         return {
           bestScore: location.state.stats.bestScore,
@@ -242,6 +267,11 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
           bestTime: location.state.stats.bestTime,
           bestCourseId: isLocCourseActive ? locBestCourse : null,
           bestTotalQuestions: location.state.stats.bestTotalQuestions,
+          // Location stats come from the leaderboard which is already weekly
+          weeklyBestScore: location.state.stats.bestScore,
+          weeklyBestTime: location.state.stats.bestTime,
+          weeklyBestTotalQuestions: location.state.stats.bestTotalQuestions,
+          weeklyBestCourseId: location.state.stats.bestCourseId,
         };
       }
       return {
@@ -252,6 +282,10 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
         bestTime: null,
         bestCourseId: null,
         bestTotalQuestions: null,
+        weeklyBestScore: null,
+        weeklyBestTime: null,
+        weeklyBestTotalQuestions: null,
+        weeklyBestCourseId: null,
       };
     }
 
@@ -260,9 +294,13 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
     let bestPercent = -1;
     let bestAttempt = null;
 
-    // Track best attempt strictly among active courses
+    // Track best attempt strictly among active courses (overall — for Best Course)
     let bestActivePercent = -1;
     let bestActiveAttempt = null;
+
+    // Track weekly best attempt (matches leaderboard logic)
+    const weekStartMs = new Date(getCurrentWeekStartIso()).getTime();
+    let weeklyBest = null;
 
     attempts.forEach((a) => {
       const qCount = Number(a.total_questions) || 0;
@@ -285,7 +323,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
           }
         }
 
-        // Active courses best attempt (strictly for Best Course)
+        // Active courses best attempt (strictly for Best Course overall)
         if (isCourseInActiveList(a.course_id, activeCourseCodes)) {
           if (percent > bestActivePercent) {
             bestActivePercent = percent;
@@ -298,14 +336,48 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
             }
           }
         }
+
+        // Weekly best attempt (same comparison as leaderboard: higher %, faster time, earlier date)
+        const attemptMs = new Date(a.date_taken).getTime();
+        if (Number.isFinite(attemptMs) && attemptMs >= weekStartMs) {
+          if (!weeklyBest) {
+            weeklyBest = a;
+          } else {
+            const bestQ = Number(weeklyBest.total_questions) || 0;
+            const bestPct =
+              bestQ > 0 ? (Number(weeklyBest.score) / bestQ) * 100 : 0;
+            if (percent > bestPct) {
+              weeklyBest = a;
+            } else if (percent === bestPct) {
+              const timeA = Number(a.time_taken) || Infinity;
+              const timeBest = Number(weeklyBest.time_taken) || Infinity;
+              if (timeA < timeBest) {
+                weeklyBest = a;
+              } else if (
+                timeA === timeBest &&
+                attemptMs < new Date(weeklyBest.date_taken).getTime()
+              ) {
+                weeklyBest = a;
+              }
+            }
+          }
+        }
       }
     });
 
     const quizzesTaken = attempts.length;
     const averageScore =
-      quizzesTaken > 0 ? `${Math.round(totalScorePercent / quizzesTaken)}%` : null;
+      quizzesTaken > 0
+        ? `${Math.round(totalScorePercent / quizzesTaken)}%`
+        : null;
     const bestScoreStr =
       bestPercent >= 0 ? `${Math.round(bestPercent)}%` : null;
+
+    const weeklyBestScoreStr = weeklyBest
+      ? `${Math.round(
+          (Number(weeklyBest.score) / Number(weeklyBest.total_questions)) * 100,
+        )}%`
+      : null;
 
     return {
       bestScore: bestScoreStr,
@@ -315,7 +387,13 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
       bestTime: bestAttempt?.time_taken ?? location.state?.stats?.bestTime,
       bestCourseId: bestActiveAttempt?.course_id ?? null,
       bestTotalQuestions:
-        bestAttempt?.total_questions ?? location.state?.stats?.bestTotalQuestions,
+        bestAttempt?.total_questions ??
+        location.state?.stats?.bestTotalQuestions,
+      // Weekly best (matches leaderboard)
+      weeklyBestScore: weeklyBestScoreStr,
+      weeklyBestTime: weeklyBest?.time_taken ?? null,
+      weeklyBestTotalQuestions: weeklyBest?.total_questions ?? null,
+      weeklyBestCourseId: weeklyBest?.course_id ?? null,
     };
   }, [attempts, activeCourseCodes, location.state]);
 
@@ -336,7 +414,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
         normalizeCourseCode(c.id) === normId ||
         normalizeCourseCode(c.course_code) === normId ||
         normalizeCourseCode(c.code) === normId ||
-        normalizeCourseCode(c.name) === normId
+        normalizeCourseCode(c.name) === normId,
     );
     if (found?.name || found?.title) {
       setCourseTitle(found.title || found.name);
@@ -351,6 +429,38 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
       .then(({ data }) => setCourseTitle(data?.title ?? null))
       .catch(() => setCourseTitle(null));
   }, [statsOverview.bestCourseId, activeCoursesList, courses]);
+
+  // Lookup weekly best course title
+  useEffect(() => {
+    const courseId = statsOverview.weeklyBestCourseId;
+    if (!courseId) {
+      setWeeklyCourseTitle(null);
+      return;
+    }
+
+    const normId = normalizeCourseCode(courseId);
+
+    const pool = [...activeCoursesList, ...courses];
+    const found = pool.find(
+      (c) =>
+        normalizeCourseCode(c.id) === normId ||
+        normalizeCourseCode(c.course_code) === normId ||
+        normalizeCourseCode(c.code) === normId ||
+        normalizeCourseCode(c.name) === normId,
+    );
+    if (found?.name || found?.title) {
+      setWeeklyCourseTitle(found.title || found.name);
+      return;
+    }
+
+    supabase
+      .from("courses_meta")
+      .select("title")
+      .ilike("course_code", courseId)
+      .maybeSingle()
+      .then(({ data }) => setWeeklyCourseTitle(data?.title ?? null))
+      .catch(() => setWeeklyCourseTitle(null));
+  }, [statsOverview.weeklyBestCourseId, activeCoursesList, courses]);
 
   if (loading && !profile) {
     return <ProfilePageSkeleton />;
@@ -387,7 +497,8 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
   const isOwnProfile =
     (viewerProfile?.id && viewerProfile.id === profile.id) ||
     (viewerProfile?.user_name &&
-      viewerProfile.user_name.toLowerCase() === profile.user_name?.toLowerCase());
+      viewerProfile.user_name.toLowerCase() ===
+        profile.user_name?.toLowerCase());
 
   const collegeLabel = ["TASUED", "BOUESTI"].includes(profile.university)
     ? "College"
@@ -401,10 +512,11 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
 
   const currentStreak = isValidStreak(
     profile.last_study_date,
-    profile.current_streak
+    profile.current_streak,
   );
   const bestStreak = profile.best_streak || 0;
-  const lastStudiedLabel = getRelativeStudyLabel(profile.last_study_date) || "—";
+  const lastStudiedLabel =
+    getRelativeStudyLabel(profile.last_study_date) || "—";
 
   // Academic info block helper
   const academicItems = [
@@ -446,7 +558,9 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
           <button
             type="button"
             onClick={() =>
-              window.history.length > 1 ? navigate(-1) : navigate("/leaderboard")
+              window.history.length > 1
+                ? navigate(-1)
+                : navigate("/leaderboard")
             }
             className="size-11 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 active:scale-95 transition-transform shrink-0"
             aria-label="Go back"
@@ -513,7 +627,6 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
 
           {/* ── RIGHT COLUMN (Sections stacked) ───────────────────────────── */}
           <main className="space-y-5">
-
             {/* 1. Study Activity — Hero Banner (most engaging, leads the page) */}
             <section aria-labelledby="study-activity-title">
               <h2
@@ -580,7 +693,6 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
                 Performance
               </h2>
               <div className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-3xl overflow-hidden shadow-sm">
-
                 {/* Key metrics row */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-700/60">
                   <div className="flex flex-col gap-1 px-5 py-4">
@@ -621,13 +733,15 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
                   </div>
                 </div>
 
-                {/* Best attempt divider row */}
-                {(statsOverview.bestScore || statsOverview.bestTime || statsOverview.bestTotalQuestions) && (
+                {/* Best attempt (this week) divider row */}
+                {(statsOverview.weeklyBestScore ||
+                  statsOverview.weeklyBestTime ||
+                  statsOverview.weeklyBestTotalQuestions) && (
                   <>
                     <div className="px-5 py-2.5 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/60 flex items-center gap-2">
                       <FiAward className="text-amber-500 size-3.5 shrink-0" />
                       <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-                        Best Attempt
+                        Best Attempt (This Week)
                       </span>
                       {rank && (
                         <span className="ml-auto text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-800/40">
@@ -637,22 +751,60 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
                     </div>
                     <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700/60 px-5 py-4">
                       <div className="flex flex-col gap-0.5 pr-4">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Score</span>
-                        <span className="text-xl font-black text-slate-900 dark:text-white">{statsOverview.bestScore || "—"}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Score
+                        </span>
+                        <span className="text-xl font-black text-slate-900 dark:text-white">
+                          {statsOverview.weeklyBestScore || "—"}
+                        </span>
                       </div>
                       <div className="flex flex-col gap-0.5 px-4">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Time</span>
-                        <span className="text-xl font-black text-slate-900 dark:text-white truncate">{formatBestTime(statsOverview.bestTime)}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Time
+                        </span>
+                        <span className="text-xl font-black text-slate-900 dark:text-white truncate">
+                          {formatBestTime(statsOverview.weeklyBestTime)}
+                        </span>
                       </div>
                       <div className="flex flex-col gap-0.5 pl-4">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Questions</span>
-                        <span className="text-xl font-black text-slate-900 dark:text-white">{statsOverview.bestTotalQuestions || "—"}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Questions
+                        </span>
+                        <span className="text-xl font-black text-slate-900 dark:text-white">
+                          {statsOverview.weeklyBestTotalQuestions || "—"}
+                        </span>
                       </div>
                     </div>
                   </>
                 )}
 
-                {/* Best course footer */}
+                {/* Best course (this week) — course from the weekly best attempt, same as leaderboard */}
+                {statsOverview.weeklyBestCourseId && (
+                  <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/60 flex items-center gap-3">
+                    <div className="size-9 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                      <FiBook size={16} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Best Course (This Week)
+                      </p>
+                      <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                        {statsOverview.weeklyBestCourseId?.replace(
+                          /([A-Za-z]+)(\d+)/,
+                          "$1 $2",
+                        )}
+                        {weeklyCourseTitle && (
+                          <span className="font-medium text-slate-500 dark:text-slate-400">
+                            {" "}
+                            — {weeklyCourseTitle}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Best course (overall) footer */}
                 {statsOverview.bestCourseId && (
                   <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/60 flex items-center gap-3">
                     <div className="size-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -660,13 +812,17 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Best Course
+                        Best Course (All Time)
                       </p>
                       <p className="text-sm font-black text-slate-900 dark:text-white truncate">
-                        {statsOverview.bestCourseId?.replace(/([A-Za-z]+)(\d+)/, "$1 $2")}
+                        {statsOverview.bestCourseId?.replace(
+                          /([A-Za-z]+)(\d+)/,
+                          "$1 $2",
+                        )}
                         {courseTitle && (
                           <span className="font-medium text-slate-500 dark:text-slate-400">
-                            {" "}— {courseTitle}
+                            {" "}
+                            — {courseTitle}
                           </span>
                         )}
                       </p>
