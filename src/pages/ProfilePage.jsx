@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -14,6 +14,9 @@ import {
   FiCheckCircle,
   FiHelpCircle,
   FiRepeat,
+  FiTarget,
+  FiZap,
+  FiTrendingUp,
 } from "react-icons/fi";
 import { FaFire } from "react-icons/fa";
 import { supabase } from "../supabaseClient";
@@ -90,6 +93,90 @@ const getCurrentWeekStartIso = () => {
   return weekStart.toISOString();
 };
 
+const formatCourseCode = (code) =>
+  code ? code.replace(/([A-Za-z]+)(\d+)/, "$1 $2") : "";
+
+/* ─────────────────────────── Presentational pieces ─────────────────────────── */
+
+const SectionTitle = ({ id, children, aside }) => (
+  <div className="flex items-center justify-between mb-3 px-1">
+    <h2
+      id={id}
+      className="text-xs font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400"
+    >
+      {children}
+    </h2>
+    {aside}
+  </div>
+);
+
+// Circular progress ring used for the hero score
+const ScoreRing = ({ percent }) => {
+  const size = 104;
+  const stroke = 9;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const safe = Math.max(0, Math.min(100, Number(percent) || 0));
+  const offset = c - (safe / 100) * c;
+
+  return (
+    <div
+      className="relative shrink-0"
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={`Score ${safe} percent`}
+    >
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          className="text-white/20"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          className="text-white transition-[stroke-dashoffset] duration-700 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-3xl font-black leading-none tabular-nums">
+          {Math.round(safe)}
+          <span className="text-base font-bold opacity-80">%</span>
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const StatTile = ({ icon: Icon, label, value, iconClass }) => (
+  <div className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2 min-w-0">
+    <div className="flex items-center gap-2">
+      <span
+        className={`size-7 rounded-lg flex items-center justify-center shrink-0 bg-slate-50 dark:bg-slate-900/50 ${iconClass}`}
+      >
+        <Icon size={14} />
+      </span>
+      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">
+        {label}
+      </span>
+    </div>
+    <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums leading-none">
+      {value}
+    </span>
+  </div>
+);
+
 const ProfilePageSkeleton = () => (
   <div className="min-h-[100dvh] bg-[#F8FAFC] dark:bg-[#0F172A] animate-pulse pb-24">
     <div className="h-16 border-b border-slate-200/70 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 flex items-center px-6">
@@ -111,6 +198,8 @@ const ProfilePageSkeleton = () => (
           </div>
         </div>
         <div className="space-y-6">
+          <div className="h-56 bg-slate-200 dark:bg-slate-800/80 rounded-3xl" />
+          <div className="h-28 bg-white dark:bg-slate-800/80 rounded-3xl border border-slate-200/70 dark:border-slate-700/60" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[1, 2, 3, 4].map((i) => (
               <div
@@ -119,13 +208,13 @@ const ProfilePageSkeleton = () => (
               />
             ))}
           </div>
-          <div className="h-40 bg-white dark:bg-slate-800/80 rounded-3xl border border-slate-200/70 dark:border-slate-700/60" />
-          <div className="h-40 bg-white dark:bg-slate-800/80 rounded-3xl border border-slate-200/70 dark:border-slate-700/60" />
         </div>
       </div>
     </div>
   </div>
 );
+
+/* ─────────────────────────────────── Page ─────────────────────────────────── */
 
 const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
   const { username } = useParams();
@@ -148,6 +237,14 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
   const [weeklyCourseTitle, setWeeklyCourseTitle] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Keep the latest profile in a ref so the fetch callback doesn't depend on
+  // `profile` state (it used to, which caused the fetch to re-run every time
+  // it set the profile).
+  const profileRef = useRef(profile);
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
 
   // Load and sync active courses for this profile
   useEffect(() => {
@@ -237,13 +334,13 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
       setAttempts(attemptsData || []);
     } catch (err) {
       console.error("Error fetching profile page data:", err);
-      if (!profile) {
+      if (!profileRef.current) {
         setNotFound(true);
       }
     } finally {
       setLoading(false);
     }
-  }, [username, profile]);
+  }, [username]);
 
   useEffect(() => {
     fetchProfileData();
@@ -527,29 +624,19 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
   const lastStudiedLabel =
     getRelativeStudyLabel(profile.last_study_date) || "—";
 
-  // Academic info block helper
   const academicItems = [
-    {
-      label: "University",
-      value: profile.university || "—",
-      icon: FiHome,
-    },
-    {
-      label: collegeLabel,
-      value: profile.college || "—",
-      icon: FiBookOpen,
-    },
-    {
-      label: "Department",
-      value: profile.department || "—",
-      icon: FiLayers,
-    },
-    {
-      label: "Level",
-      value: levelStr,
-      icon: FiUser,
-    },
+    { label: "University", value: profile.university || "—", icon: FiHome },
+    { label: collegeLabel, value: profile.college || "—", icon: FiBookOpen },
+    { label: "Department", value: profile.department || "—", icon: FiLayers },
+    { label: "Level", value: levelStr, icon: FiUser },
   ];
+
+  const hasWeekly = Boolean(
+    statsOverview.weeklyBestScore ||
+      statsOverview.weeklyBestTime ||
+      statsOverview.weeklyBestTotalQuestions,
+  );
+  const weeklyPercent = parseInt(statsOverview.weeklyBestScore, 10);
 
   return (
     <div className="min-h-[100dvh] bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors duration-500 pb-24">
@@ -561,9 +648,9 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
         </div>
       )}
 
-      {/* QuizBolt Site Standard Header with Back Button */}
+      {/* Top bar — the name lives in the identity card, so the bar just labels the page */}
       <header className="sticky top-0 z-40 border-b border-slate-200/70 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4 lg:px-8">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3.5 lg:px-8">
           <button
             type="button"
             onClick={() =>
@@ -577,11 +664,11 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
             <FiArrowLeft size={20} />
           </button>
           <div className="text-center min-w-0 px-2">
-            <h1 className="text-lg font-black tracking-tight truncate">
-              {profile.full_name || "Scholar"}
-            </h1>
+            <p className="text-sm font-black tracking-tight truncate">
+              Scholar Profile
+            </p>
             <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 truncate">
-              {profile.user_name ? `@${profile.user_name}` : "Scholar Profile"}
+              {profile.user_name ? `@${profile.user_name}` : "QuizBolt"}
             </p>
           </div>
           <div className="size-11 shrink-0" />
@@ -589,12 +676,10 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
       </header>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        {/* ── DESKTOP TWO-COLUMN / MOBILE SINGLE COLUMN ────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-8 items-start">
-          {/* ── LEFT COLUMN (Sticky on desktop) ───────────────────────────── */}
-          <aside className="lg:sticky lg:top-24 space-y-5">
-            {/* Identity Card */}
-            <div className="bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-3xl p-5 sm:p-5.5 shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 lg:gap-8 items-start">
+          {/* ── LEFT: Identity ───────────────────────────────────────────── */}
+          <aside className="lg:sticky lg:top-24">
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-3xl p-5 shadow-sm">
               <ProfileHeader
                 userProfile={profile}
                 rank={rank}
@@ -603,252 +688,234 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
                 onToast={showToast}
               />
 
-              {/* Academic info (below divider in identity card) - 2x2 compact grid */}
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/60">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400 mb-2.5 px-1">
+              {/* Academic details — stacked rows so long department names are never cut off */}
+              <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700/60">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 mb-1 px-1">
                   Academic details
                 </p>
-                <div className="grid grid-cols-2 gap-2">
+                <dl className="divide-y divide-slate-100 dark:divide-slate-700/50">
                   {academicItems.map((item) => (
                     <div
                       key={item.label}
-                      className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center min-w-0"
+                      className="flex items-start gap-3 py-2.5 px-1"
                     >
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center gap-1.5 truncate">
-                        {React.createElement(item.icon, {
-                          size: 11,
-                          className: "shrink-0 text-slate-400",
-                        })}
-                        <span className="truncate">{item.label}</span>
+                      <span className="size-8 rounded-xl bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center shrink-0 text-slate-400">
+                        {React.createElement(item.icon, { size: 14 })}
                       </span>
-                      <span
-                        className="font-bold text-xs text-slate-900 dark:text-white truncate mt-0.5"
-                        title={item.value}
-                      >
-                        {item.value}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          {item.label}
+                        </dt>
+                        <dd className="text-[13px] font-bold text-slate-900 dark:text-white break-words leading-snug mt-0.5">
+                          {item.value}
+                        </dd>
+                      </div>
                     </div>
                   ))}
-                </div>
+                </dl>
               </div>
             </div>
           </aside>
 
-          {/* ── RIGHT COLUMN (Sections stacked) ───────────────────────────── */}
-          <main className="space-y-5">
-            {/* 1. Study Activity — Hero Banner (most engaging, leads the page) */}
-            <section aria-labelledby="study-activity-title">
-              <h2
-                id="study-activity-title"
-                className="text-xs font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400 mb-3 px-1"
+          {/* ── RIGHT: Stats, ordered by importance ──────────────────────── */}
+          <main className="space-y-6 min-w-0">
+            {/* 1. THIS WEEK — the hero. It's what the leaderboard ranks on. */}
+            <section aria-labelledby="this-week-title">
+              <SectionTitle
+                id="this-week-title"
+                aside={
+                  rank ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-full border border-amber-200/50 dark:border-amber-800/40">
+                      <FiAward size={11} />
+                      Leaderboard {rank}
+                    </span>
+                  ) : null
+                }
               >
-                Study Activity
-              </h2>
-              <div className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-3xl overflow-hidden shadow-sm">
-                {/* Streak hero row */}
-                <div className="flex items-stretch divide-x divide-slate-100 dark:divide-slate-700/60">
-                  {/* Current Streak — featured */}
-                  <div className="flex-1 flex flex-col items-center justify-center gap-1.5 px-4 py-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/10">
-                    <div className="flex items-center gap-1.5">
-                      <FaFire className="text-orange-500 size-5" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-600 dark:text-orange-400">
-                        Current Streak
-                      </span>
+                This Week
+              </SectionTitle>
+
+              {hasWeekly ? (
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-900/20 dark:shadow-blue-950/40">
+                  {/* soft decorative glow */}
+                  <div className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-white/10 blur-2xl" />
+
+                  <div className="relative p-5 sm:p-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-100/80 mb-4">
+                      Best attempt
+                    </p>
+
+                    <div className="flex items-center gap-5 sm:gap-7">
+                      <ScoreRing percent={weeklyPercent} />
+
+                      <div className="grid grid-cols-2 gap-x-5 gap-y-3 flex-1 min-w-0">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100/80 flex items-center gap-1.5">
+                            <FiClock size={11} /> Time
+                          </p>
+                          <p className="text-xl sm:text-2xl font-black tabular-nums truncate">
+                            {formatBestTime(statsOverview.weeklyBestTime)}
+                          </p>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100/80 flex items-center gap-1.5">
+                            <FiList size={11} /> Questions
+                          </p>
+                          <p className="text-xl sm:text-2xl font-black tabular-nums">
+                            {statsOverview.weeklyBestTotalQuestions || "—"}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-4xl font-black text-slate-900 dark:text-white leading-none">
+                  </div>
+
+                  {statsOverview.weeklyBestCourseId && (
+                    <div className="relative flex items-center gap-3 px-5 sm:px-6 py-3.5 bg-black/15 border-t border-white/10">
+                      <FiBook size={15} className="shrink-0 text-blue-100" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100/80">
+                          Course
+                        </p>
+                        <p className="text-sm font-black truncate">
+                          {formatCourseCode(statsOverview.weeklyBestCourseId)}
+                          {weeklyCourseTitle && (
+                            <span className="font-medium text-blue-100/90">
+                              {" "}
+                              — {weeklyCourseTitle}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-800/40 p-6 text-center">
+                  <div className="size-11 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center mb-3">
+                    <FiTarget size={20} />
+                  </div>
+                  <p className="text-sm font-black text-slate-700 dark:text-slate-200">
+                    No attempt this week yet
+                  </p>
+                  <p className="text-xs font-medium text-slate-400 mt-1">
+                    A new best attempt will show up here after the next quiz.
+                  </p>
+                </div>
+              )}
+            </section>
+
+            {/* 2. STREAK — compact, one glance */}
+            <section aria-labelledby="study-activity-title">
+              <SectionTitle id="study-activity-title">
+                Study Activity
+              </SectionTitle>
+              <div className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-3xl shadow-sm overflow-hidden">
+                <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700/60">
+                  <div className="flex flex-col items-center justify-center gap-1 px-3 py-5 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/10">
+                    <FaFire
+                      className={`size-5 ${currentStreak > 0 ? "text-orange-500" : "text-slate-400"}`}
+                    />
+                    <span className="text-3xl font-black leading-none text-slate-900 dark:text-white tabular-nums mt-1">
                       {currentStreak}
                     </span>
-                    <span className="text-[11px] font-bold text-orange-500 dark:text-orange-400">
-                      {currentStreak === 1 ? "day" : "days"}
+                    <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400 text-center">
+                      Day streak
                     </span>
                   </div>
 
-                  {/* Best Streak */}
-                  <div className="flex-1 flex flex-col items-center justify-center gap-1.5 px-4 py-6">
-                    <div className="flex items-center gap-1.5">
-                      <FiAward className="text-amber-500 size-4" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">
-                        Best Streak
-                      </span>
-                    </div>
-                    <span className="text-4xl font-black text-slate-900 dark:text-white leading-none">
+                  <div className="flex flex-col items-center justify-center gap-1 px-3 py-5">
+                    <FiAward className="size-5 text-amber-500" />
+                    <span className="text-3xl font-black leading-none text-slate-900 dark:text-white tabular-nums mt-1">
                       {bestStreak}
                     </span>
-                    <span className="text-[11px] font-bold text-amber-500 dark:text-amber-400">
-                      {bestStreak === 1 ? "day" : "days"}
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 text-center">
+                      Best streak
                     </span>
                   </div>
-                </div>
 
-                {/* Last studied footer */}
-                <div className="flex items-center gap-2.5 px-5 py-3 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/60">
-                  <FiClock className="text-slate-400 size-3.5 shrink-0" />
-                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
-                    Last studied
-                  </span>
-                  <span className="ml-auto text-sm font-black text-slate-700 dark:text-slate-200">
-                    {lastStudiedLabel}
-                  </span>
+                  <div className="flex flex-col items-center justify-center gap-1 px-3 py-5">
+                    <FiClock className="size-5 text-slate-400" />
+                    <span className="text-lg font-black leading-none text-slate-900 dark:text-white mt-2 text-center">
+                      {lastStudiedLabel}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 text-center">
+                      Last studied
+                    </span>
+                  </div>
                 </div>
               </div>
             </section>
 
-            {/* 2. Performance — merged stats + best result */}
+            {/* 3. ALL-TIME STATS — separate tiles instead of a cramped row */}
             <section aria-labelledby="performance-title">
-              <h2
-                id="performance-title"
-                className="text-xs font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-400 mb-3 px-1"
-              >
-                Performance
-              </h2>
-              <div className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-3xl overflow-hidden shadow-sm">
-                {/* Key metrics row */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-700/60">
-                  <div className="flex flex-col gap-1 px-5 py-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <FiAward className="text-blue-500 size-3 shrink-0" />
-                      Best Score (All Time)
-                    </span>
-                    <span className="text-2xl font-black text-slate-900 dark:text-white">
-                      {statsOverview.bestScore || "—"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-1 px-5 py-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <FiList className="text-purple-500 size-3 shrink-0" />
-                      Quizzes
-                    </span>
-                    <span className="text-2xl font-black text-slate-900 dark:text-white">
-                      {statsOverview.quizzesTaken ?? "—"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-1 px-5 py-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <FiClock className="text-teal-500 size-3 shrink-0" />
-                      Avg Score
-                    </span>
-                    <span className="text-2xl font-black text-slate-900 dark:text-white">
-                      {statsOverview.averageScore || "—"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-1 px-5 py-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <FiAlertCircle className="text-rose-400 size-3 shrink-0" />
-                      Questions
-                    </span>
-                    <span className="text-2xl font-black text-slate-900 dark:text-white">
-                      {statsOverview.totalQuestionsAnswered ?? "—"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-1 px-5 py-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <FiRepeat className="text-indigo-500 size-3 shrink-0" />
-                      Retakes
-                    </span>
-                    <span className="text-2xl font-black text-slate-900 dark:text-white">
-                      {statsOverview.retakesCount ?? 0}
-                    </span>
-                  </div>
-                </div>
+              <SectionTitle id="performance-title">All-time stats</SectionTitle>
 
-                {/* Best attempt (this week) divider row */}
-                {(statsOverview.weeklyBestScore ||
-                  statsOverview.weeklyBestTime ||
-                  statsOverview.weeklyBestTotalQuestions) && (
-                  <>
-                    <div className="px-5 py-2.5 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/60 flex items-center gap-2">
-                      <FiAward className="text-amber-500 size-3.5 shrink-0" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-                        Best Attempt (This Week)
-                      </span>
-                      {rank && (
-                        <span className="ml-auto text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-800/40">
-                          Leaderboard {rank}
-                        </span>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700/60 px-5 py-4">
-                      <div className="flex flex-col gap-0.5 pr-4">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          Score
-                        </span>
-                        <span className="text-xl font-black text-slate-900 dark:text-white">
-                          {statsOverview.weeklyBestScore || "—"}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-0.5 px-4">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          Time
-                        </span>
-                        <span className="text-xl font-black text-slate-900 dark:text-white truncate">
-                          {formatBestTime(statsOverview.weeklyBestTime)}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-0.5 pl-4">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          Questions
-                        </span>
-                        <span className="text-xl font-black text-slate-900 dark:text-white">
-                          {statsOverview.weeklyBestTotalQuestions || "—"}
-                        </span>
-                      </div>
-                    </div>
-                  </>
-                )}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <StatTile
+                  icon={FiZap}
+                  label="Best score"
+                  value={statsOverview.bestScore || "—"}
+                  iconClass="text-blue-500"
+                />
+                <StatTile
+                  icon={FiTrendingUp}
+                  label="Avg score"
+                  value={statsOverview.averageScore || "—"}
+                  iconClass="text-teal-500"
+                />
+                <StatTile
+                  icon={FiList}
+                  label="Quizzes"
+                  value={statsOverview.quizzesTaken ?? "—"}
+                  iconClass="text-purple-500"
+                />
+                <StatTile
+                  icon={FiAlertCircle}
+                  label="Questions"
+                  value={statsOverview.totalQuestionsAnswered ?? "—"}
+                  iconClass="text-rose-400"
+                />
+              </div>
 
-                {/* Best course (this week) — course from the weekly best attempt, same as leaderboard */}
-                {statsOverview.weeklyBestCourseId && (
-                  <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/60 flex items-center gap-3">
-                    <div className="size-9 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                      <FiBook size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Best Course (This Week)
-                      </p>
-                      <p className="text-sm font-black text-slate-900 dark:text-white truncate">
-                        {statsOverview.weeklyBestCourseId?.replace(
-                          /([A-Za-z]+)(\d+)/,
-                          "$1 $2",
-                        )}
-                        {weeklyCourseTitle && (
-                          <span className="font-medium text-slate-500 dark:text-slate-400">
-                            {" "}
-                            — {weeklyCourseTitle}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Best course (overall) footer */}
-                {statsOverview.bestCourseId && (
-                  <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/60 flex items-center gap-3">
-                    <div className="size-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                      <FiBook size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Best Course (This Semester)
-                      </p>
-                      <p className="text-sm font-black text-slate-900 dark:text-white truncate">
-                        {statsOverview.bestCourseId?.replace(
-                          /([A-Za-z]+)(\d+)/,
-                          "$1 $2",
-                        )}
-                        {courseTitle && (
-                          <span className="font-medium text-slate-500 dark:text-slate-400">
-                            {" "}
-                            — {courseTitle}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                )}
+              {/* Retakes — secondary info, so it's a quiet footnote rather than a full tile */}
+              <div className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/60">
+                <FiRepeat className="text-indigo-500 size-3.5 shrink-0" />
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Retakes
+                </span>
+                <span className="text-[11px] text-slate-400 hidden sm:inline">
+                  · not counted in rankings
+                </span>
+                <span className="ml-auto text-sm font-black text-slate-700 dark:text-slate-200 tabular-nums">
+                  {statsOverview.retakesCount ?? 0}
+                </span>
               </div>
             </section>
+
+            {/* 4. BEST COURSE */}
+            {statsOverview.bestCourseId && (
+              <section aria-labelledby="best-course-title">
+                <SectionTitle id="best-course-title">Best course</SectionTitle>
+                <div className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-3xl p-4 shadow-sm flex items-center gap-4">
+                  <div className="size-11 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <FiBook size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      This semester
+                    </p>
+                    <p className="text-sm font-black text-slate-900 dark:text-white leading-snug">
+                      {formatCourseCode(statsOverview.bestCourseId)}
+                    </p>
+                    {courseTitle && (
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug">
+                        {courseTitle}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
           </main>
         </div>
       </div>
