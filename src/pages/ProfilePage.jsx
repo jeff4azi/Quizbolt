@@ -13,6 +13,7 @@ import {
   FiAlertCircle,
   FiCheckCircle,
   FiHelpCircle,
+  FiRepeat,
 } from "react-icons/fi";
 import { FaFire } from "react-icons/fa";
 import { supabase } from "../supabaseClient";
@@ -221,15 +222,14 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
       setProfile(profileData);
       setIsPremium(profileData.is_premium === true);
 
-      // 2. Fetch attempts for stats overview
+      // 2. Fetch all attempts (including retakes) for stats overview
       const { data: attemptsData } = await withTimeout(
         supabase
           .from("exam_attempts")
           .select(
             "id, course_id, score, total_questions, time_taken, date_taken, is_retake, university, type",
           )
-          .eq("user_id", profileData.id)
-          .eq("is_retake", false),
+          .eq("user_id", profileData.id),
         12000,
         "Loading attempts timed out.",
       );
@@ -272,6 +272,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
           weeklyBestTime: location.state.stats.bestTime,
           weeklyBestTotalQuestions: location.state.stats.bestTotalQuestions,
           weeklyBestCourseId: location.state.stats.bestCourseId,
+          retakesCount: 0,
         };
       }
       return {
@@ -286,8 +287,15 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
         weeklyBestTime: null,
         weeklyBestTotalQuestions: null,
         weeklyBestCourseId: null,
+        retakesCount: 0,
       };
     }
+
+    // Separate retake attempts — retakes are excluded from all best
+    // attempt/course calculations (matching leaderboard behaviour) but
+    // counted separately for the "Retakes" stat.
+    const nonRetakeAttempts = attempts.filter((a) => !a.is_retake);
+    const retakesCount = attempts.length - nonRetakeAttempts.length;
 
     let totalScorePercent = 0;
     let totalQuestions = 0;
@@ -302,7 +310,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
     const weekStartMs = new Date(getCurrentWeekStartIso()).getTime();
     let weeklyBest = null;
 
-    attempts.forEach((a) => {
+    nonRetakeAttempts.forEach((a) => {
       const qCount = Number(a.total_questions) || 0;
       const score = Number(a.score) || 0;
       totalQuestions += qCount;
@@ -365,7 +373,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
       }
     });
 
-    const quizzesTaken = attempts.length;
+    const quizzesTaken = nonRetakeAttempts.length;
     const averageScore =
       quizzesTaken > 0
         ? `${Math.round(totalScorePercent / quizzesTaken)}%`
@@ -394,6 +402,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
       weeklyBestTime: weeklyBest?.time_taken ?? null,
       weeklyBestTotalQuestions: weeklyBest?.total_questions ?? null,
       weeklyBestCourseId: weeklyBest?.course_id ?? null,
+      retakesCount,
     };
   }, [attempts, activeCourseCodes, location.state]);
 
@@ -694,11 +703,11 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
               </h2>
               <div className="bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 rounded-3xl overflow-hidden shadow-sm">
                 {/* Key metrics row */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-700/60">
+                <div className="grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-700/60">
                   <div className="flex flex-col gap-1 px-5 py-4">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                       <FiAward className="text-blue-500 size-3 shrink-0" />
-                      Best Score
+                      Best Score (All Time)
                     </span>
                     <span className="text-2xl font-black text-slate-900 dark:text-white">
                       {statsOverview.bestScore || "—"}
@@ -729,6 +738,15 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
                     </span>
                     <span className="text-2xl font-black text-slate-900 dark:text-white">
                       {statsOverview.totalQuestionsAnswered ?? "—"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 px-5 py-4">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <FiRepeat className="text-indigo-500 size-3 shrink-0" />
+                      Retakes
+                    </span>
+                    <span className="text-2xl font-black text-slate-900 dark:text-white">
+                      {statsOverview.retakesCount ?? 0}
                     </span>
                   </div>
                 </div>
