@@ -830,7 +830,7 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Best Course (All Time)
+                        Best Course (This Semester)
                       </p>
                       <p className="text-sm font-black text-slate-900 dark:text-white truncate">
                         {statsOverview.bestCourseId?.replace(
