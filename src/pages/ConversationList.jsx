@@ -76,10 +76,10 @@ const ConversationList = () => {
 
   // Categorize conversations
   const requests = conversations.filter(
-    (c) => c.connectionState === "request_received"
+    (c) => c.connectionState === "request_received",
   );
   const activeChats = conversations.filter(
-    (c) => c.connectionState !== "request_received"
+    (c) => c.connectionState !== "request_received",
   );
 
   const filterChats = (list) => {
@@ -89,7 +89,7 @@ const ConversationList = () => {
       (c) =>
         c.fullName?.toLowerCase().includes(q) ||
         c.username?.toLowerCase().includes(q) ||
-        c.department?.toLowerCase().includes(q)
+        c.department?.toLowerCase().includes(q),
     );
   };
 
@@ -155,7 +155,10 @@ const ConversationList = () => {
 
         {/* ── SEARCH MODE: SCHOLARS ON QUIZBOLT ────────────────────────────── */}
         {isSearchActive && (
-          <section aria-labelledby="scholars-search-title" className="space-y-2.5">
+          <section
+            aria-labelledby="scholars-search-title"
+            className="space-y-2.5"
+          >
             <div className="flex items-center justify-between px-1">
               <h2
                 id="scholars-search-title"
@@ -197,7 +200,8 @@ const ConversationList = () => {
                   No scholars found
                 </h3>
                 <p className="text-xs text-slate-400 dark:text-slate-400 max-w-xs mx-auto mt-1">
-                  Couldn&apos;t find anyone matching &ldquo;{search}&rdquo;. Try searching with their username or full name.
+                  Couldn&apos;t find anyone matching &ldquo;{search}&rdquo;. Try
+                  searching with their username or full name.
                 </p>
               </div>
             ) : (
@@ -207,13 +211,16 @@ const ConversationList = () => {
                   const existingConv = conversations.find(
                     (c) =>
                       c.userId === user.id ||
-                      c.username?.toLowerCase() === user.user_name?.toLowerCase()
+                      c.username?.toLowerCase() ===
+                        user.user_name?.toLowerCase(),
                   );
 
                   return (
                     <div
                       key={user.id}
-                      onClick={() => navigate(`/messages/${user.user_name || user.id}`)}
+                      onClick={() =>
+                        navigate(`/u/${user.user_name || user.id}`)
+                      }
                       className="px-4 py-3.5 sm:px-5 hover:bg-slate-50 dark:hover:bg-slate-700/30 active:bg-slate-100 dark:active:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between gap-3.5"
                     >
                       <div className="flex items-center gap-3.5 min-w-0 flex-1">
@@ -246,7 +253,9 @@ const ConversationList = () => {
                             {user.department && (
                               <>
                                 <span>•</span>
-                                <span className="truncate">{user.department}</span>
+                                <span className="truncate">
+                                  {user.department}
+                                </span>
                               </>
                             )}
                           </div>
@@ -260,26 +269,64 @@ const ConversationList = () => {
 
                       {/* Status / Message Action */}
                       <div className="shrink-0">
-                        {existingConv?.connectionState === "accepted" ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                            <FiCheck size={12} />
-                            <span>Chat</span>
-                          </span>
-                        ) : existingConv?.connectionState === "request_sent" ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-500/20">
-                            <FiClock size={12} />
-                            <span>Pending</span>
-                          </span>
-                        ) : existingConv?.connectionState === "request_received" ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-xs font-bold border border-blue-500/20">
-                            <span>Review</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-transform">
-                            <FiSend size={11} />
-                            <span>Message</span>
-                          </span>
-                        )}
+                        {(() => {
+                          const state = existingConv?.connectionState;
+                          const goChat = (e) => {
+                            e.stopPropagation();
+                            navigate(`/messages/${user.user_name || user.id}`);
+                          };
+
+                          if (state === "accepted") {
+                            return (
+                              <button
+                                type="button"
+                                onClick={goChat}
+                                aria-label={`Open chat with ${user.full_name || user.user_name}`}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 active:scale-95 transition-transform"
+                              >
+                                <FiCheck size={12} />
+                                <span>Chat</span>
+                              </button>
+                            );
+                          }
+                          if (state === "request_sent") {
+                            return (
+                              <button
+                                type="button"
+                                onClick={goChat}
+                                aria-label={`Connection request to ${user.full_name || user.user_name} is pending`}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-900/50 active:scale-95 transition-transform"
+                              >
+                                <FiClock size={12} />
+                                <span>Pending</span>
+                              </button>
+                            );
+                          }
+                          if (state === "request_received") {
+                            return (
+                              <button
+                                type="button"
+                                onClick={goChat}
+                                aria-label={`Review connection request from ${user.full_name || user.user_name}`}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-xs font-bold border border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-900/50 active:scale-95 transition-transform"
+                              >
+                                <span>Review</span>
+                              </button>
+                            );
+                          }
+                          // connectionState === "none" (not connected yet)
+                          return (
+                            <button
+                              type="button"
+                              onClick={goChat}
+                              aria-label={`Send a message to ${user.full_name || user.user_name}`}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-transform"
+                            >
+                              <FiSend size={11} />
+                              <span>Message</span>
+                            </button>
+                          );
+                        })()}
                       </div>
                     </div>
                   );
@@ -370,7 +417,9 @@ const ConversationList = () => {
             {loading ? (
               <div className="py-12 text-center bg-white dark:bg-slate-800/40 rounded-3xl border border-slate-200/70 dark:border-slate-800/60 p-6 shadow-sm">
                 <div className="size-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin mx-auto mb-3" />
-                <p className="text-xs text-slate-400">Loading your conversations...</p>
+                <p className="text-xs text-slate-400">
+                  Loading your conversations...
+                </p>
               </div>
             ) : filteredActive.length === 0 ? (
               <div className="py-12 text-center bg-white dark:bg-slate-800/40 rounded-3xl border border-slate-200/70 dark:border-slate-800/60 p-6 shadow-sm">
@@ -381,19 +430,22 @@ const ConversationList = () => {
                   No conversations yet
                 </h3>
                 <p className="text-xs text-slate-400 dark:text-slate-400 max-w-xs mx-auto mt-1">
-                  Search any scholar by username above to send a message request!
+                  Search any scholar by username above to send a message
+                  request!
                 </p>
               </div>
             ) : (
               <div className="rounded-3xl bg-white dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-700/40 overflow-hidden shadow-sm">
                 {filteredActive.map((conv) => {
-                  const msgs = Array.isArray(conv.messages) ? conv.messages : [];
+                  const msgs = Array.isArray(conv.messages)
+                    ? conv.messages
+                    : [];
                   const lastMsg = msgs[msgs.length - 1];
                   const isMe = lastMsg?.sender === "me";
                   const hasUnread = Boolean(
                     conv.unread &&
-                      (conv.unreadCount > 0 ||
-                        conv.connectionState === "request_received")
+                    (conv.unreadCount > 0 ||
+                      conv.connectionState === "request_received"),
                   );
                   const online = isOnline(conv.userId);
 
@@ -444,7 +496,10 @@ const ConversationList = () => {
                               {isMe && lastMsg && (
                                 <span className="shrink-0 text-slate-400 dark:text-slate-400 inline-flex items-center">
                                   {lastMsg.status === "sent" ? (
-                                    <IoCheckmark size={14} className="opacity-70" />
+                                    <IoCheckmark
+                                      size={14}
+                                      className="opacity-70"
+                                    />
                                   ) : (
                                     <IoCheckmarkDone
                                       size={15}
