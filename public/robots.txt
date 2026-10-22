@@ -1,4 +1,44 @@
+# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Allow: /
 
+# ── Allow Public Indexable Pages ───────────────────────────────────────────
+Allow: /$
+Allow: /landing
+Allow: /about
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /login
+Allow: /signup
+
+# ── Disallow Authenticated, User-Specific & Exam Portal Routes ──────────────
+Disallow: /exam
+Disallow: /results
+Disallow: /review-answers
+Disallow: /choose-course
+Disallow: /bookmarks
+Disallow: /history
+Disallow: /leaderboard
+Disallow: /messages
+Disallow: /messages/
+Disallow: /u/
+Disallow: /profile
+Disallow: /settings
+Disallow: /flashcards
+Disallow: /match
+Disallow: /match-result
+Disallow: /test
+Disallow: /test-result
+Disallow: /test-leaderboard
+Disallow: /premium
+Disallow: /referral-dashboard
+Disallow: /submit-review
+Disallow: /upload-profile-pic
+Disallow: /onboarding
+Disallow: /reset-password
+Disallow: /update-password
+Disallow: /confirm-email
+Disallow: /ad-stats
+
+# ── Sitemap ─────────────────────────────────────────────────────────────────
 Sitemap: https://quizbolt.site/sitemap.xml
