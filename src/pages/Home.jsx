@@ -14,6 +14,7 @@ import matchIcon from "../images/match.webp";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 
 import { useMessaging } from "../hooks/useMessaging";
+import { usePresence } from "../hooks/usePresence";
 import { IoChatbubblesOutline } from "react-icons/io5";
 
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -229,6 +230,7 @@ const Home = ({
   useDocumentTitle("Home | QuizBolt");
   const navigate = useNavigate();
   const { totalUnreadCount } = useMessaging();
+  const { onlineCount } = usePresence();
   const cachedDashboard = useMemo(
     () => readHomeDashboardCache(userProfile?.id),
     [userProfile?.id],
@@ -537,6 +539,8 @@ const Home = ({
     ? "Scholar"
     : userProfile?.full_name?.split(" ")[0] || "Scholar";
 
+  const activeStudyDate = stats.lastStudyDate || userProfile?.last_study_date;
+
   return (
     <div className="max-w-2xl mx-auto lg:max-w-full relative min-h-[100dvh] flex flex-col bg-gray-50 dark:bg-slate-900 transition-colors duration-500 overflow-x-hidden">
       {/* Top Navigation Bar */}
@@ -549,7 +553,7 @@ const Home = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {stats.lastStudyDate && (
+          {activeStudyDate && (
             <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white dark:bg-slate-800/70 border border-gray-200 dark:border-slate-700 text-slate-400 dark:text-slate-500">
               <FiClock size={11} />
               <span className="text-[10px] font-semibold">
@@ -558,12 +562,12 @@ const Home = ({
                   const yesterday = new Date(
                     Date.now() - 86400000,
                   ).toLocaleDateString("en-CA");
-                  const last = new Date(stats.lastStudyDate).toLocaleDateString(
+                  const last = new Date(activeStudyDate).toLocaleDateString(
                     "en-CA",
                   );
                   if (last === today) return "Today";
                   if (last === yesterday) return "Yesterday";
-                  return new Date(stats.lastStudyDate).toLocaleDateString(
+                  return new Date(activeStudyDate).toLocaleDateString(
                     "en-US",
                     {
                       weekday: "short",
@@ -616,14 +620,47 @@ const Home = ({
                 👋
               </span>
             </h1>
-            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 max-w-md">
-              Ready for your next challenge?
-            </p>
+            <div className="mt-2.5 flex items-center gap-2.5 flex-wrap">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Ready for your next challenge?
+              </p>
+              {onlineCount > 0 && (
+                <div
+                  className="lg:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold shadow-2xs"
+                  title={`${onlineCount} ${onlineCount === 1 ? "scholar" : "scholars"} online right now`}
+                >
+                  <span className="relative flex size-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
+                  </span>
+                  <span>
+                    {onlineCount} {onlineCount === 1 ? "scholar" : "scholars"} online
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Last Study Date — desktop only */}
-          {stats.lastStudyDate && (
-            <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-slate-800/70 border border-gray-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 shadow-sm w-fit">
+          {/* Desktop Right Side Header Badges */}
+          <div className="hidden lg:flex items-center gap-3">
+            {onlineCount > 0 && (
+              <div
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-slate-800/70 border border-emerald-500/25 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold shadow-xs"
+                title={`${onlineCount} ${onlineCount === 1 ? "scholar" : "scholars"} online right now`}
+              >
+                <span className="relative flex size-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
+                </span>
+                <span>
+                  {onlineCount} {onlineCount === 1 ? "scholar" : "scholars"} online
+                </span>
+              </div>
+            )}
+
+            {/* Last Study Date — desktop only */}
+            {activeStudyDate && (
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-slate-800/70 border border-gray-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 shadow-sm w-fit">
               <FiClock
                 size={16}
                 className="text-slate-400 dark:text-slate-500"
@@ -634,12 +671,12 @@ const Home = ({
                   const yesterday = new Date(
                     Date.now() - 86400000,
                   ).toLocaleDateString("en-CA");
-                  const last = new Date(stats.lastStudyDate).toLocaleDateString(
+                  const last = new Date(activeStudyDate).toLocaleDateString(
                     "en-CA",
                   );
                   if (last === today) return "Today";
                   if (last === yesterday) return "Yesterday";
-                  return new Date(stats.lastStudyDate).toLocaleDateString(
+                  return new Date(activeStudyDate).toLocaleDateString(
                     "en-US",
                     {
                       weekday: "short",
@@ -652,6 +689,7 @@ const Home = ({
             </div>
           )}
         </div>
+      </div>
 
         {/* Notification Reminder Card */}
         {showNotificationCard && !notificationsEnabled && (

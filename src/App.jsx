@@ -227,6 +227,7 @@ function App() {
           isPremium: profileData?.is_premium === true,
           avatar_url: profileData?.avatar_url || null,
           avatar_public_id: profileData?.avatar_public_id || null,
+          last_study_date: profileData?.last_study_date || null,
         };
 
         setUserProfile(profile);

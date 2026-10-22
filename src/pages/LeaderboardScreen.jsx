@@ -390,7 +390,7 @@ const LeaderboardScreen = ({
     () => leaderboardEntries.map((e) => e.userId).filter(Boolean),
     [leaderboardEntries]
   );
-  const { isOnline } = usePresence(leaderboardUserIds);
+  const { isOnline, onlineCount } = usePresence(leaderboardUserIds);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors duration-500">
@@ -409,9 +409,28 @@ const LeaderboardScreen = ({
             </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">
-            <FaCrown className="text-xs" />
-            <span>Top performers only</span>
+          <div className="flex items-center gap-2">
+            {onlineCount > 0 && (
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold shadow-2xs"
+                title={`${onlineCount} ${onlineCount === 1 ? "scholar" : "scholars"} online right now`}
+              >
+                <span className="relative flex size-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
+                </span>
+                <span className="hidden sm:inline">
+                  {onlineCount} {onlineCount === 1 ? "scholar" : "scholars"} online
+                </span>
+                <span className="sm:hidden">
+                  {onlineCount} online
+                </span>
+              </div>
+            )}
+            <div className="hidden sm:flex items-center gap-2 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">
+              <FaCrown className="text-xs" />
+              <span>Top performers only</span>
+            </div>
           </div>
         </div>
       </header>

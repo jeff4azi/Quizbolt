@@ -11,6 +11,7 @@ import { supabase } from "../supabaseClient";
  */
 export const usePresence = (watchUserIds = []) => {
   const [onlineIds, setOnlineIds] = useState(new Set());
+  const [onlineCount, setOnlineCount] = useState(1);
   const lastHeartbeatRef = useRef(0);
 
   // 1. Heartbeat current user globally
@@ -67,20 +68,31 @@ export const usePresence = (watchUserIds = []) => {
     };
   }, []);
 
-  // 2. Poll presence for watched IDs
+  // 2. Poll presence for watched IDs & total count
   const serializedIds = JSON.stringify(
     Array.isArray(watchUserIds) ? watchUserIds.filter(Boolean).sort() : []
   );
 
   const fetchPresence = useCallback(async () => {
-    const ids = JSON.parse(serializedIds);
-    if (!ids || ids.length === 0) {
-      setOnlineIds(new Set());
-      return;
-    }
-
     try {
       const threshold = new Date(Date.now() - 90_000).toISOString();
+
+      // Always fetch platform-wide online count
+      const { count: totalOnline, error: countErr } = await supabase
+        .from("user_presence")
+        .select("*", { count: "exact", head: true })
+        .gte("last_seen", threshold);
+
+      if (!countErr && typeof totalOnline === "number") {
+        setOnlineCount(Math.max(totalOnline, 1));
+      }
+
+      const ids = JSON.parse(serializedIds);
+      if (!ids || ids.length === 0) {
+        setOnlineIds(new Set());
+        return;
+      }
+
       const { data, error } = await supabase
         .from("user_presence")
         .select("user_id")
@@ -115,6 +127,7 @@ export const usePresence = (watchUserIds = []) => {
   return {
     isOnline,
     onlineIds,
+    onlineCount,
     refreshPresence: fetchPresence,
   };
 };
