@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { FiAlertTriangle, FiX, FiCheck } from "react-icons/fi";
 
 const REPORT_REASONS = [
@@ -25,6 +26,7 @@ export const ReportModal = ({
   const [errorMsg, setErrorMsg] = useState("");
 
   if (!isOpen) return null;
+  if (typeof document === "undefined") return null;
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
@@ -54,12 +56,15 @@ export const ReportModal = ({
     }
   };
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="report-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={() => {
+        if (!isSubmitting) onClose();
+      }}
     >
       <div
         className="relative w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 shadow-2xl animate-in zoom-in-95 duration-200"
@@ -194,7 +199,8 @@ export const ReportModal = ({
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

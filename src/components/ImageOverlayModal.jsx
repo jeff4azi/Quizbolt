@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { FiX } from "react-icons/fi";
 import { DEFAULT_AVATAR_URL } from "./Avatar";
 
@@ -27,6 +28,7 @@ const ImageOverlayModal = ({ isOpen, onClose, avatarUrl, fullName }) => {
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+  if (typeof document === "undefined") return null;
 
   const handleError = () => {
     if (imgSrc !== DEFAULT_AVATAR_URL) {
@@ -34,9 +36,9 @@ const ImageOverlayModal = ({ isOpen, onClose, avatarUrl, fullName }) => {
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200 p-4"
+      className="fixed inset-0 z-[140] flex items-center justify-center bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -74,7 +76,8 @@ const ImageOverlayModal = ({ isOpen, onClose, avatarUrl, fullName }) => {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
