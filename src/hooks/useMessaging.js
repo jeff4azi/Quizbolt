@@ -86,12 +86,12 @@ export const useMessaging = (username = null) => {
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleFocus);
 
-    // Refresh every 30s while active
+    // Refresh every 8s while active (responsive notifications without WebSocket limits)
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") {
         refreshConversations();
       }
-    }, 30000);
+    }, 8000);
 
     return () => {
       window.removeEventListener("focus", handleFocus);
