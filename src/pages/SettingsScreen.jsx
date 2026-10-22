@@ -36,6 +36,7 @@ import {
   unsubscribeFromPush,
   getCachedNotificationsEnabled,
 } from "../lib/push";
+import { useInAppNotifications } from "../context/InAppNotificationContext";
 
 const Toggle = ({ checked, onClick, disabled }) => (
   <button
@@ -150,6 +151,7 @@ const SettingsScreen = ({
   const [isUpdatingPush, setIsUpdatingPush] = useState(false);
   const [highlightNotifications, setHighlightNotifications] = useState(false);
   const notificationsSectionRef = useRef(null);
+  const { inAppPopupsEnabled, toggleInAppPopups } = useInAppNotifications();
 
   const [installPrompt, setInstallPrompt] = useState(null);
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -428,6 +430,17 @@ const SettingsScreen = ({
                 checked={pushNotificationsEnabled}
                 onClick={handlePushToggle}
                 disabled={isUpdatingPush}
+              />
+            </SettingRow>
+
+            <SettingRow
+              icon={FiMessageCircle}
+              title="In-app message popups"
+              description="Show pop-up banners for incoming messages and requests."
+            >
+              <Toggle
+                checked={inAppPopupsEnabled}
+                onClick={toggleInAppPopups}
               />
             </SettingRow>
           </div>

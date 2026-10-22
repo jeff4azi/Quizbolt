@@ -57,6 +57,7 @@ import ProfilePage from "./pages/ProfilePage";
 import ConversationList from "./pages/ConversationList";
 import ChatView from "./pages/ChatView";
 import { usePresence } from "./hooks/usePresence";
+import { InAppNotificationProvider } from "./context/InAppNotificationContext";
 
 function App() {
   // Global presence heartbeat across the entire application (exam, flashcards, home, etc.)
@@ -779,7 +780,8 @@ function App() {
         <LoadingScreen text="Authenticating" />
       ) : (
         <AuthProvider>
-          <Routes>
+          <InAppNotificationProvider>
+            <Routes>
             <Route
               path="/login"
               element={
@@ -1119,7 +1121,8 @@ function App() {
             {/* Catch-all 404 route */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
-        </AuthProvider>
+        </InAppNotificationProvider>
+      </AuthProvider>
       )}
       <SpeedInsights />
     </Router>
