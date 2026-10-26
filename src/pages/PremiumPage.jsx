@@ -301,7 +301,7 @@ const PremiumPage = ({ userProfile, onActivatePremium, isPremium }) => {
                   Bank Name
                 </p>
                 <p className="font-bold text-slate-800 dark:text-white mt-0.5">
-                  Palmpay
+                  Opay
                 </p>
               </div>
               <div className="bg-gray-50 dark:bg-slate-900/40 p-3 rounded-xl border border-gray-100/50 dark:border-slate-800 relative group">
@@ -310,11 +310,11 @@ const PremiumPage = ({ userProfile, onActivatePremium, isPremium }) => {
                 </p>
                 <div className="flex items-center justify-between mt-0.5">
                   <p className="font-bold text-slate-800 dark:text-white tracking-wide">
-                    8911504030
+                    6427960527
                   </p>
                   <button
                     type="button"
-                    onClick={() => handleCopy("8911504030")}
+                    onClick={() => handleCopy("6427960527")}
                     className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     title="Copy Account Number"
                   >
