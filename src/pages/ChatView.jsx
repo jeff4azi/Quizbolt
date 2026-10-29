@@ -227,6 +227,7 @@ const ChatView = () => {
     deleteMessage,
     accept,
     decline,
+    cancelRequest,
     block,
     markAsRead,
     report,
@@ -411,6 +412,30 @@ const ChatView = () => {
     setTimeout(() => el.classList.remove("reply-flash"), 1200);
   }, []);
 
+  /* ── cancel request ────────────────────────────────────────────────── */
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancelRequest = async () => {
+    if (
+      !window.confirm(
+        `Cancel your connection request to ${displayName}? This will remove them from your messages.`
+      )
+    ) {
+      return;
+    }
+    setMenuOpen(false);
+    setIsCancelling(true);
+    try {
+      await cancelRequest();
+      navigate("/messages", { replace: true });
+    } catch (err) {
+      console.error("Failed to cancel request:", err);
+      alert("Could not cancel request. Please try again.");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   /* ── block ──────────────────────────────────────────────────────────── */
   const handleBlockUser = async () => {
     if (window.confirm(`Are you sure you want to block @${username}?`)) {
@@ -565,6 +590,18 @@ const ChatView = () => {
                     <FiUser className="size-4 text-slate-400" />
                     <span>View Profile</span>
                   </Link>
+
+                  {connectionState === "request_sent" && (
+                    <button
+                      type="button"
+                      disabled={isCancelling}
+                      onClick={handleCancelRequest}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition text-left"
+                    >
+                      <FiX className="size-4 shrink-0" />
+                      <span>{isCancelling ? "Cancelling..." : "Cancel Request"}</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -856,10 +893,18 @@ const ChatView = () => {
 
             {/* ── COMPOSER LOCKED NOTE ───────────────────────────────────────────── */}
             {connectionState === "request_sent" && (
-              <div className="bg-amber-500/15 dark:bg-amber-900/30 backdrop-blur-xl border border-amber-500/30 px-4 py-2.5 rounded-2xl text-center shadow-lg">
-                <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
-                  You can send more messages once {displayName} accepts your request.
+              <div className="bg-amber-500/15 dark:bg-amber-900/30 backdrop-blur-xl border border-amber-500/30 px-4 py-3 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-2.5 text-center sm:text-left">
+                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                  Request pending. You can send more messages once {displayName} accepts.
                 </p>
+                <button
+                  type="button"
+                  disabled={isCancelling}
+                  onClick={handleCancelRequest}
+                  className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700/60 text-amber-800 dark:text-amber-200 text-xs font-bold hover:bg-amber-50 dark:hover:bg-amber-900/40 active:scale-95 transition shrink-0 disabled:opacity-50"
+                >
+                  {isCancelling ? "Cancelling..." : "Cancel Request"}
+                </button>
               </div>
             )}
 

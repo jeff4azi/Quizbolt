@@ -323,6 +323,39 @@ export const declineConnection = async (connectionId) => {
 };
 
 /**
+ * Cancels a sent connection request.
+ * Deletes associated request messages and removes the connection row,
+ * completely clearing the chat and removing the person from the user's chat screen.
+ */
+export const cancelConnectionRequest = async (connectionId, myId) => {
+  if (!connectionId || !myId) return false;
+
+  // 1. Delete messages tied to this connection
+  const { error: msgErr } = await supabase
+    .from("messages")
+    .delete()
+    .eq("connection_id", connectionId);
+
+  if (msgErr) {
+    console.warn("Notice: could not bulk delete messages for cancelled connection:", msgErr);
+  }
+
+  // 2. Delete the connection row itself (ensuring the requester was myId and state is request_sent)
+  const { error: connErr } = await supabase
+    .from("connections")
+    .delete()
+    .eq("id", connectionId)
+    .eq("requester_id", myId);
+
+  if (connErr) {
+    console.error("Error cancelling connection request:", connErr);
+    throw connErr;
+  }
+
+  return true;
+};
+
+/**
  * Blocks a user.
  */
 export const blockUser = async (myId, theirUserId, connectionId = null) => {

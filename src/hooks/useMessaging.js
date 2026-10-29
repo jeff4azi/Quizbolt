@@ -16,6 +16,7 @@ import {
   findConnection,
   fetchProfileByUsernameOrId,
   deleteMessage as deleteMessageFn,
+  cancelConnectionRequest,
 } from "../services/messagingService";
 
 export const useMessaging = (username = null) => {
@@ -410,6 +411,19 @@ export const useMessaging = (username = null) => {
     [currentUserId, refreshActiveMessages, refreshConversations]
   );
 
+  const cancelRequest = useCallback(async () => {
+    if (!connectionId || !currentUserId) return false;
+    try {
+      await cancelConnectionRequest(connectionId, currentUserId);
+      setCurrentMessages([]);
+      await refreshConversations();
+      return true;
+    } catch (err) {
+      console.error("Failed to cancel connection request:", err);
+      throw err;
+    }
+  }, [connectionId, currentUserId, refreshConversations]);
+
   return {
     currentUserId,
     conversations,
@@ -422,6 +436,7 @@ export const useMessaging = (username = null) => {
     deleteMessage,
     accept,
     decline,
+    cancelRequest,
     block,
     markAsRead,
     report,
