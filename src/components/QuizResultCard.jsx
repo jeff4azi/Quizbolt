@@ -7,14 +7,13 @@ import Logo from "../images/Logo";
 
 /**
  * QuizResultCard
- * A pure CSS/SVG vector card representing a scholar's exam result.
- * Highly bandwidth-efficient (~0KB image footprint) and renders crisp on any device.
+ * Identical 1:1 vector recreation of the QuizBolt sharable result image.
+ * Uses pure CSS/SVG (0KB image payload) so it renders flawlessly at any resolution.
  */
 const QuizResultCard = ({
   data,
   interactive = true,
   onAcceptChallenge = null,
-  isMe = false,
 }) => {
   const navigate = useNavigate();
 
@@ -33,44 +32,22 @@ const QuizResultCard = ({
     timestamp,
   } = data;
 
-  const minutes = String(Math.floor(durationSeconds / 60)).padStart(2, "0");
-  const seconds = String(durationSeconds % 60).padStart(2, "0");
+  const formatNum = (num) => String(num).padStart(2, "0");
+  const timeTakenSafe = durationSeconds || 0;
+  const minutes = String(Math.floor(timeTakenSafe / 60)).padStart(2, "0");
+  const seconds = String(timeTakenSafe % 60).padStart(2, "0");
 
   const formattedDate = (() => {
     try {
       const d = new Date(date || timestamp || Date.now());
-      return d.toLocaleDateString([], {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+      return d.toLocaleDateString();
     } catch {
-      return "";
+      return new Date().toLocaleDateString();
     }
   })();
 
   const typeLabel =
     questionType === "theory" ? "thy" : questionType === "fib" ? "fib" : "obj";
-
-  // Score visual tier
-  const tierColor =
-    scorePercentage >= 70
-      ? "from-blue-600 to-indigo-600"
-      : scorePercentage >= 50
-        ? "from-sky-500 to-blue-600"
-        : "from-amber-500 to-rose-600";
-
-  const strokeColor =
-    scorePercentage >= 70
-      ? "#2563EB"
-      : scorePercentage >= 50
-        ? "#0284C7"
-        : "#D97706";
-
-  const radius = 50;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset =
-    circumference - (Math.min(100, Math.max(0, scorePercentage)) / 100) * circumference;
 
   const handleChallengeClick = (e) => {
     e.stopPropagation();
@@ -84,128 +61,120 @@ const QuizResultCard = ({
 
   return (
     <div
-      className={`w-full max-w-[340px] sm:max-w-[360px] rounded-3xl p-5 flex flex-col justify-between overflow-hidden relative shadow-lg select-none transition-all ${
-        isMe
-          ? "bg-slate-900 text-white border border-slate-700/80 shadow-blue-950/40"
-          : "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200/90 dark:border-slate-800 shadow-slate-200/60 dark:shadow-none"
-      }`}
+      className="w-[330px] sm:w-[350px] min-h-[480px] bg-slate-50 dark:bg-gray-950 p-6 sm:p-7 flex flex-col justify-between shadow-2xl rounded-[2.5rem] overflow-hidden relative border border-slate-200/80 dark:border-gray-800 select-none transition-all"
       style={{ fontFamily: "Inter, sans-serif" }}
     >
-      {/* Background ambient glow */}
-      <div
-        className={`absolute -top-12 -right-12 size-36 bg-blue-500/15 dark:bg-blue-400/10 blur-3xl rounded-full pointer-events-none`}
-      />
-
-      {/* ── 1. HEADER ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="relative shrink-0">
+      {/* ── 1. Header (Identical to sharable image) ────────────────────────── */}
+      <div className="flex justify-between items-start">
+        {/* User Pill */}
+        <div className="flex items-center gap-3 bg-white dark:bg-gray-900 p-2 pr-4 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
+          <div className="relative">
             <Avatar
               avatarUrl={user.avatarUrl}
               size="sm"
-              className="ring-2 ring-blue-500/20"
+              className="ring-2 ring-blue-50 dark:ring-blue-900/20"
             />
             {user.isPremium && (
-              <div
-                className="absolute -top-1 -right-1 bg-amber-400 rounded-full p-0.5 border-2 border-white dark:border-slate-900 shadow-xs"
-                title="Premium Scholar"
-              >
+              <div className="absolute -top-1 -right-1 bg-amber-400 rounded-full p-0.5 border-2 border-white dark:border-gray-900 shadow-xs">
                 <FaCrown className="text-[6px] text-white" />
               </div>
             )}
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-black truncate leading-tight">
-              {user.fullName || user.username || "QuizBolt Scholar"}
+          <div className="flex flex-col">
+            <span className="text-[12px] font-bold text-slate-800 dark:text-white leading-none truncate max-w-[120px]">
+              {user.fullName || user.username || "Scholar"}
             </span>
-            <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-tight truncate">
+            <span className="text-[9px] font-medium text-slate-400 mt-1 uppercase tracking-tight truncate max-w-[120px]">
               {user.college || "Scholar"}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <div className="size-7 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center p-1">
-            <Logo className="w-5 h-5" />
+        {/* Logo & Date */}
+        <div className="flex flex-col items-end gap-1">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-xl">
+            <Logo className="w-8 h-8" />
           </div>
-          {formattedDate && (
-            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 tracking-tight">
-              {formattedDate}
-            </span>
-          )}
+          <span className="text-[9px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-tighter text-center mr-1.5">
+            {formattedDate}
+          </span>
         </div>
       </div>
 
-      {/* ── 2. CENTER SCORE & COURSE ────────────────────────────────────────── */}
-      <div className="flex flex-col items-center justify-center py-4 relative z-10">
-        {/* Course badge */}
-        <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/40 border border-blue-200/60 dark:border-blue-700/40 mb-3 shadow-xs">
-          <span className="size-1.5 rounded-full bg-blue-600 animate-pulse" />
-          <p className="text-[11px] font-black text-blue-600 dark:text-blue-300 uppercase tracking-wider truncate max-w-[220px]">
+      {/* ── 2. Center Score (Identical to sharable image) ─────────────────── */}
+      <div className="flex flex-col items-center justify-center py-2">
+        <div className="bg-blue-100/50 dark:bg-blue-900/30 px-3 py-1 rounded-full mb-3 shadow-xs">
+          <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest truncate max-w-[240px]">
             {courseName || courseId || "Exam"}
           </p>
         </div>
 
-        {/* Circular SVG Gauge */}
         <div className="relative flex items-center justify-center">
-          <div className="absolute size-24 bg-blue-500/10 dark:bg-blue-400/15 blur-2xl rounded-full" />
-          <svg className="size-32 -rotate-90 drop-shadow-sm">
-            {/* Background ring */}
+          <div className="absolute size-32 bg-blue-200 dark:bg-blue-500 blur-[40px] opacity-30 dark:opacity-20 rounded-full" />
+          <svg className="size-36 sm:size-40 -rotate-90 drop-shadow-sm">
+            {/* Background Circle */}
             <circle
-              cx="64"
-              cy="64"
-              r={radius}
+              cx="80"
+              cy="80"
+              r="70"
               stroke="currentColor"
-              className="text-slate-100 dark:text-slate-800"
-              strokeWidth="8"
+              className="text-slate-200 dark:text-gray-800"
+              strokeWidth="10"
               fill="transparent"
             />
-            {/* Progress ring */}
+            {/* Progress Circle (Blue Part) */}
             <circle
-              cx="64"
-              cy="64"
-              r={radius}
-              stroke={strokeColor}
-              strokeWidth="8"
+              cx="80"
+              cy="80"
+              r="70"
+              stroke="#2563EB"
+              strokeWidth="10"
               fill="transparent"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
+              strokeDasharray={2 * Math.PI * 70}
+              strokeDashoffset={
+                2 * Math.PI * 70 -
+                (Math.min(100, Math.max(0, scorePercentage)) / 100) * (2 * Math.PI * 70)
+              }
               strokeLinecap="round"
               className="transition-all duration-700 ease-out"
             />
           </svg>
-          <div className="absolute flex flex-col items-center text-center">
-            <span className="text-3xl sm:text-4xl font-black tracking-tight leading-none">
+          <div className="absolute flex flex-col items-center">
+            <span className="text-4xl sm:text-5xl font-black text-slate-800 dark:text-white tracking-tighter">
               {scorePercentage}
-              <span className="text-lg font-bold text-blue-500">%</span>
+              <span className="text-xl">%</span>
             </span>
-            <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">
               Accuracy
             </span>
           </div>
         </div>
       </div>
 
-      {/* ── 3. STATS PILLS ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-2.5 pb-3 relative z-10">
-        <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-800 flex flex-col items-center">
-          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+      {/* ── 3. Stats Grid (Identical to sharable image) ────────────────────── */}
+      <div className="flex gap-3 px-1">
+        {/* Questions count pill */}
+        <div className="bg-white dark:bg-gray-900 p-3.5 sm:p-4 rounded-[2rem] flex-1 flex flex-col items-center shadow-sm border border-slate-100 dark:border-gray-800">
+          <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">
             Questions
           </span>
           <div className="flex items-baseline gap-1">
-            <span className="text-base font-black leading-none">{total}</span>
-            <span className="text-[9px] font-extrabold text-blue-500 uppercase">
+            <span className="text-lg sm:text-xl font-black text-slate-800 dark:text-white">
+              {formatNum(total)}
+            </span>
+            <span className="text-[9px] font-bold text-blue-500 uppercase">
               {typeLabel}
             </span>
           </div>
         </div>
 
-        <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-800 flex flex-col items-center">
-          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+        {/* Duration pill */}
+        <div className="bg-slate-900 dark:bg-slate-800 p-3.5 sm:p-4 rounded-[2rem] flex-1 flex flex-col items-center shadow-lg">
+          <span className="text-[9px] font-bold text-slate-500 uppercase mb-1">
             Duration
           </span>
           <div className="flex items-baseline gap-1">
-            <span className="text-base font-black leading-none">
+            <span className="text-lg sm:text-xl font-black text-white">
               {minutes}:{seconds}
             </span>
             <span className="text-[9px] font-bold text-slate-400 uppercase">
@@ -215,27 +184,28 @@ const QuizResultCard = ({
         </div>
       </div>
 
-      {/* ── 4. CHALLENGE BANNER & CTA ───────────────────────────────────────── */}
-      <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-col items-center text-center relative z-10">
-        <p className="text-xs font-black tracking-tight italic text-slate-700 dark:text-slate-200 line-clamp-2 mb-2.5">
+      {/* ── 4. Footer CTA & Interactive Button ─────────────────────────────── */}
+      <div className="text-center pt-3 flex flex-col items-center gap-1.5">
+        <p className="text-[13px] sm:text-[14px] font-extrabold text-slate-800 dark:text-slate-200 tracking-tight italic line-clamp-2">
           "{caption}"
         </p>
+        <p className="text-[10px] text-slate-400 font-medium">
+          Challenge yourself at{" "}
+          <span className="text-blue-600 dark:text-blue-400 font-bold">
+            quizbolt.site
+          </span>
+        </p>
 
-        {interactive ? (
+        {interactive && (
           <button
             type="button"
             onClick={handleChallengeClick}
-            className={`w-full py-2.5 px-4 rounded-2xl font-black text-xs text-white shadow-md flex items-center justify-center gap-2 active:scale-98 transition-transform bg-gradient-to-r ${tierColor} hover:opacity-95`}
+            className="mt-2 w-full py-2.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white text-xs font-black shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition"
           >
-            <FiZap size={14} className="fill-current" />
+            <FiZap size={14} className="fill-current text-amber-300" />
             <span>Accept Challenge</span>
             <FiArrowRight size={13} />
           </button>
-        ) : (
-          <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-            <span>Take quiz on</span>
-            <span className="text-blue-500 font-bold">quizbolt.site</span>
-          </div>
         )}
       </div>
     </div>
