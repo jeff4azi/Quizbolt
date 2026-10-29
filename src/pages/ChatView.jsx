@@ -21,8 +21,13 @@ import { useMessaging } from "../hooks/useMessaging";
 import { usePresence } from "../hooks/usePresence";
 import ReportModal from "../components/ReportModal";
 import useDocumentTitle from "../hooks/useDocumentTitle";
-import { supabase } from "../supabaseClient";
-import { fetchProfileByUsernameOrId } from "../services/messagingService";
+import {
+  fetchProfileByUsernameOrId,
+  isQuizResultPayload,
+  parseQuizResultPayload,
+  formatQuizResultPreview,
+} from "../services/messagingService";
+import QuizResultCard from "../components/QuizResultCard";
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 
@@ -70,8 +75,9 @@ const isMobileDevice = () => {
 const ReplyQuote = ({ replyToText, replyToSender, isMe, onClick }) => {
   if (!replyToText) return null;
 
+  const display = formatQuizResultPreview(replyToText);
   const truncated =
-    replyToText.length > 80 ? replyToText.slice(0, 80) + "…" : replyToText;
+    display.length > 80 ? display.slice(0, 80) + "…" : display;
 
   return (
     <button
@@ -104,10 +110,9 @@ const ReplyQuote = ({ replyToText, replyToSender, isMe, onClick }) => {
 /* ─── ReplyBar (composer preview strip) ──────────────────────────────────── */
 const ReplyBar = ({ replyingTo, displayName, onCancel }) => {
   if (!replyingTo) return null;
+  const display = formatQuizResultPreview(replyingTo.text);
   const truncated =
-    replyingTo.text.length > 80
-      ? replyingTo.text.slice(0, 80) + "…"
-      : replyingTo.text;
+    display.length > 80 ? display.slice(0, 80) + "…" : display;
 
   return (
     <div className="flex items-center gap-2 px-3 py-2 mb-1.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border-l-4 border-blue-500 animate-in slide-in-from-bottom-1 duration-150">
@@ -610,59 +615,109 @@ const ChatView = () => {
                       </button>
                     )}
 
-                    {/* Message Bubble (tap toggles reply action) */}
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedMsgId((prev) => (prev === msg.id ? null : msg.id));
-                      }}
-                      className={`relative max-w-[85%] sm:max-w-md px-3.5 pt-2.5 pb-2 rounded-2xl text-xs sm:text-sm shadow-sm leading-relaxed cursor-pointer select-text transition-all ${
-                        isMe
-                          ? "bg-blue-600 text-white rounded-tr-xs shadow-sm dark:shadow-none"
-                          : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-tl-xs border border-slate-200/70 dark:border-slate-700/60"
-                      } ${
-                        isSelected
-                          ? "ring-2 ring-blue-400/80 ring-offset-2 ring-offset-[#F8FAFC] dark:ring-offset-[#0F172A]"
-                          : ""
-                      }`}
-                    >
-                      {/* Reply quote preview (if this is a reply to another text) */}
-                      {msg.replyToText && (
-                        <ReplyQuote
-                          replyToText={msg.replyToText}
-                          replyToSender={msg.replyToSender}
-                          isMe={isMe}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (msg.replyToId) scrollToMessage(msg.replyToId);
-                          }}
-                        />
-                      )}
-
-                      <p className="whitespace-pre-wrap break-words inline font-medium">
-                        {msg.text}
-                      </p>
-
-                      {/* Inline timestamp & status ticks */}
-                      <span
-                        className={`inline-flex items-center gap-1 float-right mt-1 ml-3 select-none text-[10px] font-medium leading-none ${
-                          isMe
-                            ? "text-blue-100/80"
-                            : "text-slate-400 dark:text-slate-400"
+                    {/* Message Bubble or Quiz Result Card */}
+                    {isQuizResultPayload(msg.text) ? (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedMsgId((prev) => (prev === msg.id ? null : msg.id));
+                        }}
+                        className={`flex flex-col gap-1 cursor-pointer transition-all ${
+                          isSelected
+                            ? "ring-2 ring-blue-400/80 rounded-3xl p-1"
+                            : ""
                         }`}
                       >
-                        <span>{formatMessageTime(msg.timestamp)}</span>
-                        {isMe && (
-                          <span className="inline-flex items-center shrink-0">
-                            {msg.status === "sent" ? (
-                              <IoCheckmark size={14} className="text-blue-200" title="Sent" />
-                            ) : (
-                              <IoCheckmarkDone size={15} className="text-sky-200" title="Delivered / Read" />
-                            )}
-                          </span>
+                        {msg.replyToText && (
+                          <ReplyQuote
+                            replyToText={msg.replyToText}
+                            replyToSender={msg.replyToSender}
+                            isMe={isMe}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (msg.replyToId) scrollToMessage(msg.replyToId);
+                            }}
+                          />
                         )}
-                      </span>
-                    </div>
+                        <QuizResultCard
+                          data={parseQuizResultPayload(msg.text)}
+                          isMe={isMe}
+                          interactive={true}
+                          onAcceptChallenge={(course) => {
+                            navigate(`/choose-course?course=${encodeURIComponent(course)}`);
+                          }}
+                        />
+                        <div
+                          className={`flex items-center gap-1 mt-0.5 px-2 text-[10px] font-medium select-none ${
+                            isMe ? "justify-end text-slate-400" : "justify-start text-slate-400"
+                          }`}
+                        >
+                          <span>{formatMessageTime(msg.timestamp)}</span>
+                          {isMe && (
+                            <span className="inline-flex items-center shrink-0">
+                              {msg.status === "sent" ? (
+                                <IoCheckmark size={14} className="text-slate-400" title="Sent" />
+                              ) : (
+                                <IoCheckmarkDone size={15} className="text-sky-500" title="Delivered / Read" />
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedMsgId((prev) => (prev === msg.id ? null : msg.id));
+                        }}
+                        className={`relative max-w-[85%] sm:max-w-md px-3.5 pt-2.5 pb-2 rounded-2xl text-xs sm:text-sm shadow-sm leading-relaxed cursor-pointer select-text transition-all ${
+                          isMe
+                            ? "bg-blue-600 text-white rounded-tr-xs shadow-sm dark:shadow-none"
+                            : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-tl-xs border border-slate-200/70 dark:border-slate-700/60"
+                        } ${
+                          isSelected
+                            ? "ring-2 ring-blue-400/80 ring-offset-2 ring-offset-[#F8FAFC] dark:ring-offset-[#0F172A]"
+                            : ""
+                        }`}
+                      >
+                        {/* Reply quote preview (if this is a reply to another text) */}
+                        {msg.replyToText && (
+                          <ReplyQuote
+                            replyToText={msg.replyToText}
+                            replyToSender={msg.replyToSender}
+                            isMe={isMe}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (msg.replyToId) scrollToMessage(msg.replyToId);
+                            }}
+                          />
+                        )}
+
+                        <p className="whitespace-pre-wrap break-words inline font-medium">
+                          {msg.text}
+                        </p>
+
+                        {/* Inline timestamp & status ticks */}
+                        <span
+                          className={`inline-flex items-center gap-1 float-right mt-1 ml-3 select-none text-[10px] font-medium leading-none ${
+                            isMe
+                              ? "text-blue-100/80"
+                              : "text-slate-400 dark:text-slate-400"
+                          }`}
+                        >
+                          <span>{formatMessageTime(msg.timestamp)}</span>
+                          {isMe && (
+                            <span className="inline-flex items-center shrink-0">
+                              {msg.status === "sent" ? (
+                                <IoCheckmark size={14} className="text-blue-200" title="Sent" />
+                              ) : (
+                                <IoCheckmarkDone size={15} className="text-sky-200" title="Delivered / Read" />
+                              )}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    )}
 
                     {/* For 'them' messages: Reply button appears on the right when tapped */}
                     {!isMe && isSelected && (

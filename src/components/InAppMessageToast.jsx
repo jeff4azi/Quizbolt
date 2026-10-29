@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FiX } from "react-icons/fi";
 import { FaCrown } from "react-icons/fa";
 import Avatar from "./Avatar";
+import { formatQuizResultPreview } from "../services/messagingService";
 
 /**
  * InAppMessageToast
@@ -179,7 +180,7 @@ const InAppMessageToast = ({
               Sent you a message request
             </span>
           ) : (
-            notification.text || "Sent you a message"
+            formatQuizResultPreview(notification.text) || "Sent you a message"
           )}
         </p>
       </div>

@@ -605,3 +605,65 @@ export const subscribeToMessages = () => {
 export const subscribeToIncoming = () => {
   return () => {};
 };
+
+/**
+ * ── Quiz Result Sharing Helpers ──────────────────────────────────────────────
+ */
+
+export const isQuizResultPayload = (text) => {
+  if (!text || typeof text !== "string") return false;
+  const trimmed = text.trim();
+  return (
+    trimmed.startsWith('{"_type":"quiz_result_card"') ||
+    trimmed.startsWith('{"_type": "quiz_result_card"')
+  );
+};
+
+export const parseQuizResultPayload = (text) => {
+  if (!isQuizResultPayload(text)) return null;
+  try {
+    const data = JSON.parse(text.trim());
+    if (data._type === "quiz_result_card") {
+      return data;
+    }
+  } catch (e) {
+    console.error("Failed to parse quiz result payload:", e);
+  }
+  return null;
+};
+
+export const formatQuizResultPreview = (text) => {
+  const parsed = parseQuizResultPayload(text);
+  if (!parsed) return text;
+  const course = parsed.courseName || parsed.courseId || "Quiz";
+  const pct =
+    parsed.scorePercentage !== undefined ? ` (${parsed.scorePercentage}%)` : "";
+  return `🎯 Quiz Result: ${course}${pct}`;
+};
+
+export const shareQuizResultToConnections = async ({
+  myId,
+  connections,
+  payload,
+}) => {
+  if (
+    !myId ||
+    !Array.isArray(connections) ||
+    connections.length === 0 ||
+    !payload
+  ) {
+    return { successCount: 0, total: 0 };
+  }
+
+  const jsonText = JSON.stringify(payload);
+  const results = await Promise.allSettled(
+    connections.map((c) =>
+      sendMessage(c.connectionId, myId, jsonText, c.recipientId)
+    )
+  );
+
+  const successCount = results.filter(
+    (r) => r.status === "fulfilled" && r.value
+  ).length;
+  return { successCount, total: connections.length };
+};

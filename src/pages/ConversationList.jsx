@@ -16,7 +16,7 @@ import Avatar from "../components/Avatar";
 import { useMessaging } from "../hooks/useMessaging";
 import { usePresence } from "../hooks/usePresence";
 import useDocumentTitle from "../hooks/useDocumentTitle";
-import { searchUsers } from "../services/messagingService";
+import { searchUsers, formatQuizResultPreview } from "../services/messagingService";
 
 const formatTimeAgo = (dateStr) => {
   if (!dateStr) return "";
@@ -389,7 +389,9 @@ const ConversationList = () => {
 
                         <div className="flex items-center justify-between gap-2 mt-0.5">
                           <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">
-                            {lastMsg?.text || "Sent you a message request"}
+                            {lastMsg
+                              ? formatQuizResultPreview(lastMsg.text)
+                              : "Sent you a message request"}
                           </p>
                           <span className="text-xs font-bold text-blue-600 dark:text-blue-400 shrink-0 flex items-center gap-0.5">
                             Review <FiChevronRight size={13} />
@@ -517,8 +519,8 @@ const ConversationList = () => {
                               >
                                 {lastMsg
                                   ? isMe
-                                    ? `You: ${lastMsg.text}`
-                                    : lastMsg.text
+                                    ? `You: ${formatQuizResultPreview(lastMsg.text)}`
+                                    : formatQuizResultPreview(lastMsg.text)
                                   : "Start a conversation"}
                               </p>
                             </div>

@@ -16,6 +16,7 @@ import Avatar from "../components/Avatar";
 /* import NavBar from "../components/NavBar"; */
 import Logo from "../images/Logo";
 import { toPng } from "html-to-image";
+import ShareResultModal from "../components/ShareResultModal";
 
 const FREE_DAILY_RETRY_KEY = "free_retry_date";
 
@@ -45,6 +46,7 @@ const ResultScreen = ({
   const [showAd, setShowAd] = useState(true);
   const [isPremiumOverlayOpen, setPremiumOverlayOpen] = useState(false);
   const [isRetryOverlayOpen, setRetryOverlayOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [freeRetryAvailable, setFreeRetryAvailable] = useState(canUseFreeRetry);
@@ -62,7 +64,13 @@ const ResultScreen = ({
   const formatNum = (num) => String(num).padStart(2, "0");
   const answeredCount = answers.filter((a) => a !== undefined).length;
 
-  const handleShareImage = async () => {
+  const handleExportImage = async ({
+    caption = "",
+    title = "",
+    text = "",
+    url = "",
+    downloadOnly = false,
+  } = {}) => {
     setSharing(true);
     if (!shareRef.current) return;
 
@@ -79,11 +87,12 @@ const ResultScreen = ({
         type: "image/png",
       });
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (!downloadOnly && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: "My QuizBolt Result",
-          text: `I scored ${scorePercentage}% in ${selectedCourse.name}`,
+          title: title || "My QuizBolt Result",
+          text: text || `I scored ${scorePercentage}% in ${selectedCourse.name}`,
+          url: url || undefined,
         });
         trackResultShare(selectedCourse.id, scorePercentage);
       } else {
@@ -94,9 +103,12 @@ const ResultScreen = ({
         trackResultShare(selectedCourse.id, scorePercentage);
       }
     } catch (err) {
-      console.error("Share failed:", err);
+      if (err.name !== "AbortError") {
+        console.error("Export image share failed:", err);
+      }
+    } finally {
+      setSharing(false);
     }
-    setSharing(false);
   };
 
   const timeTakenSafe = timeTaken ?? 0;
@@ -538,7 +550,7 @@ const ResultScreen = ({
         <ActionButton
           label={sharing ? "Sharing..." : "Share"}
           color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
-          onClick={handleShareImage}
+          onClick={() => setIsShareModalOpen(true)}
           icon={
             <path
               strokeLinecap="round"
@@ -710,6 +722,19 @@ const ResultScreen = ({
         confirmText="Get Premium"
         cancelText="Maybe tomorrow"
         icon={<FiRefreshCw size={32} />}
+      />
+
+      <ShareResultModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        course={selectedCourse}
+        results={results}
+        questions={questions}
+        questionType={questionType}
+        timeTaken={timeTakenSafe}
+        userProfile={userProfile}
+        isPremium={isPremium}
+        onExportImage={handleExportImage}
       />
 
       {/* <NavBar
