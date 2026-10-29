@@ -632,13 +632,14 @@ export const parseQuizResultPayload = (text) => {
   return null;
 };
 
-export const formatQuizResultPreview = (text) => {
+export const formatQuizResultPreview = (text, isMe = false) => {
   const parsed = parseQuizResultPayload(text);
   if (!parsed) return text;
-  const course = parsed.courseName || parsed.courseId || "Quiz";
-  const pct =
-    parsed.scorePercentage !== undefined ? ` (${parsed.scorePercentage}%)` : "";
-  return `🎯 Quiz Result: ${course}${pct}`;
+  const course = parsed.courseName || parsed.courseId || "a quiz";
+  if (isMe) {
+    return `You sent a challenge in ${course}`;
+  }
+  return `Challenged you in ${course}`;
 };
 
 export const shareQuizResultToConnections = async ({

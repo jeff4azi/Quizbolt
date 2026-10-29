@@ -141,8 +141,8 @@ const InAppMessageToast = ({
         transition: isDragging ? "none" : "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease",
         opacity: isExiting ? 0 : 1,
       }}
-      className={`group relative flex items-center gap-3.5 p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-900/15 dark:shadow-black/40 cursor-pointer select-none active:scale-[0.98] transition-transform ${
-        isExiting ? "scale-95 -translate-y-4" : "animate-in slide-in-from-top-6 duration-300"
+      className={`group relative flex items-center gap-3 p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-900/10 dark:shadow-black/30 cursor-pointer select-none active:scale-[0.98] transition-all ${
+        isExiting ? "scale-95 -translate-y-4 opacity-0" : "animate-in slide-in-from-top-6 duration-300"
       }`}
     >
       {/* Sender Avatar */}
@@ -162,7 +162,7 @@ const InAppMessageToast = ({
       {/* Message Info */}
       <div className="flex-1 min-w-0 pr-6">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate">
+          <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
             {notification.fullName || notification.username || "Scholar"}
           </p>
           <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 truncate">
@@ -188,7 +188,7 @@ const InAppMessageToast = ({
       {/* Badge / Pill and Dismiss Button */}
       <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
         {extraCount > 0 && (
-          <span className="px-1.5 py-0.5 rounded-full bg-blue-600 text-white text-[9px] font-black shrink-0">
+          <span className="px-1.5 py-0.5 rounded-full bg-blue-600 text-white text-[9px] font-bold shrink-0">
             +{extraCount}
           </span>
         )}
@@ -204,9 +204,6 @@ const InAppMessageToast = ({
           <FiX size={13} />
         </button>
       </div>
-
-      {/* Subtle indicator bar on the left edge */}
-      <div className="absolute left-0 inset-y-3 w-1 rounded-r-full bg-blue-600 dark:bg-blue-500" />
     </div>
   );
 };

@@ -16,7 +16,11 @@ import Avatar from "../components/Avatar";
 import { useMessaging } from "../hooks/useMessaging";
 import { usePresence } from "../hooks/usePresence";
 import useDocumentTitle from "../hooks/useDocumentTitle";
-import { searchUsers, formatQuizResultPreview } from "../services/messagingService";
+import {
+  searchUsers,
+  formatQuizResultPreview,
+  isQuizResultPayload,
+} from "../services/messagingService";
 
 const formatTimeAgo = (dateStr) => {
   if (!dateStr) return "";
@@ -518,9 +522,11 @@ const ConversationList = () => {
                                 }`}
                               >
                                 {lastMsg
-                                  ? isMe
-                                    ? `You: ${formatQuizResultPreview(lastMsg.text)}`
-                                    : formatQuizResultPreview(lastMsg.text)
+                                  ? isQuizResultPayload(lastMsg.text)
+                                    ? formatQuizResultPreview(lastMsg.text, isMe)
+                                    : isMe
+                                      ? `You: ${lastMsg.text}`
+                                      : lastMsg.text
                                   : "Start a conversation"}
                               </p>
                             </div>
