@@ -31,6 +31,8 @@ import {
   trackBookmarkToggle,
   trackPremiumGateHit,
 } from "../utils/analytics";
+import { gradeTheoryAnswer } from "../utils/theoryGrader";
+import { gradeFibAnswer } from "../utils/fibGrader";
 
 const FREE_FIB_LIMIT = 8;
 
@@ -186,54 +188,16 @@ const calculateTotalTime = (questionCount, isMath, isTheory, isFib) => {
   return Math.ceil((questionCount / 10) * timePer10);
 };
 
-// Theory grading
-const parseKeywords = (keywords) => {
-  if (Array.isArray(keywords)) return keywords;
-  if (typeof keywords === "string") {
-    try {
-      return JSON.parse(keywords);
-    } catch {
-      return [];
-    }
-  }
-  return [];
-};
+// Theory grading handled by ../utils/theoryGrader.js
 
-const gradeTheoryAnswer = (userAnswer, rawKeywords) => {
-  if (!userAnswer) return 0;
-  const keywords = parseKeywords(rawKeywords);
-  if (!Array.isArray(keywords) || keywords.length === 0) return 0;
-  const lower = userAnswer.toLowerCase();
-  const totalGroups = keywords.length;
-
-  const matchedGroups = keywords.filter((group) => {
-    if (!Array.isArray(group) || group.length === 0) return false;
-    return group.some((kw) => lower.includes(kw.toLowerCase()));
-  }).length;
-
-  return matchedGroups / totalGroups; // 0 to 1
-};
 
 const isTheoryQuestion = (q) =>
   q?.type === "theory" || Array.isArray(q?.keywords);
 
 const isFibQuestion = (q) => q?.type === "fib" || Array.isArray(q?.answers);
 
-// Grade a FIB question — answers is array of accepted-value groups per blank
-// userBlanks is an array of strings typed by the user
-const gradeFibAnswer = (userBlanks, answerGroups) => {
-  if (!Array.isArray(answerGroups) || answerGroups.length === 0) return 0;
-  if (!Array.isArray(userBlanks)) return 0;
-  let correct = 0;
-  for (let i = 0; i < answerGroups.length; i++) {
-    const group = answerGroups[i]; // e.g. ["Niger"] or ["third","3rd"]
-    const typed = (userBlanks[i] || "").trim().toLowerCase();
-    if (Array.isArray(group) && group.some((v) => v.toLowerCase() === typed)) {
-      correct++;
-    }
-  }
-  return correct / answerGroups.length; // fractional 0–1
-};
+// FIB grading handled by ../utils/fibGrader.js
+
 
 // Split question text on _____ sequences, return array of parts
 const splitFibQuestion = (text) => text.split(/_{2,}/g);
@@ -717,7 +681,7 @@ const ExamScreen = ({
 
     const correctCount = shuffledQuestions.reduce((acc, q, idx) => {
       if (isTheoryQuestion(q)) {
-        return acc + gradeTheoryAnswer(answers[idx], q.keywords); // fractional 0–1
+        return acc + gradeTheoryAnswer(answers[idx], q.keywords, q.model_answer); // fractional 0–1
       }
       if (isFibQuestion(q)) {
         return acc + gradeFibAnswer(answers[idx], q.answers); // fractional 0–1
@@ -755,7 +719,7 @@ const ExamScreen = ({
 
     const correctCount = shuffledQuestions.reduce((acc, q, idx) => {
       if (isTheoryQuestion(q)) {
-        return acc + gradeTheoryAnswer(answers[idx], q.keywords); // fractional 0–1
+        return acc + gradeTheoryAnswer(answers[idx], q.keywords, q.model_answer); // fractional 0–1
       }
       if (isFibQuestion(q)) {
         return acc + gradeFibAnswer(answers[idx], q.answers); // fractional 0–1

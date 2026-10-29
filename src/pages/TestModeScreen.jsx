@@ -26,6 +26,8 @@ import {
 } from "react-icons/fi";
 import { FaCrown, FaTrophy } from "react-icons/fa";
 import { withTimeout } from "../utils/withTimeout";
+import { gradeTheoryAnswer, parseKeywords } from "../utils/theoryGrader";
+import { gradeFibAnswer } from "../utils/fibGrader";
 const FREE_QUESTION_LIMIT = 11;
 
 // ─── Premium gate overlay ─────────────────────────────────────────────────────
@@ -73,50 +75,19 @@ const shuffle = (arr) => {
   return a;
 };
 
-const parseKeywords = (kw) => {
-  if (Array.isArray(kw)) return kw;
-  if (typeof kw === "string") {
-    try {
-      return JSON.parse(kw);
-    } catch {
-      return [];
-    }
-  }
-  return [];
-};
+// Theory grading handled by ../utils/theoryGrader.js
 
-const gradeTheory = (userAnswer, rawKw) => {
-  if (!userAnswer) return 0;
-  const kws = parseKeywords(rawKw);
-  if (!kws.length) return 0;
-  const lower = userAnswer.toLowerCase();
-  const matched = kws.filter(
-    (g) => Array.isArray(g) && g.some((k) => lower.includes(k.toLowerCase())),
-  ).length;
-  return matched / kws.length;
-};
 
-const gradeFib = (userBlanks, answerGroups) => {
-  if (!Array.isArray(answerGroups) || !Array.isArray(userBlanks)) return 0;
-  let correct = 0;
-  for (let i = 0; i < answerGroups.length; i++) {
-    const typed = (userBlanks[i] || "").trim().toLowerCase();
-    if (
-      Array.isArray(answerGroups[i]) &&
-      answerGroups[i].some((v) => v.toLowerCase() === typed)
-    )
-      correct++;
-  }
-  return correct / answerGroups.length;
-};
+// FIB grading handled by ../utils/fibGrader.js
+
 
 const isTheory = (q) => q?.type === "theory" || Array.isArray(q?.keywords);
 const isFib = (q) => q?.type === "fib" || Array.isArray(q?.answers);
 const splitFib = (text) => text.split(/_{2,}/g);
 
 const gradeQuestion = (q, answer) => {
-  if (isTheory(q)) return gradeTheory(answer, q.keywords);
-  if (isFib(q)) return gradeFib(answer, q.answers);
+  if (isTheory(q)) return gradeTheoryAnswer(answer, q.keywords, q.model_answer);
+  if (isFib(q)) return gradeFibAnswer(answer, q.answers);
   return answer === q.correct ? 1 : 0;
 };
 
@@ -1195,7 +1166,11 @@ const TestModeScreen = ({
                       {currentQuestion.model_answer ||
                         `Key points: ${parseKeywords(currentQuestion.keywords)
                           .map((group) =>
-                            Array.isArray(group) ? group[0] : group,
+                            typeof group === "object" && group?.primary
+                              ? group.primary
+                              : Array.isArray(group)
+                              ? group[0]
+                              : group,
                           )
                           .join(", ")}`}
                     </p>
