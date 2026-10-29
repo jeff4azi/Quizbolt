@@ -124,7 +124,44 @@ const ReviewAnswers = ({ questions, answers, selectedCourse, isPremium }) => {
                     </span>
                   </div>
 
-                  {(theoryEval.matchedConcepts.length > 0 || theoryEval.missedConcepts.length > 0) && (
+                  {theoryEval.conceptDetails && theoryEval.conceptDetails.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {theoryEval.conceptDetails
+                        .filter((c) => c.matched)
+                        .map((c, i) => (
+                          <span
+                            key={`hit-${i}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          >
+                            <FiCheck size={11} />
+                            <span>{c.primary}</span>
+                            {c.isSynonymMatch && (
+                              <span className="text-[10px] opacity-80 italic font-normal">
+                                (as "{c.matchedTerm}")
+                              </span>
+                            )}
+                          </span>
+                        ))}
+                      {theoryEval.conceptDetails
+                        .filter((c) => !c.matched)
+                        .map((c, i) => {
+                          const hasSynonyms = c.terms && c.terms.length > 1;
+                          const altText = hasSynonyms ? ` (or ${c.terms.slice(1).join(" / ")})` : "";
+                          return (
+                            <span
+                              key={`miss-${i}`}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-200/70 text-slate-700 dark:bg-slate-800 dark:text-slate-400 border border-slate-300/60 dark:border-slate-700"
+                            >
+                              <FiX size={11} />
+                              <span>{c.primary}</span>
+                              {hasSynonyms && (
+                                <span className="text-[10px] opacity-75 font-normal">{altText}</span>
+                              )}
+                            </span>
+                          );
+                        })}
+                    </div>
+                  ) : (theoryEval.matchedConcepts.length > 0 || theoryEval.missedConcepts.length > 0) && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {theoryEval.matchedConcepts.map((kw, i) => (
                         <span
@@ -167,10 +204,19 @@ const ReviewAnswers = ({ questions, answers, selectedCourse, isPremium }) => {
                         Expected Key Concepts
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-300">
-                        {theoryEval.matchedConcepts.concat(theoryEval.missedConcepts).join(", ") ||
-                          (Array.isArray(question.keywords)
-                            ? question.keywords.join(", ")
-                            : String(question.keywords || ""))}
+                        {theoryEval.conceptDetails && theoryEval.conceptDetails.length > 0
+                          ? theoryEval.conceptDetails
+                              .map((c) =>
+                                c.terms && c.terms.length > 1
+                                  ? `${c.primary} (or ${c.terms.slice(1).join(", ")})`
+                                  : c.primary
+                              )
+                              .join(" • ")
+                          : Array.isArray(question.keywords)
+                          ? question.keywords
+                              .map((k) => (Array.isArray(k) ? k.join(" or ") : k))
+                              .join(", ")
+                          : String(question.keywords || "")}
                       </div>
                     </div>
                   )

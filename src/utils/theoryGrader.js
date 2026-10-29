@@ -314,13 +314,32 @@ export const gradeTheoryDetailed = (userAnswer, rawKeywords, modelAnswer) => {
 
   const matchedConcepts = [];
   const missedConcepts = [];
+  const conceptDetails = [];
 
   for (const group of conceptGroups) {
     const match = matchConceptGroup(group, normAnswer, answerTokens, answerStems);
     if (match.matched) {
       matchedConcepts.push(group.primary);
+      conceptDetails.push({
+        primary: group.primary,
+        terms: group.terms,
+        matched: true,
+        matchedTerm: match.matchedTerm || group.primary,
+        matchedWord: match.matchedWord || null,
+        isSynonymMatch: match.matchedTerm
+          ? match.matchedTerm.toLowerCase().trim() !== group.primary.toLowerCase().trim()
+          : false,
+      });
     } else {
       missedConcepts.push(group.primary);
+      conceptDetails.push({
+        primary: group.primary,
+        terms: group.terms,
+        matched: false,
+        matchedTerm: null,
+        matchedWord: null,
+        isSynonymMatch: false,
+      });
     }
   }
 
@@ -373,6 +392,7 @@ export const gradeTheoryDetailed = (userAnswer, rawKeywords, modelAnswer) => {
     totalCount: totalConcepts,
     matchedConcepts,
     missedConcepts,
+    conceptDetails,
     overlapScore: Math.round(overlapScore * 100) / 100,
     status,
     feedback,
