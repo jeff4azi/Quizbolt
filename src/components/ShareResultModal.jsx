@@ -11,7 +11,7 @@ import {
   FiMessageSquare,
   FiExternalLink,
 } from "react-icons/fi";
-import { FaWhatsapp, FaCrown } from "react-icons/fa";
+import { FaCrown } from "react-icons/fa";
 import Avatar from "./Avatar";
 import QuizResultCard from "./QuizResultCard";
 import {
@@ -218,13 +218,6 @@ const ShareResultModal = ({
   const getShareText = () =>
     `🎯 I scored ${scorePercentage}% in ${courseName} on QuizBolt!\n"${caption}"\n\nCan you beat my score? Take the challenge:\n${challengeUrl}`;
 
-  // WhatsApp
-  const handleWhatsAppShare = () => {
-    const text = encodeURIComponent(getShareText());
-    const waUrl = `https://api.whatsapp.com/send?text=${text}`;
-    window.open(waUrl, "_blank", "noopener,noreferrer");
-  };
-
   // Copy Link / Text
   const handleCopyLink = async () => {
     try {
@@ -236,7 +229,7 @@ const ShareResultModal = ({
     }
   };
 
-  // Others / System Share API
+  // Main Share API (includes generated result image & caption)
   const handleSystemShare = async () => {
     if (onExportImage) {
       // Delegate to high-res image share
@@ -277,6 +270,17 @@ const ShareResultModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
+      `}</style>
       <div
         className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[85dvh] animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -341,7 +345,7 @@ const ShareResultModal = ({
             }`}
           >
             <FiShare2 size={14} />
-            <span>WhatsApp & Apps</span>
+            <span>Share via Apps</span>
           </button>
         </div>
 
@@ -361,7 +365,13 @@ const ShareResultModal = ({
               className="w-full h-10 px-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 text-xs font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all"
             />
             {/* Quick Caption Chips */}
-            <div className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-1 no-scrollbar">
+            <div
+              className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-1 no-scrollbar"
+              style={{
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              }}
+            >
               {QUICK_CAPTIONS.map((qc) => (
                 <button
                   key={qc}
@@ -448,15 +458,15 @@ const ShareResultModal = ({
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-1 max-w-xs mx-auto">
                     You can connect with scholars in Messages, or share
-                    externally below to WhatsApp or other apps!
+                    externally with your result image & caption!
                   </p>
                   <button
                     type="button"
                     onClick={() => setActiveTab("external")}
                     className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-xs active:scale-95"
                   >
-                    <FaWhatsapp size={13} />
-                    <span>Share to WhatsApp</span>
+                    <FiShare2 size={13} />
+                    <span>Share Result</span>
                   </button>
                 </div>
               ) : filteredConnections.length === 0 ? (
@@ -535,38 +545,38 @@ const ShareResultModal = ({
             </div>
           )}
 
-          {/* ── TAB 2: EXTERNAL & WHATSAPP ───────────────────────────────── */}
+          {/* ── TAB 2: EXTERNAL & APPS ──────────────────────────────────── */}
           {activeTab === "external" && (
             <div className="space-y-4">
-              {/* WhatsApp direct card */}
+              {/* Primary Native Share Banner (With Image + Caption) */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 flex flex-col gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                    <FaWhatsapp size={20} />
+                  <div className="size-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                    <FiShare2 size={20} />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      WhatsApp
+                      Share to Any App
                     </h3>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Share your score & challenge link to contacts or groups.
+                      Sends your score card image along with your challenge caption.
                     </p>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={handleWhatsAppShare}
-                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-bold flex items-center justify-center gap-2 transition"
+                  onClick={handleSystemShare}
+                  className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white text-xs font-bold flex items-center justify-center gap-2 transition"
                 >
-                  <FaWhatsapp size={15} />
-                  <span>Share on WhatsApp</span>
+                  <FiShare2 size={15} />
+                  <span>Share Image & Caption</span>
                 </button>
               </div>
 
-              {/* Action grid: Copy Link, Others (System Share), Download Image */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                {/* Copy Link */}
+              {/* Action grid: Copy Text, Save Image */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Copy Link / Text */}
                 <button
                   type="button"
                   onClick={handleCopyLink}
@@ -578,18 +588,8 @@ const ShareResultModal = ({
                     <FiCopy size={20} className="text-slate-500" />
                   )}
                   <span className="text-xs font-semibold">
-                    {copiedLink ? "Copied!" : "Copy Link"}
+                    {copiedLink ? "Copied!" : "Copy Text"}
                   </span>
-                </button>
-
-                {/* Others (System Share) */}
-                <button
-                  type="button"
-                  onClick={handleSystemShare}
-                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 flex flex-col items-center justify-center gap-2 active:scale-95 transition"
-                >
-                  <FiShare2 size={20} className="text-slate-500" />
-                  <span className="text-xs font-semibold">Others</span>
                 </button>
 
                 {/* Download Image */}
@@ -655,11 +655,11 @@ const ShareResultModal = ({
           ) : (
             <button
               type="button"
-              onClick={handleWhatsAppShare}
-              className="flex-1 py-2.5 px-5 rounded-2xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center justify-center gap-2 active:scale-98 transition"
+              onClick={handleSystemShare}
+              className="flex-1 py-2.5 px-5 rounded-2xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 flex items-center justify-center gap-2 active:scale-98 transition"
             >
-              <FaWhatsapp size={15} />
-              <span>Share to WhatsApp</span>
+              <FiShare2 size={15} />
+              <span>Share Image & Caption</span>
             </button>
           )}
         </div>
