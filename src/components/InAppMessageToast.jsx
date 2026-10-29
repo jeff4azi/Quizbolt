@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { FiX } from "react-icons/fi";
 import { FaCrown } from "react-icons/fa";
 import Avatar from "./Avatar";
-import { formatQuizResultPreview } from "../services/messagingService";
+import {
+  formatQuizResultPreview,
+  isDeletedMessage,
+} from "../services/messagingService";
 
 /**
  * InAppMessageToast
@@ -178,6 +181,10 @@ const InAppMessageToast = ({
           {isRequest ? (
             <span className="font-semibold text-blue-600 dark:text-blue-400">
               Sent you a message request
+            </span>
+          ) : isDeletedMessage(notification.text) ? (
+            <span className="italic text-slate-400 dark:text-slate-500">
+              This message was deleted
             </span>
           ) : (
             formatQuizResultPreview(notification.text) || "Sent you a message"

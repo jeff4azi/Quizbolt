@@ -607,6 +607,44 @@ export const subscribeToIncoming = () => {
 };
 
 /**
+ * Deletes (unsends) a message for everyone by replacing text with a deleted sentinel.
+ * Only the original sender can delete their own message.
+ */
+export const deleteMessage = async (messageId, myId) => {
+  if (!messageId || !myId) return null;
+
+  // Verify ownership: only update if sender_id matches
+  const { data, error } = await supabase
+    .from("messages")
+    .update({
+      text: '{"_type":"deleted"}',
+      status: "deleted",
+    })
+    .eq("id", messageId)
+    .eq("sender_id", myId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error deleting message:", error);
+    throw error;
+  }
+  return data;
+};
+
+/**
+ * Checks if a message text is a deleted sentinel.
+ */
+export const isDeletedMessage = (text) => {
+  if (!text || typeof text !== "string") return false;
+  const trimmed = text.trim();
+  return (
+    trimmed === '{"_type":"deleted"}' ||
+    trimmed === '{"_type": "deleted"}'
+  );
+};
+
+/**
  * ── Quiz Result Sharing Helpers ──────────────────────────────────────────────
  */
 

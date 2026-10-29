@@ -13,6 +13,7 @@ import {
   FiUser,
   FiCornerUpLeft,
   FiX,
+  FiTrash2,
 } from "react-icons/fi";
 import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
 import { FaCrown } from "react-icons/fa";
@@ -26,6 +27,7 @@ import {
   isQuizResultPayload,
   parseQuizResultPayload,
   formatQuizResultPreview,
+  isDeletedMessage,
 } from "../services/messagingService";
 import QuizResultCard from "../components/QuizResultCard";
 
@@ -75,7 +77,12 @@ const isMobileDevice = () => {
 const ReplyQuote = ({ replyToText, replyToSender, isMe, onClick }) => {
   if (!replyToText) return null;
 
-  const display = formatQuizResultPreview(replyToText);
+  const isDeleted = isDeletedMessage(replyToText);
+  const display = isDeleted
+    ? replyToSender === "me"
+      ? "You unsent a message"
+      : "This message was deleted"
+    : formatQuizResultPreview(replyToText);
   const truncated =
     display.length > 80 ? display.slice(0, 80) + "…" : display;
 
@@ -98,6 +105,8 @@ const ReplyQuote = ({ replyToText, replyToSender, isMe, onClick }) => {
       </p>
       <p
         className={`text-[11px] leading-snug line-clamp-2 ${
+          isDeleted ? "italic opacity-80" : ""
+        } ${
           isMe ? "text-blue-100/90" : "text-slate-600 dark:text-slate-300"
         }`}
       >
@@ -215,6 +224,7 @@ const ChatView = () => {
     currentConv,
     connectionState,
     sendMessage,
+    deleteMessage,
     accept,
     decline,
     block,
@@ -365,6 +375,32 @@ const ChatView = () => {
     setSelectedMsgId(null);
     setTimeout(() => inputRef.current?.focus(), 80);
   }, []);
+
+  /* ── unsend / delete message ────────────────────────────────────────── */
+  const [deletingMsgId, setDeletingMsgId] = useState(null);
+
+  const handleDeleteMessage = useCallback(
+    async (msg) => {
+      if (!msg?.id || msg.sender !== "me") return;
+      const isQuiz = isQuizResultPayload(msg.text);
+      const confirmText = isQuiz
+        ? "Unsend this quiz challenge for everyone?"
+        : "Unsend this message for everyone?";
+      if (!window.confirm(confirmText)) return;
+
+      setDeletingMsgId(msg.id);
+      setSelectedMsgId(null);
+      try {
+        await deleteMessage(msg.id);
+      } catch (err) {
+        console.error("Failed to unsend message:", err);
+        alert("Failed to unsend message. Please check your connection.");
+      } finally {
+        setDeletingMsgId(null);
+      }
+    },
+    [deleteMessage]
+  );
 
   const scrollToMessage = useCallback((id) => {
     const el = msgRefs.current[id];
@@ -577,6 +613,7 @@ const ChatView = () => {
             messages.map((msg, index) => {
               const isMe = msg.sender === "me";
               const isSelected = selectedMsgId === msg.id;
+              const isDeleted = isDeletedMessage(msg.text);
               const currentDateKey = getMessageDateKey(msg.timestamp);
               const prevDateKey =
                 index > 0 ? getMessageDateKey(messages[index - 1].timestamp) : null;
@@ -599,24 +636,57 @@ const ChatView = () => {
                     ref={(el) => { if (el) msgRefs.current[msg.id] = el; }}
                     className={`flex items-end gap-2 py-0.5 ${isMe ? "justify-end" : "justify-start"}`}
                   >
-                    {/* For 'me' messages: Reply button appears on the left when tapped */}
-                    {isMe && isSelected && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startReply(msg);
-                        }}
-                        title="Reply to message"
-                        aria-label="Reply to message"
-                        className="shrink-0 size-8 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-slate-700 shadow-md flex items-center justify-center transition-all animate-in fade-in zoom-in-75 duration-150 active:scale-90"
-                      >
-                        <FiCornerUpLeft size={15} />
-                      </button>
+                    {/* For 'me' messages: Action buttons (Delete / Reply) appear on the left when tapped */}
+                    {isMe && isSelected && !isDeleted && (
+                      <div className="flex items-center gap-1 shrink-0 animate-in fade-in zoom-in-75 duration-150">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteMessage(msg);
+                          }}
+                          disabled={deletingMsgId === msg.id}
+                          title="Unsend message"
+                          aria-label="Unsend message"
+                          className="size-8 rounded-full bg-white dark:bg-slate-800 text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-700 shadow-md flex items-center justify-center transition-all active:scale-90 disabled:opacity-50"
+                        >
+                          <FiTrash2 size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startReply(msg);
+                          }}
+                          title="Reply to message"
+                          aria-label="Reply to message"
+                          className="size-8 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-slate-700 shadow-md flex items-center justify-center transition-all active:scale-90"
+                        >
+                          <FiCornerUpLeft size={15} />
+                        </button>
+                      </div>
                     )}
 
-                    {/* Message Bubble or Quiz Result Card */}
-                    {isQuizResultPayload(msg.text) ? (
+                    {/* Deleted Message Pill */}
+                    {isDeleted ? (
+                      <div
+                        className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs select-none border italic ${
+                          isMe
+                            ? "bg-slate-100/70 dark:bg-slate-850 text-slate-500 dark:text-slate-400 border-slate-200/60 dark:border-slate-800 rounded-tr-xs"
+                            : "bg-slate-100/60 dark:bg-slate-850 text-slate-400 dark:text-slate-500 border-slate-200/50 dark:border-slate-800/80 rounded-tl-xs"
+                        }`}
+                      >
+                        <FiSlash size={13} className="shrink-0 text-slate-400" />
+                        <span>
+                          {isMe
+                            ? "You unsent a message"
+                            : "This message was deleted"}
+                        </span>
+                        <span className="text-[10px] not-italic text-slate-400 dark:text-slate-500 ml-1">
+                          {formatMessageTime(msg.timestamp)}
+                        </span>
+                      </div>
+                    ) : isQuizResultPayload(msg.text) ? (
                       <div
                         onClick={(e) => {
                           e.stopPropagation();
@@ -720,7 +790,7 @@ const ChatView = () => {
                     )}
 
                     {/* For 'them' messages: Reply button appears on the right when tapped */}
-                    {!isMe && isSelected && (
+                    {!isMe && isSelected && !isDeleted && (
                       <button
                         type="button"
                         onClick={(e) => {

@@ -20,6 +20,7 @@ import {
   searchUsers,
   formatQuizResultPreview,
   isQuizResultPayload,
+  isDeletedMessage,
 } from "../services/messagingService";
 
 const formatTimeAgo = (dateStr) => {
@@ -522,7 +523,11 @@ const ConversationList = () => {
                                 }`}
                               >
                                 {lastMsg
-                                  ? isQuizResultPayload(lastMsg.text)
+                                  ? isDeletedMessage(lastMsg.text)
+                                    ? isMe
+                                      ? "You unsent a message"
+                                      : "This message was deleted"
+                                    : isQuizResultPayload(lastMsg.text)
                                     ? formatQuizResultPreview(lastMsg.text, isMe)
                                     : isMe
                                       ? `You: ${lastMsg.text}`

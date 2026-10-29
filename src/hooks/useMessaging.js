@@ -15,6 +15,7 @@ import {
   createReport,
   findConnection,
   fetchProfileByUsernameOrId,
+  deleteMessage as deleteMessageFn,
 } from "../services/messagingService";
 
 export const useMessaging = (username = null) => {
@@ -385,6 +386,30 @@ export const useMessaging = (username = null) => {
     [currentUserId, targetUserId, connectionId]
   );
 
+  const deleteMessage = useCallback(
+    async (messageId) => {
+      if (!messageId || !currentUserId) return false;
+      try {
+        await deleteMessageFn(messageId, currentUserId);
+        // Optimistically update currentMessages in open chat
+        setCurrentMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId
+              ? { ...m, text: '{"_type":"deleted"}', status: "deleted" }
+              : m
+          )
+        );
+        await refreshActiveMessages();
+        await refreshConversations();
+        return true;
+      } catch (err) {
+        console.error("Failed to delete message:", err);
+        throw err;
+      }
+    },
+    [currentUserId, refreshActiveMessages, refreshConversations]
+  );
+
   return {
     currentUserId,
     conversations,
@@ -394,6 +419,7 @@ export const useMessaging = (username = null) => {
     loading,
     chatLoading,
     sendMessage,
+    deleteMessage,
     accept,
     decline,
     block,
