@@ -214,10 +214,10 @@ export const isFibMatch = (typedRaw, acceptedRaw) => {
   // 6. Fuzzy typo tolerance (Levenshtein distance)
   // - Word length 5-8: allow 1 edit distance (e.g., "ribisome" -> "ribosome")
   // - Word length 9+: allow 2 edit distance (e.g., "mitocondria" -> "mitochondria")
-  const minLen = Math.min(typed.length, accepted.length);
   const maxLen = Math.max(typed.length, accepted.length);
 
-  if (minLen >= 5 && Math.abs(typed.length - accepted.length) <= 2) {
+  // If the target word has at least 5 letters, allow minor 1-2 edit distance
+  if (maxLen >= 5 && Math.abs(typed.length - accepted.length) <= 2) {
     const maxAllowedDist = maxLen >= 9 ? 2 : 1;
     const dist = levenshteinDistance(typed, accepted);
     if (dist <= maxAllowedDist) {
@@ -233,7 +233,11 @@ export const isFibMatch = (typedRaw, acceptedRaw) => {
  */
 export const gradeFibDetailed = (userBlanks, rawAnswerGroups) => {
   const answerGroups = parseFibAnswers(rawAnswerGroups);
-  const blanksInput = Array.isArray(userBlanks) ? userBlanks : [];
+  const blanksInput = Array.isArray(userBlanks)
+    ? userBlanks
+    : typeof userBlanks === "string"
+    ? [userBlanks]
+    : [];
 
   if (!answerGroups.length) {
     return {
