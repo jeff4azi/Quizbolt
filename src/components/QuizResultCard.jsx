@@ -7,8 +7,8 @@ import Logo from "../images/Logo";
 
 /**
  * QuizResultCard
- * Identical 1:1 vector recreation of the QuizBolt sharable result image.
- * Uses pure CSS/SVG (0KB image payload) so it renders flawlessly at any resolution.
+ * Vector recreation of the QuizBolt sharable result card.
+ * Renders at any resolution with zero image payload.
  */
 const QuizResultCard = ({
   data,
@@ -110,8 +110,7 @@ const QuizResultCard = ({
         </div>
 
         <div className="relative flex items-center justify-center">
-          <div className="absolute size-32 bg-blue-200 dark:bg-blue-500 blur-[40px] opacity-30 dark:opacity-20 rounded-full" />
-          <svg className="size-36 sm:size-40 -rotate-90 drop-shadow-sm">
+          <svg className="size-36 sm:size-40 -rotate-90">
             {/* Background Circle */}
             <circle
               cx="80"
@@ -200,7 +199,7 @@ const QuizResultCard = ({
           <button
             type="button"
             onClick={handleChallengeClick}
-            className="mt-2 w-full py-2.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white text-xs font-black shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition"
+            className="mt-2 w-full py-2.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white text-xs font-bold flex items-center justify-center gap-2 transition"
           >
             <FiZap size={14} className="fill-current text-amber-300" />
             <span>Accept Challenge</span>

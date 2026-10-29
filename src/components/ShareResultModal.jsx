@@ -310,9 +310,9 @@ const ShareResultModal = ({
           <button
             type="button"
             onClick={() => setActiveTab("chats")}
-            className={`flex-1 py-2 px-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
               activeTab === "chats"
-                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                ? "bg-blue-600 text-white"
                 : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-750"
             }`}
           >
@@ -334,9 +334,9 @@ const ShareResultModal = ({
           <button
             type="button"
             onClick={() => setActiveTab("external")}
-            className={`flex-1 py-2 px-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
               activeTab === "external"
-                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                ? "bg-blue-600 text-white"
                 : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-750"
             }`}
           >
@@ -522,7 +522,7 @@ const ShareResultModal = ({
               {/* Card preview thumbnail accordion */}
               <div className="pt-2">
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  Card Preview (Pure CSS/SVG • 0KB Image)
+                  Card Preview
                 </span>
                 <div className="flex justify-center p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800">
                   <QuizResultCard
@@ -539,17 +539,17 @@ const ShareResultModal = ({
           {activeTab === "external" && (
             <div className="space-y-4">
               {/* WhatsApp direct card */}
-              <div className="p-4 rounded-3xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-500/20 flex flex-col gap-3">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 flex flex-col gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="size-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/30 shrink-0">
-                    <FaWhatsapp size={24} />
+                  <div className="size-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <FaWhatsapp size={20} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                      WhatsApp Challenge
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      WhatsApp
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Share formatted score & challenge link directly to WhatsApp contacts or groups.
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Share your score & challenge link to contacts or groups.
                     </p>
                   </div>
                 </div>
@@ -557,9 +557,9 @@ const ShareResultModal = ({
                 <button
                   type="button"
                   onClick={handleWhatsAppShare}
-                  className="w-full py-2.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-black shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition"
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-bold flex items-center justify-center gap-2 transition"
                 >
-                  <FaWhatsapp size={16} />
+                  <FaWhatsapp size={15} />
                   <span>Share on WhatsApp</span>
                 </button>
               </div>
@@ -575,9 +575,9 @@ const ShareResultModal = ({
                   {copiedLink ? (
                     <FiCheckCircle size={20} className="text-emerald-500" />
                   ) : (
-                    <FiCopy size={20} className="text-blue-500" />
+                    <FiCopy size={20} className="text-slate-500" />
                   )}
-                  <span className="text-xs font-black">
+                  <span className="text-xs font-semibold">
                     {copiedLink ? "Copied!" : "Copy Link"}
                   </span>
                 </button>
@@ -588,8 +588,8 @@ const ShareResultModal = ({
                   onClick={handleSystemShare}
                   className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 flex flex-col items-center justify-center gap-2 active:scale-95 transition"
                 >
-                  <FiShare2 size={20} className="text-purple-500" />
-                  <span className="text-xs font-black">Others</span>
+                  <FiShare2 size={20} className="text-slate-500" />
+                  <span className="text-xs font-semibold">Others</span>
                 </button>
 
                 {/* Download Image */}
@@ -598,8 +598,8 @@ const ShareResultModal = ({
                   onClick={handleDownloadImage}
                   className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 flex flex-col items-center justify-center gap-2 active:scale-95 transition"
                 >
-                  <FiDownload size={20} className="text-amber-500" />
-                  <span className="text-xs font-black">Save Image</span>
+                  <FiDownload size={20} className="text-slate-500" />
+                  <span className="text-xs font-semibold">Save Image</span>
                 </button>
               </div>
 
@@ -631,10 +631,10 @@ const ShareResultModal = ({
               type="button"
               disabled={selectedIds.size === 0 || sending}
               onClick={handleSendToChats}
-              className={`flex-1 py-2.5 px-5 rounded-2xl text-xs font-black text-white shadow-md flex items-center justify-center gap-2 active:scale-98 transition ${
+              className={`flex-1 py-2.5 px-5 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 active:scale-98 transition ${
                 selectedIds.size === 0 || sending
                   ? "bg-blue-400 opacity-60 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/25"
+                  : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
               {sending ? (
@@ -656,7 +656,7 @@ const ShareResultModal = ({
             <button
               type="button"
               onClick={handleWhatsAppShare}
-              className="flex-1 py-2.5 px-5 rounded-2xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 active:scale-98 transition"
+              className="flex-1 py-2.5 px-5 rounded-2xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center justify-center gap-2 active:scale-98 transition"
             >
               <FaWhatsapp size={15} />
               <span>Share to WhatsApp</span>
