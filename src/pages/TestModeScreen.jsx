@@ -27,7 +27,7 @@ import {
 import { FaCrown, FaTrophy } from "react-icons/fa";
 import { withTimeout } from "../utils/withTimeout";
 import { gradeTheoryAnswer, parseKeywords } from "../utils/theoryGrader";
-import { gradeFibAnswer } from "../utils/fibGrader";
+import { gradeFibAnswer, parseFibAnswers } from "../utils/fibGrader";
 const FREE_QUESTION_LIMIT = 11;
 
 // ─── Premium gate overlay ─────────────────────────────────────────────────────
@@ -1176,7 +1176,7 @@ const TestModeScreen = ({
                     </p>
                   ) : (
                     <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">
-                      {(currentQuestion.answers || [])
+                      {parseFibAnswers(currentQuestion.answers)
                         .map((g) => (Array.isArray(g) ? g[0] : g))
                         .join(" / ")}
                     </p>

@@ -148,7 +148,7 @@ const ReviewAnswers = ({ questions, answers, selectedCourse, isPremium }) => {
                   )}
                 </div>
 
-                {question.model_answer && (
+                {question.model_answer ? (
                   <div className="mt-3 bg-gray-50 dark:bg-gray-700 border-l-4 border-green-500 p-4 rounded-lg">
                     <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
                       Model Answer
@@ -160,6 +160,20 @@ const ReviewAnswers = ({ questions, answers, selectedCourse, isPremium }) => {
                       />
                     </div>
                   </div>
+                ) : (
+                  (theoryEval.matchedConcepts.length > 0 || theoryEval.missedConcepts.length > 0 || question.keywords) && (
+                    <div className="mt-3 bg-gray-50 dark:bg-gray-700 border-l-4 border-green-500 p-4 rounded-lg">
+                      <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
+                        Expected Key Concepts
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        {theoryEval.matchedConcepts.concat(theoryEval.missedConcepts).join(", ") ||
+                          (Array.isArray(question.keywords)
+                            ? question.keywords.join(", ")
+                            : String(question.keywords || ""))}
+                      </div>
+                    </div>
+                  )
                 )}
 
                 <div className="mt-3 flex justify-end">
@@ -238,18 +252,18 @@ const ReviewAnswers = ({ questions, answers, selectedCourse, isPremium }) => {
                         {i < parts.length - 1 && (
                           <span className="inline-flex flex-col items-center mx-1 align-bottom">
                             <span
-                              className={`font-bold border-b-2 px-2 min-w-[3rem] text-center ${
+                              className={`font-bold border-b-2 px-2.5 py-0.5 min-w-[3.5rem] text-center ${
                                 blankInfo.typed
                                   ? isCorrectBlank
                                     ? "text-green-600 border-green-500"
                                     : "text-red-500 border-red-400"
-                                  : "text-gray-400 border-gray-300 italic"
+                                  : "text-red-500/80 dark:text-red-400/80 border-red-300 dark:border-red-700/60 italic"
                               }`}
                             >
-                              {blankInfo.typed || "—"}
+                              {blankInfo.typed || "Unanswered"}
                             </span>
-                            {!isCorrectBlank && blankInfo.typed && (
-                              <span className="text-[10px] text-green-600 font-bold mt-0.5">
+                            {!isCorrectBlank && (
+                              <span className="text-[11px] text-green-600 dark:text-green-400 font-bold mt-1 inline-flex items-center gap-0.5">
                                 ✓ {correctLabel}
                               </span>
                             )}
