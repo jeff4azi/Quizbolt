@@ -458,7 +458,7 @@ const SetupScreen = ({ course, isPremium, onBack, onStart }) => {
                       locked
                         ? "border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 opacity-60 cursor-not-allowed"
                         : isSelected
-                        ? "border-violet-600 dark:border-violet-500 bg-violet-50/50 dark:bg-violet-950/20 shadow-md shadow-violet-500/10"
+                        ? "border-violet-400 dark:border-violet-400/60 bg-violet-100/60 dark:bg-violet-500/20 shadow-sm shadow-violet-500/15"
                         : "border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-violet-300 dark:hover:border-violet-500/40"
                     }`}
                   >
@@ -467,7 +467,7 @@ const SetupScreen = ({ course, isPremium, onBack, onStart }) => {
                         locked
                           ? "bg-slate-100 dark:bg-slate-800 text-slate-400"
                           : isSelected
-                          ? "bg-violet-600 text-white shadow-xs"
+                          ? "bg-violet-500 text-white shadow-sm shadow-violet-500/25"
                           : "bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
                       }`}
                     >
@@ -477,7 +477,7 @@ const SetupScreen = ({ course, isPremium, onBack, onStart }) => {
                       <span
                         className={`text-sm font-black transition-colors ${
                           isSelected
-                            ? "text-violet-700 dark:text-violet-300"
+                            ? "text-violet-700 dark:text-violet-200"
                             : "text-slate-800 dark:text-white"
                         }`}
                       >
@@ -485,7 +485,13 @@ const SetupScreen = ({ course, isPremium, onBack, onStart }) => {
                           ? `All (${availableQuestions} Cards)`
                           : `${count} Cards`}
                       </span>
-                      <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 truncate">
+                      <span
+                        className={`text-[10px] font-semibold truncate transition-colors ${
+                          isSelected
+                            ? "text-violet-600/75 dark:text-violet-300/75"
+                            : "text-slate-400 dark:text-slate-500"
+                        }`}
+                      >
                         {subtitle}
                       </span>
                     </div>
