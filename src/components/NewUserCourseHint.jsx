@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 const HINT_KEY = "quizbolt_new_user_hint_dismissed";
 
 // TEMPORARY: Set to true during redesign so the hint is always visible for preview
-const FORCE_VISIBLE_PREVIEW = true;
+const FORCE_VISIBLE_PREVIEW = false;
 
 export const isNewUserHintVisible = (isNew) => {
   if (FORCE_VISIBLE_PREVIEW) return true;
