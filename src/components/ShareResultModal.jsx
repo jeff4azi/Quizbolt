@@ -9,7 +9,6 @@ import {
   FiShare2,
   FiCheckCircle,
   FiMessageSquare,
-  FiExternalLink,
 } from "react-icons/fi";
 import { FaCrown } from "react-icons/fa";
 import Avatar from "./Avatar";
@@ -547,36 +546,20 @@ const ShareResultModal = ({
 
           {/* ── TAB 2: EXTERNAL & APPS ──────────────────────────────────── */}
           {activeTab === "external" && (
-            <div className="space-y-4">
-              {/* Primary Native Share Banner (With Image + Caption) */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
-                    <FiShare2 size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      Share to Any App
-                    </h3>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Sends your score card image along with your challenge caption.
-                    </p>
-                  </div>
-                </div>
-
+            <div className="space-y-3">
+              {/* Action row: Share, Copy, Save */}
+              <div className="grid grid-cols-3 gap-2">
+                {/* Share */}
                 <button
                   type="button"
                   onClick={handleSystemShare}
-                  className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white text-xs font-bold flex items-center justify-center gap-2 transition"
+                  className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200/70 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 flex flex-col items-center justify-center gap-2 active:scale-95 transition"
                 >
-                  <FiShare2 size={15} />
-                  <span>Share Image & Caption</span>
+                  <FiShare2 size={20} />
+                  <span className="text-[11px] font-bold">Share</span>
                 </button>
-              </div>
 
-              {/* Action grid: Copy Text, Save Image */}
-              <div className="grid grid-cols-2 gap-2.5">
-                {/* Copy Link / Text */}
+                {/* Copy Text */}
                 <button
                   type="button"
                   onClick={handleCopyLink}
@@ -587,26 +570,40 @@ const ShareResultModal = ({
                   ) : (
                     <FiCopy size={20} className="text-slate-500" />
                   )}
-                  <span className="text-xs font-semibold">
+                  <span className="text-[11px] font-bold">
                     {copiedLink ? "Copied!" : "Copy Text"}
                   </span>
                 </button>
 
-                {/* Download Image */}
+                {/* Save Image */}
                 <button
                   type="button"
                   onClick={handleDownloadImage}
                   className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 flex flex-col items-center justify-center gap-2 active:scale-95 transition"
                 >
                   <FiDownload size={20} className="text-slate-500" />
-                  <span className="text-xs font-semibold">Save Image</span>
+                  <span className="text-[11px] font-bold">Save Image</span>
                 </button>
+              </div>
+
+              {/* Card preview */}
+              <div>
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  Card Preview
+                </span>
+                <div className="flex justify-center p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800">
+                  <QuizResultCard
+                    data={resultPayload}
+                    interactive={false}
+                    isMe={true}
+                  />
+                </div>
               </div>
 
               {/* Challenge text preview */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/50">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                  Preview of message sent:
+                  Message preview
                 </span>
                 <p className="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-line leading-relaxed font-medium">
                   {getShareText()}
@@ -626,7 +623,7 @@ const ShareResultModal = ({
             Cancel
           </button>
 
-          {activeTab === "chats" ? (
+          {activeTab === "chats" && (
             <button
               type="button"
               disabled={selectedIds.size === 0 || sending}
@@ -651,15 +648,6 @@ const ShareResultModal = ({
                   </span>
                 </>
               )}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSystemShare}
-              className="flex-1 py-2.5 px-5 rounded-2xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 flex items-center justify-center gap-2 active:scale-98 transition"
-            >
-              <FiShare2 size={15} />
-              <span>Share Image & Caption</span>
             </button>
           )}
         </div>
