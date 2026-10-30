@@ -129,7 +129,7 @@ const CardContent = ({ isMobile, onDismiss }) => (
     <button
       type="button"
       onClick={onDismiss}
-      className="mt-4 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white text-sm font-bold tracking-wide transition-all shadow-lg shadow-blue-600/25"
+      className="mt-4 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white text-sm font-bold tracking-wide transition-all"
     >
       Got it
     </button>
