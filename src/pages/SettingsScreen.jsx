@@ -145,6 +145,7 @@ const SettingsScreen = ({
   const location = useLocation();
   const [isDeleteOverlayOpen, setDeleteOverlayOpen] = useState(false);
   const [isPremiumOverlayOpen, setPremiumOverlayOpen] = useState(false);
+  const [settingsFeedback, setSettingsFeedback] = useState({ isOpen: false, title: '', message: '' });
   const [isDeleting, setIsDeleting] = useState(false);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] =
     useState(() => getCachedNotificationsEnabled());
@@ -233,9 +234,11 @@ const SettingsScreen = ({
       }
     } catch (err) {
       console.error("Push toggle failed:", err);
-      window.alert(
-        "Failed to update notification preferences. Please try again.",
-      );
+      setSettingsFeedback({
+        isOpen: true,
+        title: "Notification Error",
+        message: "Failed to update notification preferences. Please try again.",
+      });
     } finally {
       setIsUpdatingPush(false);
     }
@@ -275,9 +278,11 @@ const SettingsScreen = ({
       navigate("/login");
     } catch (err) {
       console.error("Delete account failed:", err.message);
-      window.alert(
-        err.message || "We couldn't delete your account. Please try again.",
-      );
+      setSettingsFeedback({
+        isOpen: true,
+        title: "Delete Account Failed",
+        message: err.message || "We couldn't delete your account. Please try again.",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -591,6 +596,17 @@ const SettingsScreen = ({
         message="Upgrade to Premium to control whether questions automatically advance after answering."
         confirmText="Upgrade to Premium"
         cancelText="Not now"
+      />
+
+      <ConfirmOverlay
+        isOpen={settingsFeedback.isOpen}
+        onClose={() => setSettingsFeedback({ isOpen: false, title: "", message: "" })}
+        onConfirm={() => setSettingsFeedback({ isOpen: false, title: "", message: "" })}
+        title={settingsFeedback.title || "Notice"}
+        message={settingsFeedback.message}
+        confirmText="Got it"
+        cancelText=""
+        danger={true}
       />
     </div>
   );

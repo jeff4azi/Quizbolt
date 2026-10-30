@@ -6,6 +6,7 @@ import Avatar from "./Avatar";
 import MessageButton from "./MessageButton";
 import ImageOverlayModal from "./ImageOverlayModal";
 import ReportModal from "./ReportModal";
+import ConfirmOverlay from "./ConfirmOverlay";
 import { usePresence } from "../hooks/usePresence";
 import { supabase } from "../supabaseClient";
 import { createReport, blockUser } from "../services/messagingService";
@@ -52,6 +53,7 @@ const ProfileHeader = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const [isImageOverlayOpen, setIsImageOverlayOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const menuRef = useRef(null);
 
@@ -130,20 +132,17 @@ const ProfileHeader = ({
     }
   };
 
-  const handleBlock = async () => {
+  const handleBlock = () => {
     setMenuOpen(false);
     if (!currentUserId) {
       if (onToast) onToast("Please log in to block a user.");
       return;
     }
-    if (
-      !window.confirm(
-        `Are you sure you want to block @${username}? They won't be able to message you.`
-      )
-    ) {
-      return;
-    }
+    setShowBlockConfirm(true);
+  };
 
+  const confirmBlock = async () => {
+    setShowBlockConfirm(false);
     try {
       await blockUser(currentUserId, userProfile?.id);
       if (onToast) onToast(`@${username} has been blocked.`);
@@ -299,6 +298,18 @@ const ProfileHeader = ({
         username={username}
         displayName={displayName}
         onSubmitReport={handleSubmitReport}
+      />
+
+      {/* Block User Confirmation */}
+      <ConfirmOverlay
+        isOpen={showBlockConfirm}
+        onClose={() => setShowBlockConfirm(false)}
+        onConfirm={confirmBlock}
+        title="Block User?"
+        message={`Are you sure you want to block @${username}? They won't be able to message you or view your profile details.`}
+        confirmText="Yes, block user"
+        cancelText="Cancel"
+        danger={true}
       />
     </>
   );

@@ -30,6 +30,7 @@ import {
   isDeletedMessage,
 } from "../services/messagingService";
 import QuizResultCard from "../components/QuizResultCard";
+import ConfirmOverlay from "../components/ConfirmOverlay";
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 
@@ -379,29 +380,39 @@ const ChatView = () => {
 
   /* ── unsend / delete message ────────────────────────────────────────── */
   const [deletingMsgId, setDeletingMsgId] = useState(null);
+  const [msgToDelete, setMsgToDelete] = useState(null);
+  const [showCancelRequestConfirm, setShowCancelRequestConfirm] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [chatFeedbackModal, setChatFeedbackModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
 
-  const handleDeleteMessage = useCallback(
-    async (msg) => {
-      if (!msg?.id || msg.sender !== "me") return;
-      const isQuiz = isQuizResultPayload(msg.text);
-      const confirmText = isQuiz
-        ? "Unsend this quiz challenge for everyone?"
-        : "Unsend this message for everyone?";
-      if (!window.confirm(confirmText)) return;
+  const handleDeleteMessage = useCallback((msg) => {
+    if (!msg?.id || msg.sender !== "me") return;
+    setSelectedMsgId(null);
+    setMsgToDelete(msg);
+  }, []);
 
-      setDeletingMsgId(msg.id);
-      setSelectedMsgId(null);
-      try {
-        await deleteMessage(msg.id);
-      } catch (err) {
-        console.error("Failed to unsend message:", err);
-        alert("Failed to unsend message. Please check your connection.");
-      } finally {
-        setDeletingMsgId(null);
-      }
-    },
-    [deleteMessage]
-  );
+  const confirmDeleteMessage = async () => {
+    if (!msgToDelete?.id) return;
+    const targetId = msgToDelete.id;
+    setMsgToDelete(null);
+    setDeletingMsgId(targetId);
+    try {
+      await deleteMessage(targetId);
+    } catch (err) {
+      console.error("Failed to unsend message:", err);
+      setChatFeedbackModal({
+        isOpen: true,
+        title: "Could Not Unsend",
+        message: "Failed to unsend message. Please check your connection and try again.",
+      });
+    } finally {
+      setDeletingMsgId(null);
+    }
+  };
 
   const scrollToMessage = useCallback((id) => {
     const el = msgRefs.current[id];
@@ -415,33 +426,38 @@ const ChatView = () => {
   /* ── cancel request ────────────────────────────────────────────────── */
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const handleCancelRequest = async () => {
-    if (
-      !window.confirm(
-        `Cancel your connection request to ${displayName}? This will remove them from your messages.`
-      )
-    ) {
-      return;
-    }
+  const handleCancelRequest = () => {
     setMenuOpen(false);
+    setShowCancelRequestConfirm(true);
+  };
+
+  const confirmCancelRequest = async () => {
+    setShowCancelRequestConfirm(false);
     setIsCancelling(true);
     try {
       await cancelRequest();
       navigate("/messages", { replace: true });
     } catch (err) {
       console.error("Failed to cancel request:", err);
-      alert("Could not cancel request. Please try again.");
+      setChatFeedbackModal({
+        isOpen: true,
+        title: "Action Failed",
+        message: "Could not cancel request. Please try again.",
+      });
     } finally {
       setIsCancelling(false);
     }
   };
 
   /* ── block ──────────────────────────────────────────────────────────── */
-  const handleBlockUser = async () => {
-    if (window.confirm(`Are you sure you want to block @${username}?`)) {
-      setMenuOpen(false);
-      await block();
-    }
+  const handleBlockUser = () => {
+    setMenuOpen(false);
+    setShowBlockConfirm(true);
+  };
+
+  const confirmBlockUser = async () => {
+    setShowBlockConfirm(false);
+    await block();
   };
 
   const messages = currentConv?.messages || [];
@@ -977,6 +993,58 @@ const ChatView = () => {
           username={username}
           displayName={displayName}
           onSubmitReport={report}
+        />
+
+        {/* ── UNSEND MESSAGE CONFIRMATION ────────────────────────────────────── */}
+        <ConfirmOverlay
+          isOpen={Boolean(msgToDelete)}
+          onClose={() => setMsgToDelete(null)}
+          onConfirm={confirmDeleteMessage}
+          title="Unsend Message?"
+          message={
+            msgToDelete && isQuizResultPayload(msgToDelete.text)
+              ? "Unsend this quiz challenge for everyone? This action cannot be undone."
+              : "Unsend this message for everyone? This action cannot be undone."
+          }
+          confirmText="Yes, unsend"
+          cancelText="Cancel"
+          danger={true}
+        />
+
+        {/* ── CANCEL REQUEST CONFIRMATION ────────────────────────────────────── */}
+        <ConfirmOverlay
+          isOpen={showCancelRequestConfirm}
+          onClose={() => setShowCancelRequestConfirm(false)}
+          onConfirm={confirmCancelRequest}
+          title="Cancel Connection Request?"
+          message={`Are you sure you want to cancel your connection request to ${displayName}? This will remove them from your messages.`}
+          confirmText={isCancelling ? "Cancelling..." : "Yes, cancel request"}
+          cancelText="Keep request"
+          danger={true}
+        />
+
+        {/* ── BLOCK USER CONFIRMATION ────────────────────────────────────────── */}
+        <ConfirmOverlay
+          isOpen={showBlockConfirm}
+          onClose={() => setShowBlockConfirm(false)}
+          onConfirm={confirmBlockUser}
+          title="Block User?"
+          message={`Are you sure you want to block @${username}? They won't be able to message you or send connection requests.`}
+          confirmText="Yes, block user"
+          cancelText="Cancel"
+          danger={true}
+        />
+
+        {/* ── FEEDBACK / ALERT MODAL ─────────────────────────────────────────── */}
+        <ConfirmOverlay
+          isOpen={chatFeedbackModal.isOpen}
+          onClose={() => setChatFeedbackModal({ isOpen: false, title: "", message: "" })}
+          onConfirm={() => setChatFeedbackModal({ isOpen: false, title: "", message: "" })}
+          title={chatFeedbackModal.title || "Notice"}
+          message={chatFeedbackModal.message}
+          confirmText="Got it"
+          cancelText=""
+          danger={false}
         />
       </div>
     </>

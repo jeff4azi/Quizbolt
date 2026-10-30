@@ -63,7 +63,7 @@ const ConfirmOverlay = ({
           <div className="flex flex-col w-full gap-3">
             <button
               onClick={() => {
-                onConfirm();
+                if (onConfirm) onConfirm();
                 onClose();
               }}
               className={
@@ -78,12 +78,14 @@ const ConfirmOverlay = ({
               {confirmText}
             </button>
 
-            <button
-              onClick={onClose}
-              className="w-full py-4 rounded-2xl font-bold text-slate-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              {cancelText}
-            </button>
+            {cancelText && (
+              <button
+                onClick={onClose}
+                className="w-full py-4 rounded-2xl font-bold text-slate-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                {cancelText}
+              </button>
+            )}
           </div>
         </div>
       </div>

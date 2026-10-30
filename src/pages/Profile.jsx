@@ -46,6 +46,10 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteErrorModal, setDeleteErrorModal] = useState({
+    isOpen: false,
+    message: "",
+  });
 
   useEffect(() => {
     if (!userProfile || isEditing || isSaving) return;
@@ -164,7 +168,10 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
       setCourseToDelete(null);
     } catch (err) {
       console.error("Failed to delete course:", err);
-      window.alert("Failed to remove course. Please try again.");
+      setDeleteErrorModal({
+        isOpen: true,
+        message: "Failed to remove course. Please try again.",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -713,6 +720,17 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
         message={`Are you sure you want to remove ${courseToDelete?.name} from your rerun courses?`}
         confirmText={isDeleting ? "Removing..." : "Yes, remove it"}
         cancelText="Cancel"
+        danger={true}
+      />
+
+      <ConfirmOverlay
+        isOpen={deleteErrorModal.isOpen}
+        onClose={() => setDeleteErrorModal({ isOpen: false, message: "" })}
+        onConfirm={() => setDeleteErrorModal({ isOpen: false, message: "" })}
+        title="Failed to Remove"
+        message={deleteErrorModal.message}
+        confirmText="Got it"
+        cancelText=""
         danger={true}
       />
     </div>
