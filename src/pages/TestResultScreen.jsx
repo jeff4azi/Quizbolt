@@ -152,9 +152,7 @@ const TestResultScreen = () => {
 
           <button
             type="button"
-            onClick={() =>
-              navigate("/test-leaderboard", { state: { courseId } })
-            }
+            onClick={() => navigate("/test-leaderboard")}
             className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:border-amber-300 dark:hover:border-amber-500/40 text-slate-700 dark:text-slate-200 text-xs font-bold active:scale-95 transition-all shrink-0"
             title="View Full Test Leaderboard"
           >
@@ -212,9 +210,7 @@ const TestResultScreen = () => {
             {myRank && (
               <button
                 type="button"
-                onClick={() =>
-                  navigate("/test-leaderboard", { state: { courseId } })
-                }
+                onClick={() => navigate("/test-leaderboard")}
                 className="w-full mt-3 bg-white/15 hover:bg-white/20 active:scale-[0.98] transition-all rounded-2xl px-4 py-3 flex items-center justify-between text-left group cursor-pointer"
               >
                 <div className="flex items-center gap-2">
@@ -260,9 +256,7 @@ const TestResultScreen = () => {
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  navigate("/test-leaderboard", { state: { courseId } })
-                }
+                onClick={() => navigate("/test-leaderboard")}
                 className="group inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
               >
                 <span>Full Board</span>
@@ -284,9 +278,7 @@ const TestResultScreen = () => {
                 <p>No attempts this week yet. You&apos;re first!</p>
                 <button
                   type="button"
-                  onClick={() =>
-                    navigate("/test-leaderboard", { state: { courseId } })
-                  }
+                  onClick={() => navigate("/test-leaderboard")}
                   className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   <span>Check other courses on leaderboard</span>
@@ -376,9 +368,7 @@ const TestResultScreen = () => {
                 <div className="pt-2">
                   <button
                     type="button"
-                    onClick={() =>
-                      navigate("/test-leaderboard", { state: { courseId } })
-                    }
+                    onClick={() => navigate("/test-leaderboard")}
                     className="w-full py-3.5 px-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-500/40 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs active:scale-[0.99] group"
                   >
                     <FaTrophy className="size-3.5 text-amber-500" />

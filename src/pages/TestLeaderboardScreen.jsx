@@ -124,9 +124,7 @@ const TestLeaderboardScreen = ({
   const location = useLocation();
   const [attempts, setAttempts] = useState([]);
   const [profiles, setProfiles] = useState({});
-  const [selectedCourseId, setSelectedCourseId] = useState(
-    location.state?.courseId || "all"
-  );
+  const [selectedCourseId, setSelectedCourseId] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPremiumOverlayOpen, setPremiumOverlayOpen] = useState(false);
@@ -145,21 +143,10 @@ const TestLeaderboardScreen = ({
 
   const questionCountOptions = ["all", 10, 20, 30, 50, 70, 100];
 
-  const isFirstMount = useRef(true);
   useEffect(() => {
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      return;
-    }
     setSelectedCourseId("all");
     setQuestionCountFilter("all");
   }, [universityFilter]);
-
-  useEffect(() => {
-    if (location.state?.courseId) {
-      setSelectedCourseId(location.state.courseId);
-    }
-  }, [location.state?.courseId]);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [sheetProfile, setSheetProfile] = useState(null);
