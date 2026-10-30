@@ -21,7 +21,6 @@ import {
   formatQuizResultPreview,
   isQuizResultPayload,
   isDeletedMessage,
-  cancelConnectionRequest,
 } from "../services/messagingService";
 
 const formatTimeAgo = (dateStr) => {
@@ -40,32 +39,10 @@ const formatTimeAgo = (dateStr) => {
 const ConversationList = () => {
   useDocumentTitle("Messages | QuizBolt");
   const navigate = useNavigate();
-  const { conversations, loading, currentUserId, refreshConversations } = useMessaging();
+  const { conversations, loading, currentUserId } = useMessaging();
   const [search, setSearch] = useState("");
   const [userSearchResults, setUserSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [cancellingConnId, setCancellingConnId] = useState(null);
-
-  const handleCancelSentRequest = async (e, conv) => {
-    e.stopPropagation();
-    if (
-      !window.confirm(
-        `Cancel request to ${conv.fullName || conv.username}? They will be removed from your chat screen.`
-      )
-    ) {
-      return;
-    }
-    setCancellingConnId(conv.connectionId);
-    try {
-      await cancelConnectionRequest(conv.connectionId, currentUserId);
-      await refreshConversations();
-    } catch (err) {
-      console.error("Failed to cancel request:", err);
-      alert("Could not cancel request. Please try again.");
-    } finally {
-      setCancellingConnId(null);
-    }
-  };
 
   // Debounced real-time user search across all platform profiles
   useEffect(() => {
@@ -563,17 +540,6 @@ const ConversationList = () => {
                               <span className="size-5 shrink-0 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center shadow-sm">
                                 {conv.unreadCount || 1}
                               </span>
-                            )}
-
-                            {conv.connectionState === "request_sent" && (
-                              <button
-                                type="button"
-                                disabled={cancellingConnId === conv.connectionId}
-                                onClick={(e) => handleCancelSentRequest(e, conv)}
-                                className="px-2 py-0.5 rounded-lg text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-amber-300 dark:border-amber-700/50 transition shrink-0 active:scale-95 disabled:opacity-50"
-                              >
-                                {cancellingConnId === conv.connectionId ? "..." : "Cancel"}
-                              </button>
                             )}
                           </div>
                         </div>
