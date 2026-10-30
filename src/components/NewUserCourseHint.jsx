@@ -54,6 +54,7 @@ const SpotlightOverlay = ({ targetRef, onDismiss, shape = "rounded", maskId }) =
       className="fixed inset-0 w-full h-full"
       style={{ zIndex: 49, pointerEvents: "all" }}
       onClick={onDismiss}
+      onTouchEnd={(e) => { e.preventDefault(); onDismiss(); }}
     >
       <defs>
         <mask id={maskId}>
@@ -214,14 +215,17 @@ const NewUserCourseHint = ({
   }, [variant, targetRef, isDesktop]);
 
   const dismiss = () => {
+    // Always hide — FORCE_VISIBLE_PREVIEW only controls the initial state,
+    // not whether the user can dismiss it during preview.
+    setVisible(false);
     if (!FORCE_VISIBLE_PREVIEW) {
-      setVisible(false);
       try { localStorage.setItem(HINT_KEY, "1"); } catch { /* ignore */ }
     }
     onDismiss?.();
   };
 
-  if (!FORCE_VISIBLE_PREVIEW && (!visible || !isNew)) return null;
+  if (!visible) return null;
+  if (!FORCE_VISIBLE_PREVIEW && !isNew) return null;
 
   // ── MOBILE — only render on small screens ──────────────────────────────────
   if (variant === "mobile") {

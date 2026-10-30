@@ -144,12 +144,14 @@ const NavBar = ({ isPremium, onLockedClick, isNew }) => {
     <>
       {/* ── Mobile bottom bar (hidden on lg+) ─────────────────────────────── */}
       <div className="lg:hidden mx-auto max-w-2xl fixed bottom-0 inset-x-0 z-40 bg-gradient-to-t from-gray-50 via-gray-50/90 to-transparent dark:from-slate-900 dark:via-slate-900/90">
-        <NewUserCourseHint
-          variant="mobile"
-          isNew={isNew}
-          targetRef={coursesRef}
-          onDismiss={() => setHintDismissed(true)}
-        />
+        {showCourseHint && (
+          <NewUserCourseHint
+            variant="mobile"
+            isNew={isNew}
+            targetRef={coursesRef}
+            onDismiss={() => setHintDismissed(true)}
+          />
+        )}
         <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-gray-300 dark:border-slate-700 px-4 pt-3 pb-4 flex items-center justify-between mx-4 mb-4 rounded-2xl">
           {navItems.map((item) => (
             <MobileNavItem
