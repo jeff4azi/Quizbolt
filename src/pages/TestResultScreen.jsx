@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import { FiChevronLeft, FiRefreshCw } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiRefreshCw } from "react-icons/fi";
 import { FaCrown, FaMedal, FaTrophy } from "react-icons/fa";
 import Avatar from "../components/Avatar";
 import testIcon from "../images/test.webp";
@@ -132,21 +132,37 @@ const TestResultScreen = () => {
     <div className="min-h-[100dvh] bg-gray-50 dark:bg-slate-900 flex flex-col transition-colors duration-500">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-gray-50/90 dark:bg-slate-900/90 backdrop-blur-md px-5 pt-5 pb-3 border-b border-gray-100 dark:border-slate-800">
-        <div className="max-w-lg mx-auto flex items-center gap-3">
-          <button
-            onClick={() => navigate("/test")}
-            className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-90 transition-all"
-          >
-            <FiChevronLeft className="size-5 text-slate-600 dark:text-slate-300" />
-          </button>
-          <div>
-            <h1 className="text-lg font-black text-slate-900 dark:text-white">
-              Test Results
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {courseName}
-            </p>
+        <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => navigate("/test")}
+              className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-90 transition-all shrink-0"
+            >
+              <FiChevronLeft className="size-5 text-slate-600 dark:text-slate-300" />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-lg font-black text-slate-900 dark:text-white truncate">
+                Test Results
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                {courseName}
+              </p>
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/test-leaderboard", { state: { courseId } })
+            }
+            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:border-amber-300 dark:hover:border-amber-500/40 text-slate-700 dark:text-slate-200 text-xs font-bold active:scale-95 transition-all shrink-0"
+            title="View Full Test Leaderboard"
+          >
+            <FaTrophy className="text-amber-500 size-3.5" />
+            <span className="text-[11px] font-black uppercase tracking-wider">
+              Leaderboard
+            </span>
+          </button>
         </div>
       </div>
 
@@ -194,13 +210,25 @@ const TestResultScreen = () => {
             </div>
 
             {myRank && (
-              <div className="mt-3 bg-white/15 rounded-2xl px-4 py-3 flex items-center gap-2">
-                <FaTrophy className="text-yellow-300 size-4" />
-                <p className="text-sm font-black">
-                  You ranked <span className="text-yellow-300">#{myRank}</span>{" "}
-                  this week
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/test-leaderboard", { state: { courseId } })
+                }
+                className="w-full mt-3 bg-white/15 hover:bg-white/20 active:scale-[0.98] transition-all rounded-2xl px-4 py-3 flex items-center justify-between text-left group cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <FaTrophy className="text-yellow-300 size-4 shrink-0" />
+                  <p className="text-sm font-black">
+                    You ranked <span className="text-yellow-300">#{myRank}</span>{" "}
+                    this week
+                  </p>
+                </div>
+                <span className="text-[11px] font-bold text-white/80 group-hover:text-white flex items-center gap-0.5 shrink-0">
+                  Full board{" "}
+                  <FiChevronRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </button>
             )}
           </div>
 
@@ -223,11 +251,23 @@ const TestResultScreen = () => {
 
           {/* Weekly Leaderboard */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <FaTrophy className="text-amber-400 size-4" />
-              <h2 className="text-sm font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                This Week's Leaderboard
-              </h2>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <FaTrophy className="text-amber-400 size-4 shrink-0" />
+                <h2 className="text-sm font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                  This Week&apos;s Leaderboard
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/test-leaderboard", { state: { courseId } })
+                }
+                className="group inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+              >
+                <span>Full Board</span>
+                <FiChevronRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </button>
             </div>
 
             {loadingLB ? (
@@ -240,8 +280,18 @@ const TestResultScreen = () => {
                 ))}
               </div>
             ) : leaderboard.length === 0 ? (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 text-center text-sm text-slate-400">
-                No attempts this week yet. You're first!
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 text-center text-sm text-slate-400 space-y-3">
+                <p>No attempts this week yet. You&apos;re first!</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate("/test-leaderboard", { state: { courseId } })
+                  }
+                  className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  <span>Check other courses on leaderboard</span>
+                  <FiChevronRight className="size-3" />
+                </button>
               </div>
             ) : (
               <div className="space-y-2">
@@ -282,6 +332,11 @@ const TestResultScreen = () => {
                           avatarUrl={row.profiles?.avatar_url}
                           size="sm"
                           lazy
+                          className={
+                            isMe
+                              ? "ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 ring-offset-blue-50 dark:ring-offset-slate-900"
+                              : ""
+                          }
                         />
                       </button>
 
@@ -317,6 +372,20 @@ const TestResultScreen = () => {
                     </div>
                   );
                 })}
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate("/test-leaderboard", { state: { courseId } })
+                    }
+                    className="w-full py-3.5 px-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-500/40 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs active:scale-[0.99] group"
+                  >
+                    <FaTrophy className="size-3.5 text-amber-500" />
+                    <span>View Complete Test Leaderboard</span>
+                    <FiChevronRight className="size-3.5 text-slate-400 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -95,7 +95,7 @@ const CourseDropdown = ({ options, selected, onSelect }) => {
     </div>
   );
 };
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useVisibilityRefresh } from "../hooks/useVisibilityRefresh";
 import SectionLoader from "../components/SectionLoader";
 
@@ -119,9 +119,13 @@ const TestLeaderboardScreen = ({
   userProfile,
 }) => {
   useDocumentTitle("Weekly Test Leaderboard | QuizBolt");
+  const navigate = useNavigate();
+  const location = useLocation();
   const [attempts, setAttempts] = useState([]);
   const [profiles, setProfiles] = useState({});
-  const [selectedCourseId, setSelectedCourseId] = useState("all");
+  const [selectedCourseId, setSelectedCourseId] = useState(
+    location.state?.courseId || "all"
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPremiumOverlayOpen, setPremiumOverlayOpen] = useState(false);
@@ -140,17 +144,26 @@ const TestLeaderboardScreen = ({
 
   const questionCountOptions = ["all", 10, 20, 30, 50, 70, 100];
 
+  const isFirstMount = useRef(true);
   useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
     setSelectedCourseId("all");
     setQuestionCountFilter("all");
   }, [universityFilter]);
+
+  useEffect(() => {
+    if (location.state?.courseId) {
+      setSelectedCourseId(location.state.courseId);
+    }
+  }, [location.state?.courseId]);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [sheetProfile, setSheetProfile] = useState(null);
   const [sheetStats, setSheetStats] = useState(null);
   const [sheetIsPremium, setSheetIsPremium] = useState(false);
-
-  const navigate = useNavigate();
 
   const fetchLeaderboardData = useCallback(async () => {
     setLoading(true);
