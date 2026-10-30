@@ -10,7 +10,7 @@ import {
   FaUniversity,
   FaBook,
 } from "react-icons/fa";
-import { FiCheck } from "react-icons/fi";
+import { FiCheck, FiChevronLeft } from "react-icons/fi";
 import { supabase } from "../supabaseClient";
 import { withTimeout } from "../utils/withTimeout";
 import QuickViewSheet from "../components/QuickViewSheet";
@@ -97,6 +97,7 @@ const CourseDropdown = ({ options, selected, onSelect }) => {
 };
 import { useNavigate, useLocation } from "react-router-dom";
 import { useVisibilityRefresh } from "../hooks/useVisibilityRefresh";
+import { usePresence } from "../hooks/usePresence";
 import SectionLoader from "../components/SectionLoader";
 
 const getCurrentWeekStartIso = () => {
@@ -346,29 +347,24 @@ const TestLeaderboardScreen = ({
 
   const formatTime = () => "—";
 
+  const leaderboardUserIds = useMemo(
+    () => leaderboardEntries.map((e) => e.userId).filter(Boolean),
+    [leaderboardEntries]
+  );
+  const { isOnline, onlineCount } = usePresence(leaderboardUserIds);
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors duration-500">
       <header className="sticky top-0 z-50 px-6 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-slate-200/50 dark:shadow-none border-b border-slate-100 dark:border-slate-800">
-        <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => navigate("/test")}
-              className="p-2 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+              className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-90 transition-all shrink-0"
+              aria-label="Back to test mode"
             >
-              <svg
-                className="size-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
+              <FiChevronLeft className="size-5 text-slate-600 dark:text-slate-300" />
             </button>
             <div>
               <h1 className="text-xl font-black tracking-tight flex items-center gap-2">
@@ -381,15 +377,30 @@ const TestLeaderboardScreen = ({
             </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
-            <FaCrown className="text-xs" />
-            <span>Top Test Scholars</span>
+          <div className="flex items-center gap-2">
+            {onlineCount > 0 && (
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold shadow-2xs"
+                title={`${onlineCount} ${onlineCount === 1 ? "scholar" : "scholars"} online right now`}
+              >
+                <span className="relative flex size-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
+                </span>
+                <span className="hidden sm:inline">
+                  {onlineCount} {onlineCount === 1 ? "scholar" : "scholars"} online
+                </span>
+                <span className="sm:hidden">
+                  {onlineCount} online
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
       <main className="px-6 lg:px-10 pt-4 pb-32 flex-1 flex flex-col overflow-y-auto desktop-content-col">
-        <section className="mb-4">
+        <section className="mb-4 max-w-5xl mx-auto w-full">
           <div className="flex items-center gap-5">
             <div className="flex min-w-0 flex-1 bg-gray-100 dark:bg-slate-800 rounded-2xl p-1 gap-1">
               {levelOptions.map((level) => (
@@ -432,7 +443,7 @@ const TestLeaderboardScreen = ({
             </p>
           </div>
         ) : (
-          <section className="space-y-4">
+          <section className="space-y-4 max-w-5xl mx-auto w-full">
             <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 ml-1">
               Top Test Scholars
             </h3>
@@ -451,6 +462,7 @@ const TestLeaderboardScreen = ({
                   avgTime={formatTime(entry.avgTimeSeconds)}
                   university={entry.university}
                   isCurrentUser={entry.userId === userProfile?.id}
+                  isOnline={isOnline(entry.userId)}
                   onClick={() => {
                     const profile = profiles[entry.userId] || {};
                     const courseMatch = (courses || []).find(
@@ -622,6 +634,7 @@ const TestLeaderboardRow = ({
   isPremium,
   bestPercent,
   isCurrentUser = false,
+  isOnline = false,
   onClick
 }) => {
   const isTop1 = rank === 1;
@@ -678,6 +691,7 @@ const TestLeaderboardRow = ({
               avatarUrl={avatarUrl}
               size="sm"
               lazy={true}
+              isOnline={isOnline}
               className={
                 isCurrentUser
                   ? "ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 ring-offset-blue-50 dark:ring-offset-slate-900"
