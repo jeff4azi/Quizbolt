@@ -555,7 +555,6 @@ const ExamScreen = ({
 
   const saveResultToSupabase = async (finalTime, correctCount) => {
     try {
-      // 🔥 STEP 1: ALWAYS get fresh session
       let {
         data: { session },
         error: sessionError,
@@ -563,11 +562,8 @@ const ExamScreen = ({
 
       if (sessionError) throw sessionError;
 
-      // 🔥 STEP 2: If session is missing/expired → refresh it
       if (!session) {
-        console.warn("Session missing. Attempting refresh...");
         const { data, error } = await supabase.auth.refreshSession();
-
         if (error) throw error;
         session = data.session;
       }
@@ -575,7 +571,6 @@ const ExamScreen = ({
       const user = session?.user;
       if (!user) throw new Error("User not authenticated");
 
-      // 🔥 STEP 4: Insert with retry logic
       let { error } = await supabase.from("exam_attempts").insert({
         user_id: user.id,
         course_id: selectedCourse.id,
@@ -587,10 +582,7 @@ const ExamScreen = ({
         type: isTheoryExam ? "THY" : isFibExam ? "FIB" : "OBJ",
       });
 
-      // 🔥 STEP 5: If JWT expired during insert → retry ONCE
       if (error?.message?.toLowerCase().includes("jwt")) {
-        console.warn("JWT expired during insert. Retrying...");
-
         const { data: refreshData, error: refreshError } =
           await supabase.auth.refreshSession();
 
@@ -615,9 +607,10 @@ const ExamScreen = ({
         throw error;
       }
 
-      console.log("Saved to Supabase ✅");
-    } catch (error) {
-      console.error("SAVE RESULT FAILED:", error.message);
+      return true;
+    } catch (_error) {
+      // Failed to save online (e.g. offline / poor network)
+      return false;
     }
   };
 
@@ -681,22 +674,24 @@ const ExamScreen = ({
 
     const correctCount = shuffledQuestions.reduce((acc, q, idx) => {
       if (isTheoryQuestion(q)) {
-        return acc + gradeTheoryAnswer(answers[idx], q.keywords, q.model_answer); // fractional 0–1
+        return acc + gradeTheoryAnswer(answers[idx], q.keywords, q.model_answer); // fractional 0-1
       }
       if (isFibQuestion(q)) {
-        return acc + gradeFibAnswer(answers[idx], q.answers); // fractional 0–1
+        return acc + gradeFibAnswer(answers[idx], q.answers); // fractional 0-1
       }
       return acc + (answers[idx] === q.correct ? 1 : 0);
     }, 0);
 
+    let savedOnline = false;
     try {
-      await withTimeout(
+      const res = await withTimeout(
         saveResultToSupabase(finalTime, correctCount),
-        15000,
-        "Saving results took too long. They may not have been stored online.",
+        10000,
+        "Saving results took too long.",
       );
-    } catch (err) {
-      console.error("Error while saving to Supabase:", err);
+      savedOnline = Boolean(res);
+    } catch (_err) {
+      savedOnline = false;
     }
 
     if (onSubmit) onSubmit(correctCount, shuffledQuestions.length, finalTime);
@@ -708,7 +703,7 @@ const ExamScreen = ({
       finalTime,
       questionType,
     );
-    navigate("/results");
+    navigate("/results", { state: { savedOnline } });
   };
 
   const handleTimeUp = async () => {
@@ -719,18 +714,24 @@ const ExamScreen = ({
 
     const correctCount = shuffledQuestions.reduce((acc, q, idx) => {
       if (isTheoryQuestion(q)) {
-        return acc + gradeTheoryAnswer(answers[idx], q.keywords, q.model_answer); // fractional 0–1
+        return acc + gradeTheoryAnswer(answers[idx], q.keywords, q.model_answer); // fractional 0-1
       }
       if (isFibQuestion(q)) {
-        return acc + gradeFibAnswer(answers[idx], q.answers); // fractional 0–1
+        return acc + gradeFibAnswer(answers[idx], q.answers); // fractional 0-1
       }
       return acc + (answers[idx] === q.correct ? 1 : 0);
     }, 0);
 
+    let savedOnline = false;
     try {
-      await saveResultToSupabase(finalTime, correctCount);
-    } catch (err) {
-      console.error("Error while saving to Supabase on timeout:", err);
+      const res = await withTimeout(
+        saveResultToSupabase(finalTime, correctCount),
+        10000,
+        "Saving results took too long.",
+      );
+      savedOnline = Boolean(res);
+    } catch (_err) {
+      savedOnline = false;
     }
 
     if (onSubmit) onSubmit(correctCount, shuffledQuestions.length, finalTime);
@@ -740,7 +741,7 @@ const ExamScreen = ({
       answers.filter(Boolean).length,
       shuffledQuestions.length,
     );
-    navigate("/results");
+    navigate("/results", { state: { savedOnline } });
   };
 
   const progress = ((currentIndex + 1) / totalQuestions) * 100;

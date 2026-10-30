@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { FiWifiOff, FiX } from "react-icons/fi";
 import WhatsAppCard from "../components/WhatsAppCard";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import { useEffect, useState, useRef } from "react";
@@ -43,6 +44,18 @@ const ResultScreen = ({
   hasRetaken,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [offlineToast, setOfflineToast] = useState(() => {
+    // If navigation passed savedOnline === false, show offline warning toast
+    return location.state?.savedOnline === false;
+  });
+
+  useEffect(() => {
+    if (offlineToast) {
+      const timer = setTimeout(() => setOfflineToast(false), 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [offlineToast]);
   const [showAd, setShowAd] = useState(true);
   const [isPremiumOverlayOpen, setPremiumOverlayOpen] = useState(false);
   const [isRetryOverlayOpen, setRetryOverlayOpen] = useState(false);
@@ -269,7 +282,37 @@ const ResultScreen = ({
   })();
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-950 p-6 lg:p-10 pb-16 lg:pb-32 flex flex-col lg:max-w-2xl mx-auto transition-colors duration-300">
+    <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-950 p-6 lg:p-10 pb-16 lg:pb-32 flex flex-col lg:max-w-2xl mx-auto transition-colors duration-300 relative">
+      {/* Offline sync failure notification toast */}
+      {offlineToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-4 inset-x-4 sm:inset-x-auto sm:right-6 sm:max-w-md z-50 bg-slate-900/95 dark:bg-slate-800/95 text-white border border-amber-500/30 p-3.5 rounded-2xl shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 animate-in slide-in-from-top-4 duration-300"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="size-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+              <FiWifiOff size={16} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-100 truncate">
+                Result Saved Locally Only
+              </p>
+              <p className="text-[11px] text-slate-400 leading-snug">
+                Your connection was poor, so this score couldn't sync online.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOfflineToast(false)}
+            aria-label="Dismiss notification"
+            className="size-7 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition shrink-0 active:scale-95"
+          >
+            <FiX size={14} />
+          </button>
+        </div>
+      )}
       <header className="flex justify-between items-center md:mb-8 lg:px-16">
         <div className="flex items-center gap-2 bg-white dark:bg-gray-900 py-2 px-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
           <span className="text-gray-400 dark:text-gray-500 text-xs uppercase tracking-wider font-bold">
