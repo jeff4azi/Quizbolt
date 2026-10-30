@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SidebarNavItem, isActivePath } from "./NavBar";
 import {
@@ -39,6 +39,7 @@ const DesktopLayout = ({ children, isPremium, userProfile, isNew }) => {
   const pathname = location?.pathname || "/";
   const [premiumOverlayOpen, setPremiumOverlayOpen] = useState(false);
   const { totalUnreadCount } = useMessaging();
+  const desktopCoursesRef = useRef(null);
 
   const go = (path) => navigate(path);
 
@@ -139,32 +140,16 @@ const DesktopLayout = ({ children, isPremium, userProfile, isNew }) => {
         <nav
           className={`flex-1 px-3 py-4 space-y-1 overflow-x-hidden overflow-y-auto relative ${isExamActive ? "pointer-events-none select-none" : ""}`}
         >
-          {navItems.map((item) =>
-            item.label === "Courses" ? (
-              <div key={item.label}>
-                <SidebarNavItem
-                  {...item}
-                  active={isExamActive ? false : item.active}
-                  locked={isExamActive ? true : item.locked}
-                  highlight={showCourseHint}
-                />
-                {!isExamActive && (
-                  <NewUserCourseHint
-                    variant="desktop"
-                    isNew={isNew}
-                    onDismiss={() => setHintDismissed(true)}
-                  />
-                )}
-              </div>
-            ) : (
-              <SidebarNavItem
-                key={item.label}
-                {...item}
-                active={isExamActive ? false : item.active}
-                locked={isExamActive ? true : item.locked}
-              />
-            ),
-          )}
+          {navItems.map((item) => (
+            <SidebarNavItem
+              key={item.label}
+              {...item}
+              itemRef={item.label === "Courses" ? desktopCoursesRef : undefined}
+              active={isExamActive ? false : item.active}
+              locked={isExamActive ? true : item.locked}
+
+            />
+          ))}
           {/* Frosted overlay shown during exam */}
           {isExamActive && (
             <div className="absolute inset-0 rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
@@ -231,6 +216,16 @@ const DesktopLayout = ({ children, isPremium, userProfile, isNew }) => {
           />
         </div>
       </aside>
+
+      {/* Desktop floating guide (positioned right outside the sidebar pointing at Courses) */}
+      {!isExamActive && showCourseHint && (
+        <NewUserCourseHint
+          variant="desktop"
+          isNew={isNew}
+          targetRef={desktopCoursesRef}
+          onDismiss={() => setHintDismissed(true)}
+        />
+      )}
 
       {/* ── Content area ────────────────────────────────────────────────────── */}
       {/*

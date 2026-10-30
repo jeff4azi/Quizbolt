@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   IoBookmark,
@@ -21,45 +21,40 @@ const isActivePath = (pathname, target) => {
 };
 
 // ── Mobile bottom-bar item ──────────────────────────────────────────────────
-const MobileNavItem = ({ label, icon, active, onClick, highlight }) => (
+const MobileNavItem = ({ label, icon, active, onClick, itemRef }) => (
   <button
+    ref={itemRef}
     type="button"
     onClick={onClick}
     className={`flex flex-col items-center flex-1 text-xs font-semibold transition-colors ${
       active
         ? "text-blue-600 dark:text-blue-400"
-        : highlight
-          ? "text-blue-600 dark:text-blue-400"
-          : "text-slate-500 dark:text-slate-300"
+        : "text-slate-500 dark:text-slate-300"
     }`}
     aria-current={active ? "page" : undefined}
   >
     <div
       className={`relative size-9 rounded-2xl flex items-center justify-center transition-all ${
-        active || highlight
-          ? "bg-blue-50 dark:bg-blue-900/20"
-          : "bg-transparent"
-      } ${highlight ? "ring-2 ring-blue-500/60 ring-offset-1 dark:ring-offset-slate-800 animate-hint-pulse" : ""}`}
+        active ? "bg-blue-50 dark:bg-blue-900/20" : "bg-transparent"
+      }`}
     >
       {icon}
-      {highlight && (
-        <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-blue-600 ring-2 ring-white dark:ring-slate-800" />
-      )}
     </div>
     <span>{label}</span>
   </button>
 );
 
 // ── Desktop sidebar item ────────────────────────────────────────────────────
-const SidebarNavItem = ({ label, icon, active, onClick, highlight, badge }) => (
+const SidebarNavItem = ({ label, icon, active, onClick, badge, itemRef }) => (
   <button
+    ref={itemRef}
     type="button"
     onClick={onClick}
     className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-      active || highlight
+      active
         ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
         : "text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50 hover:text-slate-800 dark:hover:text-slate-200"
-    } ${highlight ? "ring-1 ring-blue-400/50" : ""}`}
+    }`}
     aria-current={active ? "page" : undefined}
   >
     <div className="flex items-center gap-3 min-w-0">
@@ -80,6 +75,7 @@ const NavBar = ({ isPremium, onLockedClick, isNew }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location?.pathname || "/";
+  const coursesRef = useRef(null);
 
   const [hintDismissed, setHintDismissed] = useState(false);
   const showCourseHint =
@@ -151,6 +147,7 @@ const NavBar = ({ isPremium, onLockedClick, isNew }) => {
         <NewUserCourseHint
           variant="mobile"
           isNew={isNew}
+          targetRef={coursesRef}
           onDismiss={() => setHintDismissed(true)}
         />
         <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-gray-300 dark:border-slate-700 px-4 pt-3 pb-4 flex items-center justify-between mx-4 mb-4 rounded-2xl">
@@ -158,7 +155,7 @@ const NavBar = ({ isPremium, onLockedClick, isNew }) => {
             <MobileNavItem
               key={item.label}
               {...item}
-              highlight={showCourseHint && item.label === "Courses"}
+              itemRef={item.label === "Courses" ? coursesRef : undefined}
             />
           ))}
         </div>
