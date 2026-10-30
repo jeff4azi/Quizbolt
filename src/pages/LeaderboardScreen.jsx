@@ -427,10 +427,6 @@ const LeaderboardScreen = ({
                 </span>
               </div>
             )}
-            <div className="hidden sm:flex items-center gap-2 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">
-              <FaCrown className="text-xs" />
-              <span>Top performers only</span>
-            </div>
           </div>
         </div>
       </header>
