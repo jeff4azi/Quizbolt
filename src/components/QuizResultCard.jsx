@@ -110,7 +110,7 @@ const QuizResultCard = ({
         </div>
 
         <div className="relative flex items-center justify-center">
-          <svg className="size-36 sm:size-40 -rotate-90">
+          <svg viewBox="0 0 160 160" className="size-36 sm:size-40 -rotate-90">
             {/* Background Circle */}
             <circle
               cx="80"

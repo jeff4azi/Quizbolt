@@ -655,7 +655,7 @@ const ResultScreen = ({
             </div>
             <div className="relative flex items-center justify-center">
               <div className="absolute size-32 bg-blue-200 dark:bg-blue-500 blur-[40px] opacity-30 dark:opacity-20 rounded-full" />
-              <svg className="size-40 -rotate-90 drop-shadow-sm">
+              <svg viewBox="0 0 160 160" className="size-40 -rotate-90 drop-shadow-sm">
                 {/* Background Circle (The "grayed out" part) */}
                 <circle
                   cx="80"
