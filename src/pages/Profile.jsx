@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   FiArrowLeft,
   FiAward,
@@ -31,6 +31,39 @@ const formatLevel = (year) => {
 const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
   useDocumentTitle("Your Profile | QuizBolt");
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Always reset scroll to the top when visiting the profile screen
+  useEffect(() => {
+    const prevScrollRestoration = window.history?.scrollRestoration;
+    if (window.history?.scrollRestoration) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    const resetScroll = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+      const wrappers = document.querySelectorAll(
+        ".desktop-content-wrapper, main"
+      );
+      wrappers.forEach((el) => {
+        if (el) el.scrollTop = 0;
+      });
+    };
+
+    resetScroll();
+    const frameId = requestAnimationFrame(resetScroll);
+    const timer = setTimeout(resetScroll, 50);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      clearTimeout(timer);
+      if (window.history?.scrollRestoration && prevScrollRestoration) {
+        window.history.scrollRestoration = prevScrollRestoration;
+      }
+    };
+  }, [location.pathname, location.key]);
   const telegramGroupUrl = "";
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

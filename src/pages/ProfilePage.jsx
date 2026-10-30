@@ -238,6 +238,38 @@ const ProfilePage = ({ userProfile: viewerProfile, courses = [] }) => {
   const [notFound, setNotFound] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
+  // Always reset scroll to the top when visiting the profile screen
+  useEffect(() => {
+    const prevScrollRestoration = window.history?.scrollRestoration;
+    if (window.history?.scrollRestoration) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    const resetScroll = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+      const wrappers = document.querySelectorAll(
+        ".desktop-content-wrapper, main"
+      );
+      wrappers.forEach((el) => {
+        if (el) el.scrollTop = 0;
+      });
+    };
+
+    resetScroll();
+    const frameId = requestAnimationFrame(resetScroll);
+    const timer = setTimeout(resetScroll, 50);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      clearTimeout(timer);
+      if (window.history?.scrollRestoration && prevScrollRestoration) {
+        window.history.scrollRestoration = prevScrollRestoration;
+      }
+    };
+  }, [location.pathname, location.key]);
+
   // Keep the latest profile in a ref so the fetch callback doesn't depend on
   // `profile` state (it used to, which caused the fetch to re-run every time
   // it set the profile).
