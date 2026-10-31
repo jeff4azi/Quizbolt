@@ -9,7 +9,9 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
  * Gets the current session JWT for edge function auth.
  */
 const getAuthHeader = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   return session?.access_token ? `Bearer ${session.access_token}` : null;
 };
 
@@ -29,7 +31,7 @@ export const fetchProfileByUsernameOrId = async (identifier) => {
     const { data: byUsername } = await supabase
       .from("profiles")
       .select(
-        "id, full_name, user_name, avatar_url, university, department, year, is_premium"
+        "id, full_name, user_name, avatar_url, university, department, year, is_premium",
       )
       .ilike("user_name", clean)
       .maybeSingle();
@@ -41,7 +43,7 @@ export const fetchProfileByUsernameOrId = async (identifier) => {
       const { data: byId } = await supabase
         .from("profiles")
         .select(
-          "id, full_name, user_name, avatar_url, university, department, year, is_premium"
+          "id, full_name, user_name, avatar_url, university, department, year, is_premium",
         )
         .eq("id", clean)
         .maybeSingle();
@@ -68,7 +70,7 @@ export const searchUsers = async (query, currentUserId = null, limit = 25) => {
     let q = supabase
       .from("profiles")
       .select(
-        "id, full_name, user_name, avatar_url, university, department, year, is_premium"
+        "id, full_name, user_name, avatar_url, university, department, year, is_premium",
       )
       .or(`user_name.ilike.%${clean}%,full_name.ilike.%${clean}%`)
       .order("user_name", { ascending: true })
@@ -96,7 +98,9 @@ export const searchUsers = async (query, currentUserId = null, limit = 25) => {
  */
 
 export const getCurrentUserId = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   return user?.id || null;
 };
 
@@ -109,7 +113,7 @@ export const findConnection = async (userA, userB) => {
     .from("connections")
     .select("*")
     .or(
-      `and(requester_id.eq.${userA},receiver_id.eq.${userB}),and(requester_id.eq.${userB},receiver_id.eq.${userA})`
+      `and(requester_id.eq.${userA},receiver_id.eq.${userB}),and(requester_id.eq.${userB},receiver_id.eq.${userA})`,
     )
     .maybeSingle();
 
@@ -142,7 +146,10 @@ export const getOrCreateConnection = async (myId, theirId) => {
 
   if (error) {
     // If unique constraint race condition hit, fetch again
-    console.warn("Connection insert notice (may already exist):", error.message);
+    console.warn(
+      "Connection insert notice (may already exist):",
+      error.message,
+    );
     return await findConnection(myId, theirId);
   }
   return data;
@@ -153,7 +160,13 @@ export const getOrCreateConnection = async (myId, theirId) => {
  * Routes through Supabase Edge Function so server-side push notification fires,
  * with graceful fallback to direct insert if edge function is unreachable.
  */
-export const sendFirstMessage = async (connectionId, myId, text, recipientId, replyToId = null) => {
+export const sendFirstMessage = async (
+  connectionId,
+  myId,
+  text,
+  recipientId,
+  replyToId = null,
+) => {
   if (!myId || !text?.trim() || !recipientId) return null;
 
   try {
@@ -178,10 +191,15 @@ export const sendFirstMessage = async (connectionId, myId, text, recipientId, re
         const result = await res.json();
         return result.message || null;
       }
-      console.warn("Edge function send-message returned non-200, falling back to direct insert");
+      console.warn(
+        "Edge function send-message returned non-200, falling back to direct insert",
+      );
     }
   } catch (err) {
-    console.warn("Edge function send-message call failed, falling back to direct insert:", err);
+    console.warn(
+      "Edge function send-message call failed, falling back to direct insert:",
+      err,
+    );
   }
 
   // Fallback: direct insert via Supabase
@@ -219,7 +237,13 @@ export const sendFirstMessage = async (connectionId, myId, text, recipientId, re
  * Routes through Supabase Edge Function so server-side push notification fires,
  * with graceful fallback to direct insert if edge function is unreachable.
  */
-export const sendMessage = async (connectionId, myId, text, recipientId, replyToId = null) => {
+export const sendMessage = async (
+  connectionId,
+  myId,
+  text,
+  recipientId,
+  replyToId = null,
+) => {
   if (!connectionId || !myId || !text?.trim() || !recipientId) return null;
 
   try {
@@ -244,10 +268,15 @@ export const sendMessage = async (connectionId, myId, text, recipientId, replyTo
         const result = await res.json();
         return result.message || null;
       }
-      console.warn("Edge function send-message returned non-200, falling back to direct insert");
+      console.warn(
+        "Edge function send-message returned non-200, falling back to direct insert",
+      );
     }
   } catch (err) {
-    console.warn("Edge function send-message call failed, falling back to direct insert:", err);
+    console.warn(
+      "Edge function send-message call failed, falling back to direct insert:",
+      err,
+    );
   }
 
   // Fallback: direct insert via Supabase
@@ -323,33 +352,42 @@ export const declineConnection = async (connectionId) => {
 };
 
 /**
- * Cancels a sent connection request.
- * Deletes associated request messages and removes the connection row,
- * completely clearing the chat and removing the person from the user's chat screen.
+ * Cancels a sent connection request by deleting the row entirely.
+ * Only the original requester can cancel their own request.
+ *
+ * NOTE: This requires a DELETE RLS policy on the connections table:
+ *   CREATE POLICY "Users can delete own connection requests"
+ *   ON connections FOR DELETE TO authenticated
+ *   USING (auth.uid() = requester_id);
+ *
+ * Without that policy, Supabase RLS silently blocks the delete
+ * (returns 200 with 0 rows, no error object).
  */
 export const cancelConnectionRequest = async (connectionId, myId) => {
   if (!connectionId || !myId) return false;
 
-  // 1. Delete messages tied to this connection
-  const { error: msgErr } = await supabase
-    .from("messages")
-    .delete()
-    .eq("connection_id", connectionId);
-
-  if (msgErr) {
-    console.warn("Notice: could not bulk delete messages for cancelled connection:", msgErr);
-  }
-
-  // 2. Delete the connection row itself (ensuring the requester was myId and state is request_sent)
-  const { error: connErr } = await supabase
+  const { data, error } = await supabase
     .from("connections")
     .delete()
     .eq("id", connectionId)
-    .eq("requester_id", myId);
+    .eq("requester_id", myId)
+    .select("id");
 
-  if (connErr) {
-    console.error("Error cancelling connection request:", connErr);
-    throw connErr;
+  if (error) {
+    console.error("Error cancelling connection request:", error);
+    throw error;
+  }
+
+  // RLS can silently block a DELETE — it returns 200 with zero rows.
+  // Detect that and surface a clear error so the UI doesn't lie about success.
+  if (!data || data.length === 0) {
+    console.error(
+      "Cancel request: 0 rows deleted. The connections table likely has no DELETE RLS policy.",
+      { connectionId, myId },
+    );
+    throw new Error(
+      "Could not cancel request — database blocked the deletion.",
+    );
   }
 
   return true;
@@ -431,7 +469,7 @@ export const createReport = async ({
         status: "pending",
         created_at: new Date().toISOString(),
       },
-      { onConflict: "reporter_id,reported_id" }
+      { onConflict: "reporter_id,reported_id" },
     )
     .select()
     .single();
@@ -457,7 +495,9 @@ export const getMyConnections = async (myId) => {
   const { data: conns, error: connErr } = await supabase
     .from("connections")
     .select("*")
-    .or(`requester_id.eq.${myId},receiver_id.eq.${myId}`)
+    .or(
+      `requester_id.eq.${myId},and(receiver_id.eq.${myId},state.neq.declined)`,
+    )
     .order("updated_at", { ascending: false });
 
   if (connErr) {
@@ -469,14 +509,18 @@ export const getMyConnections = async (myId) => {
   // Gather other user IDs
   const otherUserIds = Array.from(
     new Set(
-      conns.map((c) => (c.requester_id === myId ? c.receiver_id : c.requester_id))
-    )
+      conns.map((c) =>
+        c.requester_id === myId ? c.receiver_id : c.requester_id,
+      ),
+    ),
   );
 
   // Batch fetch profiles
   const { data: profiles, error: profErr } = await supabase
     .from("profiles")
-    .select("id, full_name, user_name, avatar_url, university, department, year, is_premium")
+    .select(
+      "id, full_name, user_name, avatar_url, university, department, year, is_premium",
+    )
     .in("id", otherUserIds);
 
   if (profErr) {
@@ -489,7 +533,9 @@ export const getMyConnections = async (myId) => {
   const connectionIds = conns.map((c) => c.id);
   const { data: messages, error: msgErr } = await supabase
     .from("messages")
-    .select("id, connection_id, sender_id, text, status, created_at, reply_to_id")
+    .select(
+      "id, connection_id, sender_id, text, status, created_at, reply_to_id",
+    )
     .in("connection_id", connectionIds)
     .order("created_at", { ascending: true });
 
@@ -521,7 +567,7 @@ export const getMyConnections = async (myId) => {
 
     // Count unread messages (sent by them, status != 'read')
     const unreadCount = connMsgs.filter(
-      (m) => m.sender_id !== myId && m.status !== "read"
+      (m) => m.sender_id !== myId && m.status !== "read",
     ).length;
 
     // Quick id→row map for reply preview text within this connection's msgs
@@ -538,7 +584,11 @@ export const getMyConnections = async (myId) => {
         timestamp: m.created_at,
         replyToId: m.reply_to_id || null,
         replyToText: replyRef?.text || null,
-        replyToSender: replyRef ? (replyRef.sender_id === myId ? "me" : "them") : null,
+        replyToSender: replyRef
+          ? replyRef.sender_id === myId
+            ? "me"
+            : "them"
+          : null,
       };
     });
 
@@ -573,7 +623,9 @@ export const getMessages = async (connectionId, myId, limit = 50) => {
 
   const { data, error } = await supabase
     .from("messages")
-    .select("id, connection_id, sender_id, text, status, created_at, reply_to_id")
+    .select(
+      "id, connection_id, sender_id, text, status, created_at, reply_to_id",
+    )
     .eq("connection_id", connectionId)
     .order("created_at", { ascending: true })
     .limit(limit);
@@ -586,7 +638,9 @@ export const getMessages = async (connectionId, myId, limit = 50) => {
   const rows = data || [];
 
   // Build a quick id→text/sender map for quote preview
-  const idMap = new Map(rows.map((m) => [m.id, { text: m.text, senderId: m.sender_id }]));
+  const idMap = new Map(
+    rows.map((m) => [m.id, { text: m.text, senderId: m.sender_id }]),
+  );
 
   return rows.map((m) => {
     const replyRef = m.reply_to_id ? idMap.get(m.reply_to_id) : null;
@@ -599,7 +653,11 @@ export const getMessages = async (connectionId, myId, limit = 50) => {
       timestamp: m.created_at,
       replyToId: m.reply_to_id || null,
       replyToText: replyRef?.text || null,
-      replyToSender: replyRef ? (replyRef.senderId === myId ? "me" : "them") : null,
+      replyToSender: replyRef
+        ? replyRef.senderId === myId
+          ? "me"
+          : "them"
+        : null,
     };
   });
 };
@@ -672,8 +730,7 @@ export const isDeletedMessage = (text) => {
   if (!text || typeof text !== "string") return false;
   const trimmed = text.trim();
   return (
-    trimmed === '{"_type":"deleted"}' ||
-    trimmed === '{"_type": "deleted"}'
+    trimmed === '{"_type":"deleted"}' || trimmed === '{"_type": "deleted"}'
   );
 };
 
@@ -730,12 +787,12 @@ export const shareQuizResultToConnections = async ({
   const jsonText = JSON.stringify(payload);
   const results = await Promise.allSettled(
     connections.map((c) =>
-      sendMessage(c.connectionId, myId, jsonText, c.recipientId)
-    )
+      sendMessage(c.connectionId, myId, jsonText, c.recipientId),
+    ),
   );
 
   const successCount = results.filter(
-    (r) => r.status === "fulfilled" && r.value
+    (r) => r.status === "fulfilled" && r.value,
   ).length;
   return { successCount, total: connections.length };
 };

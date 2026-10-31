@@ -415,8 +415,11 @@ export const useMessaging = (username = null) => {
     if (!connectionId || !currentUserId) return false;
     try {
       await cancelConnectionRequest(connectionId, currentUserId);
+      // Clear local state immediately so the UI doesn't flash the old conversation
       setCurrentMessages([]);
-      await refreshConversations();
+      setConversations((prev) => prev.filter((c) => c.connectionId !== connectionId));
+      // Background refresh to sync server state (non-blocking)
+      refreshConversations();
       return true;
     } catch (err) {
       console.error("Failed to cancel connection request:", err);

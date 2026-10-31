@@ -37,7 +37,11 @@ import ConfirmOverlay from "../components/ConfirmOverlay";
 const formatMessageTime = (dateStr) => {
   if (!dateStr) return "";
   const d = new Date(dateStr);
-  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+  return d.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 };
 
 const getDateSeparatorLabel = (dateStr) => {
@@ -47,7 +51,7 @@ const getDateSeparatorLabel = (dateStr) => {
   const startOfDay = (date) =>
     new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   const diffDays = Math.round(
-    (startOfDay(now) - startOfDay(d)) / (1000 * 60 * 60 * 24)
+    (startOfDay(now) - startOfDay(d)) / (1000 * 60 * 60 * 24),
   );
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
@@ -84,8 +88,7 @@ const ReplyQuote = ({ replyToText, replyToSender, isMe, onClick }) => {
       ? "You unsent a message"
       : "This message was deleted"
     : formatQuizResultPreview(replyToText);
-  const truncated =
-    display.length > 80 ? display.slice(0, 80) + "…" : display;
+  const truncated = display.length > 80 ? display.slice(0, 80) + "…" : display;
 
   return (
     <button
@@ -107,9 +110,7 @@ const ReplyQuote = ({ replyToText, replyToSender, isMe, onClick }) => {
       <p
         className={`text-[11px] leading-snug line-clamp-2 ${
           isDeleted ? "italic opacity-80" : ""
-        } ${
-          isMe ? "text-blue-100/90" : "text-slate-600 dark:text-slate-300"
-        }`}
+        } ${isMe ? "text-blue-100/90" : "text-slate-600 dark:text-slate-300"}`}
       >
         {truncated}
       </p>
@@ -121,8 +122,7 @@ const ReplyQuote = ({ replyToText, replyToSender, isMe, onClick }) => {
 const ReplyBar = ({ replyingTo, displayName, onCancel }) => {
   if (!replyingTo) return null;
   const display = formatQuizResultPreview(replyingTo.text);
-  const truncated =
-    display.length > 80 ? display.slice(0, 80) + "…" : display;
+  const truncated = display.length > 80 ? display.slice(0, 80) + "…" : display;
 
   return (
     <div className="flex items-center gap-2 px-3 py-2 mb-1.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border-l-4 border-blue-500 animate-in slide-in-from-bottom-1 duration-150">
@@ -283,8 +283,7 @@ const ChatView = () => {
   const displayName =
     currentConv?.fullName || profileInfo?.full_name || username || "Scholar";
   const avatarUrl = currentConv?.avatarUrl || profileInfo?.avatar_url || null;
-  const isPremium =
-    currentConv?.isPremium ?? profileInfo?.is_premium ?? false;
+  const isPremium = currentConv?.isPremium ?? profileInfo?.is_premium ?? false;
   const partnerUserId = currentConv?.userId || profileInfo?.id || null;
 
   const { isOnline } = usePresence(partnerUserId ? [partnerUserId] : []);
@@ -381,7 +380,8 @@ const ChatView = () => {
   /* ── unsend / delete message ────────────────────────────────────────── */
   const [deletingMsgId, setDeletingMsgId] = useState(null);
   const [msgToDelete, setMsgToDelete] = useState(null);
-  const [showCancelRequestConfirm, setShowCancelRequestConfirm] = useState(false);
+  const [showCancelRequestConfirm, setShowCancelRequestConfirm] =
+    useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [chatFeedbackModal, setChatFeedbackModal] = useState({
     isOpen: false,
@@ -407,7 +407,8 @@ const ChatView = () => {
       setChatFeedbackModal({
         isOpen: true,
         title: "Could Not Unsend",
-        message: "Failed to unsend message. Please check your connection and try again.",
+        message:
+          "Failed to unsend message. Please check your connection and try again.",
       });
     } finally {
       setDeletingMsgId(null);
@@ -442,7 +443,10 @@ const ChatView = () => {
       setChatFeedbackModal({
         isOpen: true,
         title: "Action Failed",
-        message: "Could not cancel request. Please try again.",
+        message:
+          connectionState === "declined"
+            ? "Could not delete this chat. Please try again."
+            : "Could not cancel request. Please try again.",
       });
     } finally {
       setIsCancelling(false);
@@ -504,9 +508,7 @@ const ChatView = () => {
         }
       `}</style>
 
-      <div
-        className="flex flex-col h-[100dvh] w-full max-w-4xl mx-auto bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 lg:border-x border-slate-200/70 dark:border-slate-800/60 overflow-hidden"
-      >
+      <div className="flex flex-col h-[100dvh] w-full max-w-4xl mx-auto bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 lg:border-x border-slate-200/70 dark:border-slate-800/60 overflow-hidden">
         {/* ── TOP NAV ──────────────────────────────────────────────────────── */}
         <header className="shrink-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800 px-4 py-3 flex items-center justify-between gap-3 z-20">
           <div className="flex items-center gap-3 min-w-0">
@@ -521,7 +523,10 @@ const ChatView = () => {
               <FiArrowLeft size={20} />
             </button>
 
-            <Link to={`/u/${username}`} className="flex items-center gap-3 min-w-0 group">
+            <Link
+              to={`/u/${username}`}
+              className="flex items-center gap-3 min-w-0 group"
+            >
               <div className="relative shrink-0">
                 <Avatar
                   avatarUrl={avatarUrl}
@@ -562,6 +567,11 @@ const ChatView = () => {
                     <span className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-0.5">
                       <FiClock size={10} />
                       Request pending
+                    </span>
+                  ) : connectionState === "declined" ? (
+                    <span className="text-rose-500 dark:text-rose-400 font-semibold flex items-center gap-0.5">
+                      <FiX size={10} />
+                      Request declined
                     </span>
                   ) : connectionState === "request_received" ? (
                     <span className="text-blue-600 dark:text-blue-400 font-semibold">
@@ -615,13 +625,32 @@ const ChatView = () => {
                       className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition text-left"
                     >
                       <FiX className="size-4 shrink-0" />
-                      <span>{isCancelling ? "Cancelling..." : "Cancel Request"}</span>
+                      <span>
+                        {isCancelling ? "Cancelling..." : "Cancel Request"}
+                      </span>
+                    </button>
+                  )}
+
+                  {connectionState === "declined" && (
+                    <button
+                      type="button"
+                      disabled={isCancelling}
+                      onClick={handleCancelRequest}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition text-left"
+                    >
+                      <FiTrash2 className="size-4 shrink-0" />
+                      <span>
+                        {isCancelling ? "Deleting..." : "Delete Chat"}
+                      </span>
                     </button>
                   )}
 
                   <button
                     type="button"
-                    onClick={() => { setMenuOpen(false); setReportModalOpen(true); }}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setReportModalOpen(true);
+                    }}
                     className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition text-left"
                   >
                     <FiFlag className="size-4 shrink-0" />
@@ -659,7 +688,8 @@ const ChatView = () => {
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">
                 You can send 1 message to initiate a connection request. Once{" "}
-                {displayName} accepts, full chatting will unlock for both of you.
+                {displayName} accepts, full chatting will unlock for both of
+                you.
               </p>
             </div>
           ) : (
@@ -669,7 +699,9 @@ const ChatView = () => {
               const isDeleted = isDeletedMessage(msg.text);
               const currentDateKey = getMessageDateKey(msg.timestamp);
               const prevDateKey =
-                index > 0 ? getMessageDateKey(messages[index - 1].timestamp) : null;
+                index > 0
+                  ? getMessageDateKey(messages[index - 1].timestamp)
+                  : null;
               const showDateSeparator = currentDateKey !== prevDateKey;
               const dateLabel = showDateSeparator
                 ? getDateSeparatorLabel(msg.timestamp)
@@ -686,7 +718,9 @@ const ChatView = () => {
                   )}
 
                   <div
-                    ref={(el) => { if (el) msgRefs.current[msg.id] = el; }}
+                    ref={(el) => {
+                      if (el) msgRefs.current[msg.id] = el;
+                    }}
                     className={`flex items-end gap-2 py-0.5 ${isMe ? "justify-end" : "justify-start"}`}
                   >
                     {/* For 'me' messages: Action buttons (Delete / Reply) appear on the left when tapped */}
@@ -729,7 +763,10 @@ const ChatView = () => {
                             : "bg-slate-100/60 dark:bg-slate-850 text-slate-400 dark:text-slate-500 border-slate-200/50 dark:border-slate-800/80 rounded-tl-xs"
                         }`}
                       >
-                        <FiSlash size={13} className="shrink-0 text-slate-400" />
+                        <FiSlash
+                          size={13}
+                          className="shrink-0 text-slate-400"
+                        />
                         <span>
                           {isMe
                             ? "You unsent a message"
@@ -743,7 +780,9 @@ const ChatView = () => {
                       <div
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedMsgId((prev) => (prev === msg.id ? null : msg.id));
+                          setSelectedMsgId((prev) =>
+                            prev === msg.id ? null : msg.id,
+                          );
                         }}
                         className={`flex flex-col gap-1 cursor-pointer transition-all ${
                           isSelected
@@ -767,21 +806,33 @@ const ChatView = () => {
                           isMe={isMe}
                           interactive={true}
                           onAcceptChallenge={(course) => {
-                            navigate(`/choose-course?course=${encodeURIComponent(course)}`);
+                            navigate(
+                              `/choose-course?course=${encodeURIComponent(course)}`,
+                            );
                           }}
                         />
                         <div
                           className={`flex items-center gap-1 mt-0.5 px-2 text-[10px] font-medium select-none ${
-                            isMe ? "justify-end text-slate-400" : "justify-start text-slate-400"
+                            isMe
+                              ? "justify-end text-slate-400"
+                              : "justify-start text-slate-400"
                           }`}
                         >
                           <span>{formatMessageTime(msg.timestamp)}</span>
                           {isMe && (
                             <span className="inline-flex items-center shrink-0">
                               {msg.status === "sent" ? (
-                                <IoCheckmark size={14} className="text-slate-400" title="Sent" />
+                                <IoCheckmark
+                                  size={14}
+                                  className="text-slate-400"
+                                  title="Sent"
+                                />
                               ) : (
-                                <IoCheckmarkDone size={15} className="text-sky-500" title="Delivered / Read" />
+                                <IoCheckmarkDone
+                                  size={15}
+                                  className="text-sky-500"
+                                  title="Delivered / Read"
+                                />
                               )}
                             </span>
                           )}
@@ -791,7 +842,9 @@ const ChatView = () => {
                       <div
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedMsgId((prev) => (prev === msg.id ? null : msg.id));
+                          setSelectedMsgId((prev) =>
+                            prev === msg.id ? null : msg.id,
+                          );
                         }}
                         className={`relative max-w-[85%] sm:max-w-md px-3.5 pt-2.5 pb-2 rounded-2xl text-xs sm:text-sm shadow-sm leading-relaxed cursor-pointer select-text transition-all ${
                           isMe
@@ -832,9 +885,17 @@ const ChatView = () => {
                           {isMe && (
                             <span className="inline-flex items-center shrink-0">
                               {msg.status === "sent" ? (
-                                <IoCheckmark size={14} className="text-blue-200" title="Sent" />
+                                <IoCheckmark
+                                  size={14}
+                                  className="text-blue-200"
+                                  title="Sent"
+                                />
                               ) : (
-                                <IoCheckmarkDone size={15} className="text-sky-200" title="Delivered / Read" />
+                                <IoCheckmarkDone
+                                  size={15}
+                                  className="text-sky-200"
+                                  title="Delivered / Read"
+                                />
                               )}
                             </span>
                           )}
@@ -882,7 +943,8 @@ const ChatView = () => {
                       {displayName} wants to connect with you
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Accepting allows both of you to chat freely. Replying also accepts.
+                      Accepting allows both of you to chat freely. Replying also
+                      accepts.
                     </p>
                   </div>
 
@@ -911,7 +973,8 @@ const ChatView = () => {
             {connectionState === "request_sent" && (
               <div className="bg-amber-500/15 dark:bg-amber-900/30 backdrop-blur-xl border border-amber-500/30 px-4 py-3 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-2.5 text-center sm:text-left">
                 <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
-                  Request pending. You can send more messages once {displayName} accepts.
+                  Request pending. You can send more messages once {displayName}{" "}
+                  accepts.
                 </p>
                 <button
                   type="button"
@@ -930,6 +993,23 @@ const ChatView = () => {
                 <p className="text-xs font-bold text-rose-800 dark:text-rose-300">
                   Messaging is unavailable because this user is blocked.
                 </p>
+              </div>
+            )}
+
+            {/* ── DECLINED NOTE ─────────────────────────────────────────────────── */}
+            {connectionState === "declined" && (
+              <div className="bg-rose-500/15 dark:bg-rose-950/40 backdrop-blur-xl border border-rose-500/30 px-4 py-3 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-2.5 text-center sm:text-left">
+                <p className="text-xs font-semibold text-rose-800 dark:text-rose-300">
+                  {displayName} declined your connection request.
+                </p>
+                <button
+                  type="button"
+                  disabled={isCancelling}
+                  onClick={handleCancelRequest}
+                  className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-rose-300 dark:border-rose-700/60 text-rose-800 dark:text-rose-200 text-xs font-bold hover:bg-rose-50 dark:hover:bg-rose-900/40 active:scale-95 transition shrink-0 disabled:opacity-50"
+                >
+                  {isCancelling ? "Deleting..." : "Delete Chat"}
+                </button>
               </div>
             )}
 
@@ -958,8 +1038,8 @@ const ChatView = () => {
                     isComposerDisabled
                       ? "Composer locked pending accept..."
                       : connectionState === "none"
-                      ? "Send your one message request to connect..."
-                      : "Type a message..."
+                        ? "Send your one message request to connect..."
+                        : "Type a message..."
                   }
                   className="flex-1 min-h-[42px] max-h-[120px] px-3.5 py-2.5 bg-transparent text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto leading-relaxed no-scrollbar"
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -1011,15 +1091,31 @@ const ChatView = () => {
           danger={true}
         />
 
-        {/* ── CANCEL REQUEST CONFIRMATION ────────────────────────────────────── */}
+        {/* ── CANCEL / DELETE CONFIRMATION ───────────────────────────────────── */}
         <ConfirmOverlay
           isOpen={showCancelRequestConfirm}
           onClose={() => setShowCancelRequestConfirm(false)}
           onConfirm={confirmCancelRequest}
-          title="Cancel Connection Request?"
-          message={`Are you sure you want to cancel your connection request to ${displayName}? This will remove them from your messages.`}
-          confirmText={isCancelling ? "Cancelling..." : "Yes, cancel request"}
-          cancelText="Keep request"
+          title={
+            connectionState === "declined"
+              ? "Delete This Chat?"
+              : "Cancel Connection Request?"
+          }
+          message={
+            connectionState === "declined"
+              ? `This will permanently remove the conversation with ${displayName} from your messages.`
+              : `Are you sure you want to cancel your connection request to ${displayName}? This will remove them from your messages.`
+          }
+          confirmText={
+            isCancelling
+              ? "Deleting..."
+              : connectionState === "declined"
+                ? "Yes, delete"
+                : "Yes, cancel request"
+          }
+          cancelText={
+            connectionState === "declined" ? "Keep chat" : "Keep request"
+          }
           danger={true}
         />
 
@@ -1038,8 +1134,12 @@ const ChatView = () => {
         {/* ── FEEDBACK / ALERT MODAL ─────────────────────────────────────────── */}
         <ConfirmOverlay
           isOpen={chatFeedbackModal.isOpen}
-          onClose={() => setChatFeedbackModal({ isOpen: false, title: "", message: "" })}
-          onConfirm={() => setChatFeedbackModal({ isOpen: false, title: "", message: "" })}
+          onClose={() =>
+            setChatFeedbackModal({ isOpen: false, title: "", message: "" })
+          }
+          onConfirm={() =>
+            setChatFeedbackModal({ isOpen: false, title: "", message: "" })
+          }
           title={chatFeedbackModal.title || "Notice"}
           message={chatFeedbackModal.message}
           confirmText="Got it"

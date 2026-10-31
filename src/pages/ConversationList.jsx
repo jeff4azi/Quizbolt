@@ -319,6 +319,19 @@ const ConversationList = () => {
                               </button>
                             );
                           }
+                          if (state === "declined") {
+                            return (
+                              <button
+                                type="button"
+                                onClick={goChat}
+                                aria-label={`Connection request to ${user.full_name || user.user_name} was declined`}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/20 hover:bg-rose-100 dark:hover:bg-rose-900/50 active:scale-95 transition-transform"
+                              >
+                                <FiX size={12} />
+                                <span>Declined</span>
+                              </button>
+                            );
+                          }
                           // connectionState === "none" (not connected yet)
                           return (
                             <button
@@ -517,29 +530,42 @@ const ConversationList = () => {
                               )}
                               <p
                                 className={`text-xs truncate ${
-                                  hasUnread
-                                    ? "font-bold text-slate-900 dark:text-white"
-                                    : "font-medium text-slate-500 dark:text-slate-400"
+                                  conv.connectionState === "declined"
+                                    ? "font-bold text-rose-500 dark:text-rose-400 italic"
+                                    : hasUnread
+                                      ? "font-bold text-slate-900 dark:text-white"
+                                      : "font-medium text-slate-500 dark:text-slate-400"
                                 }`}
                               >
-                                {lastMsg
-                                  ? isDeletedMessage(lastMsg.text)
-                                    ? isMe
-                                      ? "You unsent a message"
-                                      : "This message was deleted"
-                                    : isQuizResultPayload(lastMsg.text)
-                                    ? formatQuizResultPreview(lastMsg.text, isMe)
-                                    : isMe
-                                      ? `You: ${lastMsg.text}`
-                                      : lastMsg.text
-                                  : "Start a conversation"}
+                                {conv.connectionState === "declined"
+                                  ? "Request declined"
+                                  : lastMsg
+                                    ? isDeletedMessage(lastMsg.text)
+                                      ? isMe
+                                        ? "You unsent a message"
+                                        : "This message was deleted"
+                                      : isQuizResultPayload(lastMsg.text)
+                                        ? formatQuizResultPreview(
+                                            lastMsg.text,
+                                            isMe,
+                                          )
+                                        : isMe
+                                          ? `You: ${lastMsg.text}`
+                                          : lastMsg.text
+                                    : "Start a conversation"}
                               </p>
                             </div>
 
-                            {hasUnread && (
-                              <span className="size-5 shrink-0 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center shadow-sm">
-                                {conv.unreadCount || 1}
+                            {conv.connectionState === "declined" ? (
+                              <span className="shrink-0 px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 text-[10px] font-bold">
+                                Declined
                               </span>
+                            ) : (
+                              hasUnread && (
+                                <span className="size-5 shrink-0 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center shadow-sm">
+                                  {conv.unreadCount || 1}
+                                </span>
+                              )
                             )}
                           </div>
                         </div>
