@@ -14,6 +14,7 @@ import imageCompression from "browser-image-compression";
 import { supabase } from "../supabaseClient";
 /* import NavBar from "../components/NavBar"; */
 import { DEFAULT_AVATAR_URL } from "../components/Avatar";
+import ImageCropModal from "../components/ImageCropModal";
 
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = "profile_pictures";
@@ -28,36 +29,6 @@ const validateCloudinaryConfig = () => {
   }
 };
 
-const cropToSquare = (file) => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
-
-    img.onload = () => {
-      const size = Math.min(img.width, img.height);
-
-      const canvas = document.createElement("canvas");
-      canvas.width = size;
-      canvas.height = size;
-
-      const ctx = canvas.getContext("2d");
-
-      const offsetX = (img.width - size) / 2;
-      const offsetY = (img.height - size) / 2;
-
-      ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, size, size);
-
-      canvas.toBlob((blob) => {
-        const croppedFile = new File([blob], file.name, {
-          type: file.type,
-        });
-
-        resolve(croppedFile);
-      }, file.type);
-    };
-  });
-};
-
 const UploadProfilePic = ({ userProfile, setUserProfile, deleteImage }) => {
   useDocumentTitle("Upload Profile Picture | QuizBolt");
   const navigate = useNavigate();
@@ -65,11 +36,16 @@ const UploadProfilePic = ({ userProfile, setUserProfile, deleteImage }) => {
 
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(userProfile?.avatar_url || null);
+  const [rawImage, setRawImage] = useState(null);
+  const [isCropOpen, setIsCropOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState({ type: "", message: "" });
 
-  const handleFileChange = async (event) => {
-    const selectedFile = event.target.files[0];
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files?.[0];
+    // Reset so picking the same file again re-triggers this handler
+    // (common when the user cancels the crop step).
+    event.target.value = "";
     if (!selectedFile) return;
 
     const validTypes = ["image/jpeg", "image/png", "image/webp"];
@@ -81,21 +57,36 @@ const UploadProfilePic = ({ userProfile, setUserProfile, deleteImage }) => {
       return;
     }
 
-    setStatus({ type: "info", message: "Preparing image..." });
+    setStatus({ type: "", message: "" });
+    setRawImage({
+      src: URL.createObjectURL(selectedFile),
+      fileName: selectedFile.name,
+      fileType: selectedFile.type,
+    });
+    setIsCropOpen(true);
+  };
 
-    try {
-      const cropped = await cropToSquare(selectedFile);
+  const releaseRawImage = () => {
+    if (rawImage?.src) URL.revokeObjectURL(rawImage.src);
+    setRawImage(null);
+  };
 
-      setFile(cropped);
-      setPreviewUrl(URL.createObjectURL(cropped));
-
-      setStatus({ type: "", message: "" });
-    } catch (err) {
-      setStatus({
-        type: "error",
-        message: "Failed to process image.",
-      });
+  const handleCropApply = (croppedFile) => {
+    releaseRawImage();
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
     }
+
+    setFile(croppedFile);
+    setPreviewUrl(URL.createObjectURL(croppedFile));
+    setIsCropOpen(false);
+    setStatus({ type: "", message: "" });
+  };
+
+  const handleCropCancel = () => {
+    releaseRawImage();
+    setIsCropOpen(false);
+    setStatus({ type: "", message: "" });
   };
 
   const triggerFileInput = () => fileInputRef.current.click();
@@ -375,7 +366,8 @@ const UploadProfilePic = ({ userProfile, setUserProfile, deleteImage }) => {
             <div className="border-b border-slate-100 dark:border-slate-800 px-5 py-4">
               <h2 className="font-black">Photo controls</h2>
               <p className="text-xs font-semibold text-slate-400">
-                Use a clear square photo. JPEG, PNG, and WEBP are supported.
+                Pick a photo, then adjust the crop before saving. JPEG, PNG,
+                and WEBP are supported.
               </p>
             </div>
 
@@ -454,7 +446,7 @@ const UploadProfilePic = ({ userProfile, setUserProfile, deleteImage }) => {
         </section>
       </main>
 
-      {file && (
+      {file && !isCropOpen && (
         <div className="fixed bottom-6 inset-x-5 z-50 mx-auto max-w-sm lg:left-[16rem]">
           <button
             type="button"
@@ -472,6 +464,15 @@ const UploadProfilePic = ({ userProfile, setUserProfile, deleteImage }) => {
           </button>
         </div>
       )}
+
+      <ImageCropModal
+        isOpen={isCropOpen}
+        imageSrc={rawImage?.src}
+        fileName={rawImage?.fileName}
+        fileType={rawImage?.fileType}
+        onCrop={handleCropApply}
+        onCancel={handleCropCancel}
+      />
 
       {/* {!file && <NavBar isPremium={isPremium} />} */}
     </div>
