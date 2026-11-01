@@ -11,7 +11,7 @@ const MessageButton = ({
 }) => {
   const navigate = useNavigate();
   const targetUsername = username || userProfile?.user_name || userProfile?.id;
-  const { connectionState } = useMessaging(targetUsername);
+  const { connectionState, cooldownInfo } = useMessaging(targetUsername);
 
   // Hidden or disabled if blocked or declined
   if (connectionState === "blocked" || connectionState === "declined") {
@@ -22,6 +22,23 @@ const MessageButton = ({
         className={`px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-bold cursor-not-allowed opacity-60 ${className}`}
       >
         Unavailable
+      </button>
+    );
+  }
+
+  // Cooldown active — show disabled button with remaining days
+  if (connectionState === "none" && cooldownInfo && !cooldownInfo.canRequest) {
+    return (
+      <button
+        type="button"
+        disabled
+        className={`px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-bold cursor-not-allowed opacity-60 ${className}`}
+      >
+        {cooldownInfo.declineCount >= 4
+          ? "Unavailable"
+          : cooldownInfo.daysRemaining > 0
+            ? `Wait ${cooldownInfo.daysRemaining}d`
+            : "Unavailable"}
       </button>
     );
   }

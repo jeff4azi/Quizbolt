@@ -796,3 +796,62 @@ export const shareQuizResultToConnections = async ({
   ).length;
   return { successCount, total: connections.length };
 };
+
+/**
+ * Checks whether the current user can send a new connection request to a
+ * target user, factoring in prior declines and escalating cooldowns.
+ * Calls the can_request_connection RPC on the server.
+ *
+ * Returns: { canRequest, daysRemaining, nextEligibleDate, declineCount }
+ */
+export const checkRequestCooldown = async (targetUserId) => {
+  if (!targetUserId) {
+    return {
+      canRequest: true,
+      daysRemaining: null,
+      nextEligibleDate: null,
+      declineCount: 0,
+    };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc("can_request_connection", {
+      target_uuid: targetUserId,
+    });
+
+    if (error) {
+      console.error("Error checking request cooldown:", error);
+      return {
+        canRequest: true,
+        daysRemaining: null,
+        nextEligibleDate: null,
+        declineCount: 0,
+      };
+    }
+
+    if (!data || data.length === 0) {
+      return {
+        canRequest: true,
+        daysRemaining: null,
+        nextEligibleDate: null,
+        declineCount: 0,
+      };
+    }
+
+    const row = data[0];
+    return {
+      canRequest: Boolean(row.can_request),
+      daysRemaining: row.days_remaining ?? null,
+      nextEligibleDate: row.next_eligible_date ?? null,
+      declineCount: row.decline_count ?? 0,
+    };
+  } catch (err) {
+    console.error("Cooldown check failed:", err);
+    return {
+      canRequest: true,
+      daysRemaining: null,
+      nextEligibleDate: null,
+      declineCount: 0,
+    };
+  }
+};

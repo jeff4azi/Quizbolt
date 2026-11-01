@@ -17,6 +17,7 @@ import {
   fetchProfileByUsernameOrId,
   deleteMessage as deleteMessageFn,
   cancelConnectionRequest,
+  checkRequestCooldown,
 } from "../services/messagingService";
 
 export const useMessaging = (username = null) => {
@@ -26,6 +27,7 @@ export const useMessaging = (username = null) => {
   const [chatLoading, setChatLoading] = useState(Boolean(username));
   const [targetProfile, setTargetProfile] = useState(null);
   const [currentMessages, setCurrentMessages] = useState([]);
+  const [cooldownInfo, setCooldownInfo] = useState(null);
 
   const activeConnRef = useRef(null);
 
@@ -176,6 +178,29 @@ export const useMessaging = (username = null) => {
 
   const connectionId = matchedConv?.connectionId || null;
   const targetUserId = targetProfile?.id || matchedConv?.userId || null;
+
+  // 4b. Cooldown check — only when there's no active connection
+  // (matchedConv is null, meaning state === "none") and we have a resolved
+  // target user. Calls the server-side RPC for escalating cooldowns.
+  useEffect(() => {
+    if (!currentUserId || !targetUserId || matchedConv) {
+      setCooldownInfo(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const checkCooldown = async () => {
+      const info = await checkRequestCooldown(targetUserId);
+      if (isMounted) setCooldownInfo(info);
+    };
+
+    checkCooldown();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUserId, targetUserId, matchedConv]);
 
   // 5. Smart active chat polling (3-second lightweight REST sync)
   // Runs ONLY when actively viewing this open chat, AND only when tab is visible.
@@ -451,6 +476,7 @@ export const useMessaging = (username = null) => {
     totalUnreadCount,
     currentConv,
     connectionState,
+    cooldownInfo,
     loading,
     chatLoading,
     sendMessage,

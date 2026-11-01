@@ -206,7 +206,7 @@ const ChatSkeleton = ({ onBack }) => {
       </div>
 
       {/* Floating Composer Skeleton */}
-      <div className="fixed inset-x-0 bottom-3 z-30 pointer-events-none px-3 sm:px-4 max-w-4xl mx-auto">
+      <div className="fixed inset-x-0 lg:left-64 bottom-3 z-30 pointer-events-none px-3 sm:px-4 max-w-4xl mx-auto">
         <div className="max-w-3xl mx-auto bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-800 shadow-xl rounded-3xl p-1.5 flex items-center justify-between gap-3 animate-pulse">
           <div className="h-4 w-36 bg-slate-200/70 dark:bg-slate-800/70 rounded-full ml-3" />
           <div className="size-10 rounded-full bg-slate-200/80 dark:bg-slate-800 mr-0.5" />
@@ -224,6 +224,7 @@ const ChatView = () => {
   const {
     currentConv,
     connectionState,
+    cooldownInfo,
     sendMessage,
     deleteMessage,
     accept,
@@ -468,7 +469,8 @@ const ChatView = () => {
   const isComposerDisabled =
     connectionState === "request_sent" ||
     connectionState === "declined" ||
-    connectionState === "blocked";
+    connectionState === "blocked" ||
+    (connectionState === "none" && cooldownInfo && !cooldownInfo.canRequest);
 
   const isMobile = isMobileDevice();
 
@@ -928,7 +930,7 @@ const ChatView = () => {
 
         {/* ── FLOATING COMPOSER UNIT ────────────────────────────────────────── */}
         <div
-          className="fixed inset-x-0 z-30 pointer-events-none px-3 sm:px-4 max-w-4xl mx-auto transition-all duration-150"
+          className="fixed inset-x-0 lg:left-64 z-30 pointer-events-none px-3 sm:px-4 max-w-4xl mx-auto transition-all duration-150"
           style={{
             bottom: kbHeight > 0 ? `${kbHeight + 8}px` : "12px",
           }}
@@ -951,7 +953,10 @@ const ChatView = () => {
                   <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                     <button
                       type="button"
-                      onClick={decline}
+                      onClick={async () => {
+                        await decline();
+                        navigate("/messages", { replace: true });
+                      }}
                       className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 transition-colors"
                     >
                       Decline
@@ -1012,6 +1017,27 @@ const ChatView = () => {
                 </button>
               </div>
             )}
+
+            {/* ── COOLDOWN NOTE (no active connection + declined before) ──────────── */}
+            {connectionState === "none" &&
+              cooldownInfo &&
+              !cooldownInfo.canRequest && (
+                <div className="bg-slate-500/15 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-400/30 px-4 py-3 rounded-2xl shadow-lg text-center">
+                  {cooldownInfo.declineCount >= 4 ? (
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      {displayName} has declined your requests multiple times.
+                      You can no longer send them a connection request.
+                    </p>
+                  ) : cooldownInfo.daysRemaining > 0 ? (
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      {displayName} declined your previous request
+                      {cooldownInfo.declineCount > 1 ? "s" : ""}. You can send a
+                      new request in {cooldownInfo.daysRemaining} day
+                      {cooldownInfo.daysRemaining !== 1 ? "s" : ""}.
+                    </p>
+                  ) : null}
+                </div>
+              )}
 
             {/* ── FLOATING COMPOSER CAPSULE ───────────────────────────────────── */}
             <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 shadow-2xl rounded-3xl p-1.5 transition-all">
