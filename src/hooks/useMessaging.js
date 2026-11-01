@@ -50,7 +50,7 @@ export const useMessaging = (username = null) => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setCurrentUserId(session?.user?.id || null);
-      }
+      },
     );
 
     return () => {
@@ -118,7 +118,7 @@ export const useMessaging = (username = null) => {
       const existingInList = conversations.find(
         (c) =>
           c.username?.toLowerCase() === lower ||
-          c.userId?.toLowerCase() === lower
+          c.userId?.toLowerCase() === lower,
       );
 
       if (existingInList) {
@@ -220,15 +220,15 @@ export const useMessaging = (username = null) => {
 
         // 3. If there are incoming unread messages from "them", mark them read
         const hasUnreadIncoming = latestMsgs.some(
-          (m) => m.sender === "them" && m.status !== "read"
+          (m) => m.sender === "them" && m.status !== "read",
         );
         if (hasUnreadIncoming) {
           await markRead(connectionId, currentUserId);
           if (isMounted) {
             setCurrentMessages((prev) =>
               prev.map((m) =>
-                m.sender === "them" ? { ...m, status: "read" } : m
-              )
+                m.sender === "them" ? { ...m, status: "read" } : m,
+              ),
             );
             refreshConversations();
           }
@@ -266,26 +266,30 @@ export const useMessaging = (username = null) => {
   const currentConv = matchedConv
     ? {
         ...matchedConv,
-        messages: currentMessages.length > 0 ? currentMessages : matchedConv.messages || [],
+        messages:
+          currentMessages.length > 0
+            ? currentMessages
+            : matchedConv.messages || [],
       }
     : targetProfile
-    ? {
-        connectionId: null,
-        userId: targetProfile.id,
-        username: targetProfile.user_name || targetProfile.id,
-        fullName: targetProfile.full_name || targetProfile.user_name || "Scholar",
-        avatarUrl: targetProfile.avatar_url,
-        university: targetProfile.university || "University",
-        department: targetProfile.department || "General Studies",
-        year: targetProfile.year || 1,
-        isPremium: Boolean(targetProfile.is_premium),
-        connectionState: "none",
-        unread: false,
-        unreadCount: 0,
-        lastActivity: new Date().toISOString(),
-        messages: currentMessages,
-      }
-    : null;
+      ? {
+          connectionId: null,
+          userId: targetProfile.id,
+          username: targetProfile.user_name || targetProfile.id,
+          fullName:
+            targetProfile.full_name || targetProfile.user_name || "Scholar",
+          avatarUrl: targetProfile.avatar_url,
+          university: targetProfile.university || "University",
+          department: targetProfile.department || "General Studies",
+          year: targetProfile.year || 1,
+          isPremium: Boolean(targetProfile.is_premium),
+          connectionState: "none",
+          unread: false,
+          unreadCount: 0,
+          lastActivity: new Date().toISOString(),
+          messages: currentMessages,
+        }
+      : null;
 
   const connectionState = currentConv ? currentConv.connectionState : "none";
 
@@ -310,13 +314,25 @@ export const useMessaging = (username = null) => {
           const conn = await getOrCreateConnection(currentUserId, targetUserId);
           if (!conn) throw new Error("Could not initialize connection");
           activeConnId = conn.id;
-          await sendFirstMessage(activeConnId, currentUserId, text, targetUserId, replyToId);
+          await sendFirstMessage(
+            activeConnId,
+            currentUserId,
+            text,
+            targetUserId,
+            replyToId,
+          );
         } else {
           // If request_received, sending a reply automatically accepts the request!
           if (connectionState === "request_received") {
             await acceptConnection(activeConnId);
           }
-          await sendMsg(activeConnId, currentUserId, text, targetUserId, replyToId);
+          await sendMsg(
+            activeConnId,
+            currentUserId,
+            text,
+            targetUserId,
+            replyToId,
+          );
         }
 
         await refreshActiveMessages();
@@ -333,7 +349,7 @@ export const useMessaging = (username = null) => {
       connectionState,
       refreshActiveMessages,
       refreshConversations,
-    ]
+    ],
   );
 
   const accept = useCallback(async () => {
@@ -384,7 +400,7 @@ export const useMessaging = (username = null) => {
         connectionId,
       });
     },
-    [currentUserId, targetUserId, connectionId]
+    [currentUserId, targetUserId, connectionId],
   );
 
   const deleteMessage = useCallback(
@@ -397,8 +413,8 @@ export const useMessaging = (username = null) => {
           prev.map((m) =>
             m.id === messageId
               ? { ...m, text: '{"_type":"deleted"}', status: "deleted" }
-              : m
-          )
+              : m,
+          ),
         );
         await refreshActiveMessages();
         await refreshConversations();
@@ -408,7 +424,7 @@ export const useMessaging = (username = null) => {
         throw err;
       }
     },
-    [currentUserId, refreshActiveMessages, refreshConversations]
+    [currentUserId, refreshActiveMessages, refreshConversations],
   );
 
   const cancelRequest = useCallback(async () => {
@@ -417,12 +433,14 @@ export const useMessaging = (username = null) => {
       await cancelConnectionRequest(connectionId, currentUserId);
       // Clear local state immediately so the UI doesn't flash the old conversation
       setCurrentMessages([]);
-      setConversations((prev) => prev.filter((c) => c.connectionId !== connectionId));
+      setConversations((prev) =>
+        prev.filter((c) => c.connectionId !== connectionId),
+      );
       // Background refresh to sync server state (non-blocking)
       refreshConversations();
       return true;
     } catch (err) {
-      console.error("Failed to cancel connection request:", err);
+      console.error("Failed to cancel/delete connection:", err);
       throw err;
     }
   }, [connectionId, currentUserId, refreshConversations]);
