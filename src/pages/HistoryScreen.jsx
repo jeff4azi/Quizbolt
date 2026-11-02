@@ -1164,16 +1164,16 @@ const HistoryItem = ({
             </span>
           )}
         </div>
-        <span className="text-sm text-slate-500 dark:text-slate-400 flex flex-wrap gap-2 items-center">
-          <span>{exam.date}</span>
-          <span className="hidden sm:inline">·</span>
-          <span>{total} Qs</span>
+        <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
+          <span className="shrink-0">{exam.date}</span>
+          <span className="shrink-0">·</span>
+          <span className="shrink-0">{total} Qs</span>
           {formattedTime && (
-            <>
-              <span className="hidden sm:inline">·</span>
+            <span className="inline-flex items-center gap-1 shrink-0">
+              <span>·</span>
               <FiClock size={12} className="opacity-70" />
               <span>{formattedTime}</span>
-            </>
+            </span>
           )}
         </span>
         <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-2">
