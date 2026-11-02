@@ -705,6 +705,54 @@ export const markDelivered = async (connectionId, myId) => {
 };
 
 /**
+ * ── Typing indicator (polling-based, no Realtime) ────────────────────────────
+ * The typing slot lives on the connections row and is read as part of the
+ * open-chat poll. Writes/reads are RPCs so the timestamp comes from the
+ * server's now() and can't be skewed by a wrong client clock.
+ */
+
+/** How long a typing heartbeat stays valid. Must exceed TYPING_THROTTLE_MS. */
+export const TYPING_WINDOW_MS = 5000;
+
+/** Minimum gap between typing heartbeats while the user keeps typing. */
+export const TYPING_THROTTLE_MS = 2000;
+
+/**
+ * Publishes my typing state on a connection. Call with `true` on keystroke
+ * (throttled) and with `false` right after sending to clear the bubble.
+ */
+export const setTyping = async (connectionId, isTyping) => {
+  if (!connectionId) return;
+  try {
+    const { error } = await supabase.rpc("set_typing", {
+      p_connection_id: connectionId,
+      p_typing: Boolean(isTyping),
+    });
+    if (error) console.error("Error setting typing state:", error);
+  } catch (err) {
+    console.error("Typing heartbeat failed:", err);
+  }
+};
+
+/** Returns true when the other party typed within the last TYPING_WINDOW_MS. */
+export const getPartnerTyping = async (connectionId) => {
+  if (!connectionId) return false;
+  try {
+    const { data, error } = await supabase.rpc("get_partner_typing", {
+      p_connection_id: connectionId,
+    });
+    if (error) {
+      console.error("Error reading typing state:", error);
+      return false;
+    }
+    return Boolean(data);
+  } catch (err) {
+    console.error("Typing read failed:", err);
+    return false;
+  }
+};
+
+/**
  * Lightweight stub: we use smart active polling instead of WebSockets to avoid hitting Supabase 200-connection limit.
  */
 export const subscribeToMessages = () => {

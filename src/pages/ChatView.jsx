@@ -376,6 +376,8 @@ const ChatView = () => {
     markAsRead,
     report,
     chatLoading,
+    isPartnerTyping,
+    notifyTyping,
   } = useMessaging(username);
 
   // Mark conversation as read whenever this view is active
@@ -652,6 +654,13 @@ const ChatView = () => {
           100% { background-color: transparent; }
         }
         .reply-flash { animation: replyFlash 1.1s ease; border-radius: 16px; }
+
+        /* Typing indicator dots */
+        @keyframes typingDot {
+          0%, 60%, 100% { transform: translateY(0);    opacity: 0.35; }
+          30%           { transform: translateY(-3px); opacity: 1;    }
+        }
+        .typing-dot { animation: typingDot 1.2s infinite ease-in-out; }
 
         /* Hide scrollbar across all browsers */
         .no-scrollbar::-webkit-scrollbar {
@@ -1145,6 +1154,27 @@ const ChatView = () => {
               );
             })
           )}
+          {/* ── TYPING INDICATOR ──────────────────────────────────────────── */}
+          {isPartnerTyping && (
+            <div className="flex items-end gap-2 justify-start mt-0.5">
+              <div
+                role="status"
+                aria-label={`${displayName} is typing`}
+                className="inline-flex items-center gap-1 px-3.5 py-3 rounded-2xl rounded-tl-xs bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/60 shadow-sm"
+              >
+                <span className="size-1.5 rounded-full bg-slate-400 dark:bg-slate-500 typing-dot" />
+                <span
+                  className="size-1.5 rounded-full bg-slate-400 dark:bg-slate-500 typing-dot"
+                  style={{ animationDelay: "0.15s" }}
+                />
+                <span
+                  className="size-1.5 rounded-full bg-slate-400 dark:bg-slate-500 typing-dot"
+                  style={{ animationDelay: "0.3s" }}
+                />
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} className="h-4" />
         </div>
 
@@ -1277,7 +1307,10 @@ const ChatView = () => {
                   ref={inputRef}
                   rows={1}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    if (e.target.value.trim()) notifyTyping();
+                  }}
                   onKeyDown={handleKeyDown}
                   disabled={isComposerDisabled || isSending}
                   placeholder={

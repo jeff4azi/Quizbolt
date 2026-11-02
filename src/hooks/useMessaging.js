@@ -11,6 +11,9 @@ import {
   blockUser as blockUserFn,
   markRead,
   markDelivered,
+  setTyping,
+  getPartnerTyping,
+  TYPING_THROTTLE_MS,
   subscribeToMessages,
   subscribeToIncoming,
   createReport,
@@ -29,8 +32,11 @@ export const useMessaging = (username = null) => {
   const [targetProfile, setTargetProfile] = useState(null);
   const [currentMessages, setCurrentMessages] = useState([]);
   const [cooldownInfo, setCooldownInfo] = useState(null);
+  const [isPartnerTyping, setIsPartnerTyping] = useState(false);
 
   const activeConnRef = useRef(null);
+  // Last time we pushed a typing heartbeat (throttles writes to the DB)
+  const typingThrottleRef = useRef(0);
 
   useEffect(() => {
     if (username) {
@@ -187,6 +193,12 @@ export const useMessaging = (username = null) => {
   const connectionId = matchedConv?.connectionId || null;
   const targetUserId = targetProfile?.id || matchedConv?.userId || null;
 
+  // Reset typing state whenever we switch conversations
+  useEffect(() => {
+    typingThrottleRef.current = 0;
+    setIsPartnerTyping(false);
+  }, [connectionId]);
+
   // 4b. Cooldown check — only when there's no active connection
   // (matchedConv is null, meaning state === "none") and we have a resolved
   // target user. Calls the server-side RPC for escalating cooldowns.
@@ -219,6 +231,16 @@ export const useMessaging = (username = null) => {
     setCurrentMessages(msgs);
   }, [connectionId, currentUserId]);
 
+  // Publish my "typing" heartbeat, throttled so a fast typist doesn't hammer
+  // the DB. The 5s validity window on the reader side covers the gaps.
+  const notifyTyping = useCallback(() => {
+    if (!connectionId || !currentUserId) return;
+    const now = Date.now();
+    if (now - typingThrottleRef.current < TYPING_THROTTLE_MS) return;
+    typingThrottleRef.current = now;
+    setTyping(connectionId, true);
+  }, [connectionId, currentUserId]);
+
   useEffect(() => {
     if (!connectionId || !currentUserId) {
       if (!matchedConv) setCurrentMessages([]);
@@ -235,6 +257,11 @@ export const useMessaging = (username = null) => {
         const latestMsgs = await getMessages(connectionId, currentUserId);
         if (!isMounted) return;
         setChatLoading(false);
+
+        // 1b. Read the other party's typing heartbeat (server-timed, 5s window)
+        const partnerTyping = await getPartnerTyping(connectionId);
+        if (!isMounted) return;
+        setIsPartnerTyping(partnerTyping);
 
         // 2. Check if messages have changed or if read status updated
         setCurrentMessages((prev) => {
@@ -379,6 +406,10 @@ export const useMessaging = (username = null) => {
           );
         }
 
+        // Stop showing as "typing" the moment the message lands
+        typingThrottleRef.current = 0;
+        setTyping(activeConnId, false);
+
         await refreshActiveMessages();
         await refreshConversations();
       } catch (err) {
@@ -507,6 +538,8 @@ export const useMessaging = (username = null) => {
     markAsRead,
     report,
     refreshConversations,
+    isPartnerTyping,
+    notifyTyping,
   };
 };
 
