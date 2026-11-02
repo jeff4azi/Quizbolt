@@ -15,8 +15,9 @@ const QuizResultCard = ({
   interactive = true,
   onAcceptChallenge = null,
   // Optional node (time + delivery ticks) rendered inside the card, bottom-right,
-  // over a WhatsApp-style scrim. Only passed when the card is shown in a chat.
+  // over a WhatsApp-style scrim. Only passed when the chat is shown in a chat.
   meta = null,
+  className = "",
 }) => {
   const navigate = useNavigate();
 
@@ -64,7 +65,7 @@ const QuizResultCard = ({
 
   return (
     <div
-      className="w-[330px] sm:w-[350px] min-h-[480px] bg-slate-50 dark:bg-gray-950 p-6 sm:p-7 flex flex-col justify-between shadow-2xl rounded-[2.5rem] overflow-hidden relative border border-slate-200/80 dark:border-gray-800 select-none transition-all"
+      className={`w-[330px] sm:w-[350px] min-h-[480px] bg-slate-50 dark:bg-gray-950 p-6 sm:p-7 flex flex-col justify-between shadow-2xl rounded-[2.5rem] overflow-hidden relative border border-slate-200/80 dark:border-gray-800 select-none transition-all ${className}`}
       style={{ fontFamily: "Inter, sans-serif" }}
     >
       {/* ── 1. Header (Identical to sharable image) ────────────────────────── */}

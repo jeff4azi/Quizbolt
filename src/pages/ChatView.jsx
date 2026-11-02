@@ -85,6 +85,9 @@ const SWIPE_MAX = 72;
 /** WhatsApp-like limit for unsending messages: 24 hours */
 const MESSAGE_DELETE_LIMIT = 24 * 60 * 60 * 1000;
 
+/** Burst threshold: 5 minutes */
+const BURST_THRESHOLD = 5 * 60 * 1000;
+
 const SwipeToReply = ({ onReply, disabled = false, className = "", children }) => {
   const bubbleRef = useRef(null);
   const iconRef = useRef(null);
@@ -852,6 +855,17 @@ const ChatView = () => {
                 !isDeleted &&
                 Date.now() - new Date(msg.timestamp).getTime() <
                   MESSAGE_DELETE_LIMIT;
+
+              // Burst detection logic
+              const prevMsg = index > 0 ? messages[index - 1] : null;
+              const isSameSender = prevMsg && prevMsg.sender === msg.sender;
+              const timeDiff = prevMsg
+                ? new Date(msg.timestamp).getTime() -
+                  new Date(prevMsg.timestamp).getTime()
+                : Infinity;
+              const isBurst = isSameSender && timeDiff < BURST_THRESHOLD;
+              const isFirstInBurst = !isBurst;
+
               const currentDateKey = getMessageDateKey(msg.timestamp);
               const prevDateKey =
                 index > 0
@@ -876,7 +890,11 @@ const ChatView = () => {
                     ref={(el) => {
                       if (el) msgRefs.current[msg.id] = el;
                     }}
-                    className={`flex items-end gap-2 py-0.5 ${isMe ? "justify-end" : "justify-start"}`}
+                    className={`flex items-end gap-2 ${
+                      isFirstInBurst && index > 0 && !showDateSeparator
+                        ? "mt-3"
+                        : "mt-0.5"
+                    } ${isMe ? "justify-end" : "justify-start"}`}
                   >
                     {/* For 'me' messages: Action buttons (Delete / Reply) appear on the left when tapped */}
                     {isMe && isSelected && !isDeleted && (
@@ -916,8 +934,12 @@ const ChatView = () => {
                       <div
                         className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs select-none border italic ${
                           isMe
-                            ? "bg-slate-100/70 dark:bg-slate-850 text-slate-500 dark:text-slate-400 border-slate-200/60 dark:border-slate-800 rounded-tr-xs"
-                            : "bg-slate-100/60 dark:bg-slate-850 text-slate-400 dark:text-slate-500 border-slate-200/50 dark:border-slate-800/80 rounded-tl-xs"
+                            ? `bg-slate-100/70 dark:bg-slate-850 text-slate-500 dark:text-slate-400 border-slate-200/60 dark:border-slate-800 ${
+                                isFirstInBurst ? "rounded-tr-xs" : ""
+                              }`
+                            : `bg-slate-100/60 dark:bg-slate-850 text-slate-400 dark:text-slate-500 border-slate-200/50 dark:border-slate-800/80 ${
+                                isFirstInBurst ? "rounded-tl-xs" : ""
+                              }`
                         }`}
                       >
                         <FiSlash
@@ -947,7 +969,15 @@ const ChatView = () => {
                         }}
                         className={`flex flex-col gap-1 cursor-pointer transition-all ${
                           isSelected
-                            ? "ring-2 ring-blue-400/80 rounded-[2.75rem] p-1"
+                            ? `ring-2 ring-blue-400/80 p-1 ${
+                                isMe
+                                  ? isFirstInBurst
+                                    ? "rounded-tr-xs"
+                                    : "rounded-[2.75rem]"
+                                  : isFirstInBurst
+                                    ? "rounded-tl-xs"
+                                    : "rounded-[2.75rem]"
+                              }`
                             : ""
                         }`}
                       >
@@ -971,6 +1001,15 @@ const ChatView = () => {
                               `/choose-course?course=${encodeURIComponent(course)}`,
                             );
                           }}
+                          className={
+                            isMe
+                              ? isFirstInBurst
+                                ? "rounded-tr-xs"
+                                : ""
+                              : isFirstInBurst
+                                ? "rounded-tl-xs"
+                                : ""
+                          }
                           meta={
                             <>
                               <span>{formatMessageTime(msg.timestamp)}</span>
@@ -1010,8 +1049,12 @@ const ChatView = () => {
                         }}
                         className={`relative px-3.5 pt-2.5 pb-2 rounded-2xl text-xs sm:text-sm shadow-sm leading-relaxed cursor-pointer select-text transition-all ${
                           isMe
-                            ? "bg-blue-600 text-white rounded-tr-xs shadow-sm dark:shadow-none"
-                            : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-tl-xs border border-slate-200/70 dark:border-slate-700/60"
+                            ? `bg-blue-600 text-white shadow-sm dark:shadow-none ${
+                                isFirstInBurst ? "rounded-tr-xs" : ""
+                              }`
+                            : `bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200/70 dark:border-slate-700/60 ${
+                                isFirstInBurst ? "rounded-tl-xs" : ""
+                              }`
                         } ${
                           isSelected
                             ? "ring-2 ring-blue-400/80 ring-offset-2 ring-offset-[#F8FAFC] dark:ring-offset-[#0F172A]"
