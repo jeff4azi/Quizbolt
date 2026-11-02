@@ -540,6 +540,11 @@ const ConversationList = () => {
                                       size={14}
                                       className="opacity-70"
                                     />
+                                  ) : lastMsg.status === "delivered" ? (
+                                    <IoCheckmarkDone
+                                      size={15}
+                                      className="opacity-70"
+                                    />
                                   ) : (
                                     <IoCheckmarkDone
                                       size={15}

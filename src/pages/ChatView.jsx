@@ -1021,6 +1021,12 @@ const ChatView = () => {
                                       className="text-white/85"
                                       title="Sent"
                                     />
+                                  ) : msg.status === "delivered" ? (
+                                    <IoCheckmarkDone
+                                      size={13}
+                                      className="text-white/85"
+                                      title="Delivered"
+                                    />
                                   ) : (
                                     <IoCheckmarkDone
                                       size={13}
@@ -1094,6 +1100,12 @@ const ChatView = () => {
                                   size={14}
                                   className="text-blue-200"
                                   title="Sent"
+                                />
+                              ) : msg.status === "delivered" ? (
+                                <IoCheckmarkDone
+                                  size={15}
+                                  className="text-blue-200"
+                                  title="Delivered"
                                 />
                               ) : (
                                 <IoCheckmarkDone

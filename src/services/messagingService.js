@@ -684,6 +684,27 @@ export const markRead = async (connectionId, myId) => {
 };
 
 /**
+ * Marks messages in a connection as delivered.
+ */
+export const markDelivered = async (connectionId, myId) => {
+  if (!connectionId || !myId) return 0;
+
+  const { data, error } = await supabase
+    .from("messages")
+    .update({ status: "delivered" })
+    .eq("connection_id", connectionId)
+    .neq("sender_id", myId)
+    .eq("status", "sent")
+    .select("id");
+
+  if (error) {
+    console.error("Error marking messages delivered:", error);
+    return 0;
+  }
+  return data?.length || 0;
+};
+
+/**
  * Lightweight stub: we use smart active polling instead of WebSockets to avoid hitting Supabase 200-connection limit.
  */
 export const subscribeToMessages = () => {

@@ -10,6 +10,7 @@ import {
   declineConnection,
   blockUser as blockUserFn,
   markRead,
+  markDelivered,
   subscribeToMessages,
   subscribeToIncoming,
   createReport,
@@ -66,6 +67,13 @@ export const useMessaging = (username = null) => {
     try {
       const list = await getMyConnections(currentUserId);
       setConversations(list);
+
+      // WhatsApp-like: Mark all sent messages from others as delivered when the list is fetched
+      for (const conv of list) {
+        if (conv.connectionId) {
+          await markDelivered(conv.connectionId, currentUserId);
+        }
+      }
     } catch (err) {
       console.error("Error refreshing conversations:", err);
     } finally {
@@ -244,10 +252,12 @@ export const useMessaging = (username = null) => {
         });
 
         // 3. If there are incoming unread messages from "them", mark them read
-        const hasUnreadIncoming = latestMsgs.some(
-          (m) => m.sender === "them" && m.status !== "read",
+        const hasIncomingToMark = latestMsgs.some(
+          (m) =>
+            m.sender === "them" &&
+            (m.status === "sent" || m.status === "delivered"),
         );
-        if (hasUnreadIncoming) {
+        if (hasIncomingToMark) {
           await markRead(connectionId, currentUserId);
           if (isMounted) {
             setCurrentMessages((prev) =>
@@ -255,6 +265,15 @@ export const useMessaging = (username = null) => {
                 m.sender === "them" ? { ...m, status: "read" } : m,
               ),
             );
+            refreshConversations();
+          }
+        } else {
+          // Even if not active in this tab, mark as delivered if we see "sent" messages from them
+          const hasSentFromThem = latestMsgs.some(
+            (m) => m.sender === "them" && m.status === "sent",
+          );
+          if (hasSentFromThem) {
+            await markDelivered(connectionId, currentUserId);
             refreshConversations();
           }
         }
