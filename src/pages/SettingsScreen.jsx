@@ -4,6 +4,7 @@ import {
   FiAlertTriangle,
   FiArrowLeft,
   FiBell,
+  FiBookmark,
   FiChevronRight,
   FiCheckSquare,
   FiFileText,
@@ -139,16 +140,29 @@ const SettingsScreen = ({
   toggleUnlimitedHints,
   showPagination,
   toggleShowPagination,
+  onClearHistory,
+  onClearBookmarks,
 }) => {
   useDocumentTitle("Settings | QuizBolt");
   const navigate = useNavigate();
   const location = useLocation();
   const [isDeleteOverlayOpen, setDeleteOverlayOpen] = useState(false);
+  const [isClearHistoryOverlayOpen, setClearHistoryOverlayOpen] =
+    useState(false);
+  const [isClearBookmarksOverlayOpen, setClearBookmarksOverlayOpen] =
+    useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
+  const [isClearingBookmarks, setIsClearingBookmarks] = useState(false);
   const [isPremiumOverlayOpen, setPremiumOverlayOpen] = useState(false);
-  const [settingsFeedback, setSettingsFeedback] = useState({ isOpen: false, title: '', message: '' });
+  const [settingsFeedback, setSettingsFeedback] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
   const [isDeleting, setIsDeleting] = useState(false);
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] =
-    useState(() => getCachedNotificationsEnabled());
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(() =>
+    getCachedNotificationsEnabled(),
+  );
   const [isUpdatingPush, setIsUpdatingPush] = useState(false);
   const [highlightNotifications, setHighlightNotifications] = useState(false);
   const notificationsSectionRef = useRef(null);
@@ -244,6 +258,52 @@ const SettingsScreen = ({
     }
   };
 
+  const handleClearHistory = async () => {
+    if (isClearingHistory) return;
+    setIsClearingHistory(true);
+    try {
+      await onClearHistory?.();
+      setClearHistoryOverlayOpen(false);
+      setSettingsFeedback({
+        isOpen: true,
+        title: "History Cleared",
+        message: "All your exam attempts have been removed.",
+      });
+    } catch (err) {
+      console.error("Clear history failed:", err);
+      setSettingsFeedback({
+        isOpen: true,
+        title: "Failed to Clear History",
+        message: "Something went wrong. Please try again.",
+      });
+    } finally {
+      setIsClearingHistory(false);
+    }
+  };
+
+  const handleClearBookmarks = async () => {
+    if (isClearingBookmarks) return;
+    setIsClearingBookmarks(true);
+    try {
+      await onClearBookmarks?.();
+      setClearBookmarksOverlayOpen(false);
+      setSettingsFeedback({
+        isOpen: true,
+        title: "Bookmarks Cleared",
+        message: "All your saved questions have been removed.",
+      });
+    } catch (err) {
+      console.error("Clear bookmarks failed:", err);
+      setSettingsFeedback({
+        isOpen: true,
+        title: "Failed to Clear Bookmarks",
+        message: "Something went wrong. Please try again.",
+      });
+    } finally {
+      setIsClearingBookmarks(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     if (isDeleting) return;
 
@@ -281,7 +341,8 @@ const SettingsScreen = ({
       setSettingsFeedback({
         isOpen: true,
         title: "Delete Account Failed",
-        message: err.message || "We couldn't delete your account. Please try again.",
+        message:
+          err.message || "We couldn't delete your account. Please try again.",
       });
     } finally {
       setIsDeleting(false);
@@ -410,8 +471,6 @@ const SettingsScreen = ({
                 )}
               </div>
             </SettingRow>
-
-
           </div>
         </section>
 
@@ -497,10 +556,7 @@ const SettingsScreen = ({
               title="Contact Support"
               description="Chat with us on WhatsApp."
               onClick={() =>
-                window.open(
-                  "https://wa.me/2347015585397",
-                  "_blank",
-                )
+                window.open("https://wa.me/2347015585397", "_blank")
               }
             >
               <FiChevronRight className="text-slate-300" />
@@ -526,6 +582,32 @@ const SettingsScreen = ({
               title="Submit a Review"
               description="Share your feedback about QuizBolt."
               onClick={() => navigate("/submit-review")}
+            >
+              <FiChevronRight className="text-slate-300" />
+            </SettingRow>
+          </div>
+        </section>
+
+        {/* ── Data ── */}
+        <SectionLabel title="Data" />
+        <section className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            <SettingRow
+              icon={isClearingHistory ? FiLoader : FiTrash2}
+              title="Clear exam history"
+              description="Remove all your past exam attempts."
+              tone="danger"
+              onClick={() => setClearHistoryOverlayOpen(true)}
+            >
+              <FiChevronRight className="text-slate-300" />
+            </SettingRow>
+
+            <SettingRow
+              icon={isClearingBookmarks ? FiLoader : FiBookmark}
+              title="Clear saved questions"
+              description="Remove all your bookmarked questions."
+              tone="danger"
+              onClick={() => setClearBookmarksOverlayOpen(true)}
             >
               <FiChevronRight className="text-slate-300" />
             </SettingRow>
@@ -589,6 +671,30 @@ const SettingsScreen = ({
       />
 
       <ConfirmOverlay
+        isOpen={isClearHistoryOverlayOpen}
+        onClose={() => setClearHistoryOverlayOpen(false)}
+        onConfirm={handleClearHistory}
+        title="Clear Exam History?"
+        message="All your past exam attempts will be permanently deleted. This cannot be undone."
+        confirmText={isClearingHistory ? "Clearing..." : "Yes, clear history"}
+        cancelText="Cancel"
+        danger={true}
+      />
+
+      <ConfirmOverlay
+        isOpen={isClearBookmarksOverlayOpen}
+        onClose={() => setClearBookmarksOverlayOpen(false)}
+        onConfirm={handleClearBookmarks}
+        title="Clear Saved Questions?"
+        message="All your bookmarked questions will be permanently removed. This cannot be undone."
+        confirmText={
+          isClearingBookmarks ? "Clearing..." : "Yes, clear bookmarks"
+        }
+        cancelText="Cancel"
+        danger={true}
+      />
+
+      <ConfirmOverlay
         isOpen={isPremiumOverlayOpen}
         onClose={() => setPremiumOverlayOpen(false)}
         onConfirm={() => navigate("/premium")}
@@ -600,8 +706,12 @@ const SettingsScreen = ({
 
       <ConfirmOverlay
         isOpen={settingsFeedback.isOpen}
-        onClose={() => setSettingsFeedback({ isOpen: false, title: "", message: "" })}
-        onConfirm={() => setSettingsFeedback({ isOpen: false, title: "", message: "" })}
+        onClose={() =>
+          setSettingsFeedback({ isOpen: false, title: "", message: "" })
+        }
+        onConfirm={() =>
+          setSettingsFeedback({ isOpen: false, title: "", message: "" })
+        }
         title={settingsFeedback.title || "Notice"}
         message={settingsFeedback.message}
         confirmText="Got it"

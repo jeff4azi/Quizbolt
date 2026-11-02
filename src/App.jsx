@@ -983,6 +983,29 @@ function App() {
                           setShowPagination((prev) => !prev)
                         }
                         deleteImage={deleteImage}
+                        onClearHistory={async () => {
+                          const {
+                            data: { user },
+                          } = await supabase.auth.getUser();
+                          if (!user) return;
+                          const { error } = await supabase
+                            .from("exam_attempts")
+                            .delete()
+                            .eq("user_id", user.id);
+                          if (error) throw error;
+                        }}
+                        onClearBookmarks={async () => {
+                          const {
+                            data: { user },
+                          } = await supabase.auth.getUser();
+                          if (!user) return;
+                          const { error } = await supabase
+                            .from("profiles")
+                            .update({ bookmarks: [] })
+                            .eq("id", user.id);
+                          if (error) throw error;
+                          setBookmarks([]);
+                        }}
                       />,
                     )}
                   </ProtectedRoute>
