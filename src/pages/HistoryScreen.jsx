@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { useProfile } from "../hooks/useProfile";
 import {
   FaHistory,
@@ -17,6 +23,7 @@ import {
   FiTarget,
   FiAlertCircle,
   FiPieChart,
+  FiShare2,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import {
@@ -42,12 +49,25 @@ import { withTimeout } from "../utils/withTimeout";
 import NavBar from "../components/NavBar";
 import { useVisibilityRefresh } from "../hooks/useVisibilityRefresh";
 import SectionLoader from "../components/SectionLoader";
+import ShareResultModal from "../components/ShareResultModal";
+import QuizResultCard from "../components/QuizResultCard";
+import { toPng } from "html-to-image";
+import { trackResultShare } from "../utils/analytics";
 
 const formatTime = (seconds) => {
   if (!seconds) return null;
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}m ${secs}s`;
+};
+
+/** Returns true if the given ISO date string is within the last 7 days. */
+const isWithin7Days = (dateStr) => {
+  if (!dateStr) return false;
+  const taken = new Date(dateStr);
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  return taken >= sevenDaysAgo;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -94,6 +114,12 @@ const HistoryScreen = ({
   const [loading, setLoading] = useState(true);
   const [isPremiumOverlayOpen, setPremiumOverlayOpen] = useState(false);
   const [chartTab, setChartTab] = useState("score");
+
+  // ── Share old result state ───────────────────────────────────────────────
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [sharingExam, setSharingExam] = useState(null);
+  const [sharing, setSharing] = useState(false);
+  const shareRef = useRef(null);
 
   const navigate = useNavigate();
 
@@ -177,9 +203,9 @@ const HistoryScreen = ({
 
     // Store all attempts for weekly activity calculation
     const allAttempts = [
-      ...(examResult.data || []).map(a => ({ ...a, type: 'exam' })),
-      ...(testResult.data || []).map(a => ({ ...a, type: 'test' })),
-      ...(matchResult.data || []).map(a => ({ ...a, type: 'match' })),
+      ...(examResult.data || []).map((a) => ({ ...a, type: "exam" })),
+      ...(testResult.data || []).map((a) => ({ ...a, type: "test" })),
+      ...(matchResult.data || []).map((a) => ({ ...a, type: "match" })),
     ];
 
     setAllAttempts(allAttempts);
@@ -264,7 +290,8 @@ const HistoryScreen = ({
     }
 
     const filtered = historyData.filter(
-      (h) => !h.is_retake && isCourseInActiveList(h.course_id, activeCourseCodes)
+      (h) =>
+        !h.is_retake && isCourseInActiveList(h.course_id, activeCourseCodes),
     );
     const map = {};
     filtered.forEach((h) => {
@@ -326,7 +353,9 @@ const HistoryScreen = ({
       d.setDate(today.getDate() - (6 - i));
       const key = d.toLocaleDateString("en-CA");
       const active = allAttempts.some((h) => {
-        const dateStr = h.date_taken ? new Date(h.date_taken) : new Date(h.created_at);
+        const dateStr = h.date_taken
+          ? new Date(h.date_taken)
+          : new Date(h.created_at);
         return dateStr.toLocaleDateString("en-CA") === key;
       });
       return { day: days[d.getDay()], active };
@@ -362,6 +391,125 @@ const HistoryScreen = ({
       setOverlayOpen(false);
     }
   };
+
+  /* ======================= SHARE OLD RESULT ============================== */
+
+  /** Maps exam type from DB ("THY"/"FIB"/"OBJ") to modal format. */
+  const mapQuestionType = (type) =>
+    type === "THY" ? "theory" : type === "FIB" ? "fib" : "obj";
+
+  const handleShareExam = (exam) => {
+    setSharingExam(exam);
+    setIsShareModalOpen(true);
+  };
+
+  // Build the structured payload for the hidden QuizResultCard (image export)
+  const sharingResultPayload = useMemo(() => {
+    if (!sharingExam) return null;
+    const correct = Number(sharingExam.score) || 0;
+    const total = Number(sharingExam.total_questions) || 1;
+    const scorePercentage = Math.round((correct / total) * 100);
+    const effectiveProfile = userProfile || profile;
+
+    return {
+      _type: "quiz_result_card",
+      v: 1,
+      courseId: sharingExam.course_id,
+      courseName: sharingExam.course_id,
+      scorePercentage,
+      correct,
+      total,
+      questionType: mapQuestionType(sharingExam.type),
+      durationSeconds: Number(sharingExam.time_taken) || 0,
+      caption: "Think you can beat this? 🔥",
+      user: {
+        id: effectiveProfile?.id,
+        fullName: effectiveProfile?.full_name || "QuizBolt Scholar",
+        username: effectiveProfile?.user_name || "",
+        college:
+          effectiveProfile?.college || effectiveProfile?.department || "",
+        avatarUrl: effectiveProfile?.avatar_url || "",
+        isPremium: Boolean(isPremium),
+      },
+      timestamp: sharingExam.date_taken,
+    };
+  }, [sharingExam, userProfile, profile, isPremium]);
+
+  // Generate a high-res PNG from the hidden card and share/download it.
+  const handleExportImage = async ({
+    caption = "",
+    title = "",
+    text = "",
+    url = "",
+    downloadOnly = false,
+  } = {}) => {
+    setSharing(true);
+    if (!shareRef.current) return;
+
+    try {
+      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const dataUrl = await toPng(shareRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: isDark ? "#030712" : "#f8fafc",
+        useCORS: true,
+      });
+
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], "quizbolt-result.png", {
+        type: "image/png",
+      });
+
+      if (
+        !downloadOnly &&
+        navigator.canShare &&
+        navigator.canShare({ files: [file] })
+      ) {
+        await navigator.share({
+          files: [file],
+          title: title || "My QuizBolt Result",
+          text: text || "",
+          url: url || undefined,
+        });
+      } else {
+        const link = document.createElement("a");
+        link.download = "quizbolt-result.png";
+        link.href = dataUrl;
+        link.click();
+      }
+
+      // Track analytics
+      if (sharingExam) {
+        const correct = Number(sharingExam.score) || 0;
+        const total = Number(sharingExam.total_questions) || 1;
+        trackResultShare(
+          sharingExam.course_id,
+          Math.round((correct / total) * 100),
+        );
+      }
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        console.error("Export image share failed:", err);
+      }
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  // Props derived from the exam being shared, passed to ShareResultModal
+  const sharingCourse = sharingExam
+    ? { id: sharingExam.course_id, name: sharingExam.course_id }
+    : null;
+  const sharingResults = sharingExam
+    ? {
+        correct: Number(sharingExam.score) || 0,
+        answered: Number(sharingExam.total_questions) || 0,
+      }
+    : null;
+  const sharingQuestionType = sharingExam
+    ? mapQuestionType(sharingExam.type)
+    : "obj";
+  const sharingTimeTaken = Number(sharingExam?.time_taken) || 0;
 
   /* ======================= RENDER ========================================= */
   return (
@@ -665,53 +813,53 @@ const HistoryScreen = ({
               </p>
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                 {/* Streak */}
-            <div className="col-span-2 bg-white dark:bg-slate-900 rounded-[1.75rem] border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start gap-3">
-                  <div className="size-11 rounded-3xl bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-300 grid place-items-center">
-                    <FaFire size={16} />
+                <div className="col-span-2 bg-white dark:bg-slate-900 rounded-[1.75rem] border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start gap-3">
+                      <div className="size-11 rounded-3xl bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-300 grid place-items-center">
+                        <FaFire size={16} />
+                      </div>
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] font-black text-slate-400 dark:text-slate-500 mb-1">
+                          Daily streak
+                        </p>
+                        <p className="text-2xl font-black text-slate-900 dark:text-white">
+                          {streak} {streak === 1 ? "day" : "days"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[11px] uppercase tracking-[0.18em] font-black text-slate-400 dark:text-slate-500 mb-1">
+                        Best streak
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <FaTrophy size={14} className="text-amber-500" />
+                        <p className="text-xl font-black text-slate-900 dark:text-white">
+                          {bestStreak} {bestStreak === 1 ? "day" : "days"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.18em] font-black text-slate-400 dark:text-slate-500 mb-1">
-                      Daily streak
-                    </p>
-                    <p className="text-2xl font-black text-slate-900 dark:text-white">
-                      {streak} {streak === 1 ? "day" : "days"}
-                    </p>
+                  <div className="grid grid-cols-7 gap-2 mb-4">
+                    {weeklyActivity.map((d, i) => (
+                      <div
+                        key={i}
+                        className={`aspect-square rounded-2xl flex items-center justify-center text-sm font-black transition-all ${
+                          d.active
+                            ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500"
+                        }`}
+                      >
+                        {d.day}
+                      </div>
+                    ))}
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-[11px] uppercase tracking-[0.18em] font-black text-slate-400 dark:text-slate-500 mb-1">
-                    Best streak
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                    {streak > 0
+                      ? `Keep it up! You've studied ${streak} day${streak > 1 ? "s" : ""} in a row.`
+                      : "Start a streak — take an exam today!"}
                   </p>
-                  <div className="flex items-center gap-1">
-                    <FaTrophy size={14} className="text-amber-500" />
-                    <p className="text-xl font-black text-slate-900 dark:text-white">
-                      {bestStreak} {bestStreak === 1 ? "day" : "days"}
-                    </p>
-                  </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-7 gap-2 mb-4">
-                {weeklyActivity.map((d, i) => (
-                  <div
-                    key={i}
-                    className={`aspect-square rounded-2xl flex items-center justify-center text-sm font-black transition-all ${
-                      d.active
-                        ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500"
-                    }`}
-                  >
-                    {d.day}
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                {streak > 0
-                  ? `Keep it up! You've studied ${streak} day${streak > 1 ? "s" : ""} in a row.`
-                  : "Start a streak — take an exam today!"}
-              </p>
-            </div>
 
                 {/* Best course */}
                 {courseInsights.top && (
@@ -719,8 +867,10 @@ const HistoryScreen = ({
                     icon={<FiTarget size={13} />}
                     label="Best course"
                     value={
-                      courseInsights.top.id?.replace(/([A-Za-z]+)(\d+)/, "$1 $2") ||
-                      courseInsights.top.id
+                      courseInsights.top.id?.replace(
+                        /([A-Za-z]+)(\d+)/,
+                        "$1 $2",
+                      ) || courseInsights.top.id
                     }
                     sub={`Avg. ${courseInsights.top.avg}% · ${courseInsights.top.count} exam${courseInsights.top.count > 1 ? "s" : ""}`}
                     colorClass="text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
@@ -734,8 +884,10 @@ const HistoryScreen = ({
                       icon={<FiAlertCircle size={13} />}
                       label="Needs work"
                       value={
-                        courseInsights.worst.id?.replace(/([A-Za-z]+)(\d+)/, "$1 $2") ||
-                        courseInsights.worst.id
+                        courseInsights.worst.id?.replace(
+                          /([A-Za-z]+)(\d+)/,
+                          "$1 $2",
+                        ) || courseInsights.worst.id
                       }
                       sub={`Avg. ${courseInsights.worst.avg}% — try retaking`}
                       colorClass="text-red-500 bg-red-50 dark:bg-red-900/20"
@@ -825,6 +977,8 @@ const HistoryScreen = ({
                         },
                       ),
                     }}
+                    canShare={isWithin7Days(exam.date_taken)}
+                    onShare={() => handleShareExam(exam)}
                     onDelete={() => deleteExam(exam.id)}
                     setQuestionType={setQuestionType}
                   />
@@ -852,6 +1006,36 @@ const HistoryScreen = ({
         confirmText="Get Premium"
         cancelText="Maybe later"
       />
+
+      {/* ── HIDDEN SHAREABLE CARD (for image export) ─────────────────────── */}
+      <div className="fixed top-0 left-0 opacity-0 pointer-events-none">
+        {sharingResultPayload && (
+          <div ref={shareRef}>
+            <QuizResultCard data={sharingResultPayload} interactive={false} />
+          </div>
+        )}
+      </div>
+
+      {/* ── SHARE RESULT MODAL ───────────────────────────────────────────── */}
+      <ShareResultModal
+        isOpen={isShareModalOpen}
+        onClose={() => {
+          setIsShareModalOpen(false);
+          setSharingExam(null);
+        }}
+        course={sharingCourse}
+        results={sharingResults}
+        questions={
+          sharingExam ? Array(sharingExam.total_questions).fill({}) : []
+        }
+        questionType={sharingQuestionType}
+        timeTaken={sharingTimeTaken}
+        userProfile={userProfile || profile}
+        isPremium={isPremium}
+        onExportImage={handleExportImage}
+        resultDate={sharingExam?.date_taken}
+      />
+
       <NavBar
         isPremium={isPremium}
         onLockedClick={() => setPremiumOverlayOpen(true)}
@@ -918,7 +1102,13 @@ const InsightCard = ({ icon, label, value, sub, colorClass }) => (
 /* -------------------------------------------------------------------------- */
 /*  HISTORY ITEM                                                                */
 /* -------------------------------------------------------------------------- */
-const HistoryItem = ({ exam, onDelete, setQuestionType }) => {
+const HistoryItem = ({
+  exam,
+  onDelete,
+  setQuestionType,
+  canShare,
+  onShare,
+}) => {
   const navigate = useNavigate();
   const score = parseFloat((Number(exam.score) || 0).toFixed(2));
   const total = Number(exam.total) || 1;
@@ -945,10 +1135,11 @@ const HistoryItem = ({ exam, onDelete, setQuestionType }) => {
           : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
       }`}
     >
-      <div className="flex flex-col gap-2 min-w-0 mr-3">
+      <div className="flex flex-col items-start gap-2 flex-1 min-w-0 mr-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-black text-slate-900 dark:text-white truncate max-w-[150px] sm:max-w-none text-base sm:text-lg">
-            {exam.course?.toLowerCase() || "Course"}
+            {exam.course?.toUpperCase().replace(/([A-Za-z]+)(\d+)/, "$1 $2") ||
+              "Course"}
           </span>
           {exam.type && (
             <span
@@ -991,6 +1182,22 @@ const HistoryItem = ({ exam, onDelete, setQuestionType }) => {
             style={{ width: `${percent}%`, backgroundColor: progressColor }}
           />
         </div>
+
+        {/* Share pill — below the progress bar, only for results within 7 days */}
+        {canShare && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onShare?.();
+            }}
+            title="Share this result"
+            aria-label="Share this result"
+            className="mt-1 self-start inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-900/25 text-purple-600 dark:text-purple-300 text-[11px] font-bold hover:bg-purple-100 dark:hover:bg-purple-900/40 active:scale-95 transition-all"
+          >
+            <FiShare2 size={11} />
+            Share result
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4 shrink-0">

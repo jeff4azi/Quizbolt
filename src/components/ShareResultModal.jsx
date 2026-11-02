@@ -37,6 +37,7 @@ const ShareResultModal = ({
   userProfile = null,
   isPremium = false,
   onExportImage = null, // fallback trigger for toPng
+  resultDate = null, // ISO string or Date — when sharing a past result, pass the original date
 }) => {
   const [activeTab, setActiveTab] = useState("chats"); // 'chats' | 'external'
   const [caption, setCaption] = useState("Think you can beat this? 🔥");
@@ -53,7 +54,7 @@ const ShareResultModal = ({
   // 1. Calculate accuracy & time
   const totalQuestions = results?.answered || questions?.length || 1;
   const scorePercentage = Math.round(
-    ((results?.correct || 0) / totalQuestions) * 100
+    ((results?.correct || 0) / totalQuestions) * 100,
   );
   const courseId = course?.id || course?.code || "";
   const courseName = course?.name || course?.code || "Course Exam";
@@ -79,7 +80,7 @@ const ShareResultModal = ({
         avatarUrl: userProfile?.avatar_url || "",
         isPremium: Boolean(isPremium),
       },
-      timestamp: new Date().toISOString(),
+      timestamp: resultDate || new Date().toISOString(),
     }),
     [
       courseId,
@@ -93,7 +94,8 @@ const ShareResultModal = ({
       currentUserId,
       userProfile,
       isPremium,
-    ]
+      resultDate,
+    ],
   );
 
   // 2. Fetch connected chats (state === 'accepted')
@@ -125,7 +127,7 @@ const ShareResultModal = ({
   // Presence hook
   const partnerUserIds = useMemo(
     () => connections.map((c) => c.userId).filter(Boolean),
-    [connections]
+    [connections],
   );
   const { isOnline } = usePresence(partnerUserIds);
 
@@ -137,7 +139,7 @@ const ShareResultModal = ({
       (c) =>
         c.fullName?.toLowerCase().includes(q) ||
         c.username?.toLowerCase().includes(q) ||
-        c.department?.toLowerCase().includes(q)
+        c.department?.toLowerCase().includes(q),
     );
   }, [connections, search]);
 
@@ -211,7 +213,7 @@ const ShareResultModal = ({
 
   // 5. External Sharing Handlers
   const challengeUrl = `https://quizbolt.site/choose-course?course=${encodeURIComponent(
-    courseId || courseName
+    courseId || courseName,
   )}`;
 
   const getShareText = () =>

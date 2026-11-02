@@ -23,6 +23,9 @@ const QuizResultCard = ({
 
   if (!data) return null;
 
+  const formatCourse = (name) =>
+    name?.replace(/([A-Za-z]+)(\d+)/, "$1 $2").toUpperCase() || "";
+
   const {
     courseId,
     courseName,
@@ -109,7 +112,7 @@ const QuizResultCard = ({
       <div className="flex flex-col items-center justify-center py-2">
         <div className="bg-blue-100/50 dark:bg-blue-900/30 px-3 py-1 rounded-full mb-3 shadow-xs">
           <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest truncate max-w-[240px]">
-            {courseName || courseId || "Exam"}
+            {formatCourse(courseName || courseId) || "Exam"}
           </p>
         </div>
 
@@ -136,7 +139,8 @@ const QuizResultCard = ({
               strokeDasharray={2 * Math.PI * 70}
               strokeDashoffset={
                 2 * Math.PI * 70 -
-                (Math.min(100, Math.max(0, scorePercentage)) / 100) * (2 * Math.PI * 70)
+                (Math.min(100, Math.max(0, scorePercentage)) / 100) *
+                  (2 * Math.PI * 70)
               }
               strokeLinecap="round"
               className="transition-all duration-700 ease-out"
