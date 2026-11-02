@@ -1024,7 +1024,7 @@ const ChatView = () => {
                                   ) : (
                                     <IoCheckmarkDone
                                       size={13}
-                                      className="text-sky-300"
+                                      className="text-sky-400"
                                       title="Delivered / Read"
                                     />
                                   )}
@@ -1098,7 +1098,7 @@ const ChatView = () => {
                               ) : (
                                 <IoCheckmarkDone
                                   size={15}
-                                  className="text-sky-200"
+                                  className="text-sky-400"
                                   title="Delivered / Read"
                                 />
                               )}

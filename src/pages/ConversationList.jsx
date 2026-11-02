@@ -543,7 +543,7 @@ const ConversationList = () => {
                                   ) : (
                                     <IoCheckmarkDone
                                       size={15}
-                                      className="text-sky-500"
+                                      className="text-sky-400"
                                     />
                                   )}
                                 </span>
