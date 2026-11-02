@@ -46,7 +46,7 @@ const ConversationsSkeleton = () => {
           className="px-4 py-3.5 sm:px-5 flex items-center justify-between gap-3.5 animate-pulse"
         >
           <div className="flex items-center gap-3.5 min-w-0 flex-1">
-            <div className="size-12 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0" />
+            <div className="size-14 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-center gap-2">
                 <div className="h-3.5 w-32 bg-slate-200 dark:bg-slate-700 rounded-md" />
