@@ -130,6 +130,20 @@ const OnboardingScreen = ({ onProfileReady }) => {
       return;
     }
 
+    const fullNameTrimmed = formData.fullName.trim();
+    if (!fullNameTrimmed) {
+      setError("Please enter your full name.");
+      setLoading(false);
+      return;
+    }
+    if (!/^[A-Za-z][A-Za-z '\-]{1,48}$/.test(fullNameTrimmed)) {
+      setError(
+        "Name should only contain letters, spaces, hyphens, or apostrophes (2–49 characters).",
+      );
+      setLoading(false);
+      return;
+    }
+
     try {
       // 1. Ensure user exists
       const {
@@ -141,7 +155,7 @@ const OnboardingScreen = ({ onProfileReady }) => {
       }
 
       const fullName =
-        formData.fullName ||
+        formData.fullName.trim() ||
         user.user_metadata?.full_name ||
         user.user_metadata?.name ||
         user.email?.split("@")[0] ||
@@ -156,10 +170,11 @@ const OnboardingScreen = ({ onProfileReady }) => {
       }
 
       // Create user_name base slug (lowercase, alphanumeric only)
-      const baseSlug = fullName
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "")
-        .trim() || "scholar";
+      const baseSlug =
+        fullName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "")
+          .trim() || "scholar";
 
       // Generate a unique username: always append random digits and verify
       // against the database in a loop until we find one that is free.
@@ -189,7 +204,9 @@ const OnboardingScreen = ({ onProfileReady }) => {
       const referralCodeRaw = formData.referralCode?.trim() || "";
       // Only accept referral codes in format QB-XXXX (QB- followed by 4 uppercase alphanumeric characters)
       const referralCodeRegex = /^QB-[A-Z0-9]{4}$/;
-      const referralCode = referralCodeRegex.test(referralCodeRaw) ? referralCodeRaw : null;
+      const referralCode = referralCodeRegex.test(referralCodeRaw)
+        ? referralCodeRaw
+        : null;
 
       const { error: upsertError } = await supabase.from("profiles").upsert({
         id: user.id,
@@ -230,7 +247,14 @@ const OnboardingScreen = ({ onProfileReady }) => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // Strip disallowed characters from the name field on the fly
+    if (name === "fullName") {
+      const sanitized = value.replace(/[^A-Za-z '\-]/g, "");
+      setFormData({ ...formData, [name]: sanitized });
+      return;
+    }
+    setFormData({ ...formData, [name]: value });
   };
 
   return (

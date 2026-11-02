@@ -45,7 +45,7 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
       if (document.documentElement) document.documentElement.scrollTop = 0;
       if (document.body) document.body.scrollTop = 0;
       const wrappers = document.querySelectorAll(
-        ".desktop-content-wrapper, main"
+        ".desktop-content-wrapper, main",
       );
       wrappers.forEach((el) => {
         if (el) el.scrollTop = 0;
@@ -135,7 +135,9 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
 
     try {
       setRerunCoursesLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       // Fetch course codes from course_enrollments_override
@@ -150,7 +152,7 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
       }
 
       // Fetch course details from courses_meta
-      const courseCodes = overrideData.map(item => item.course_code);
+      const courseCodes = overrideData.map((item) => item.course_code);
       const { data: coursesData, error: coursesError } = await supabase
         .from("courses_meta")
         .select("*")
@@ -159,10 +161,12 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
 
       if (!coursesError && coursesData) {
         // Map course_group to group
-        setRerunCourses(coursesData.map(course => ({
-          ...course,
-          group: course.course_group
-        })));
+        setRerunCourses(
+          coursesData.map((course) => ({
+            ...course,
+            group: course.course_group,
+          })),
+        );
       }
     } catch (err) {
       console.error("Failed to fetch rerun courses:", err);
@@ -181,7 +185,9 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
 
     try {
       setIsDeleting(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       // Delete from course_enrollments_override
@@ -245,13 +251,14 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
       return {
         tone: "expired",
         label: "Premium Expired",
-        value: `Expired ${new Date(
-          premiumAccess.expires_at,
-        ).toLocaleDateString(undefined, {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })}`,
+        value: `Expired ${new Date(premiumAccess.expires_at).toLocaleDateString(
+          undefined,
+          {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          },
+        )}`,
         note: premiumAccess.reason,
       };
     }
@@ -277,15 +284,67 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
       return;
     }
 
+    // ── Client-side validation ──────────────────────────────────────────────
+    const usernameVal = formData.user_name.trim();
+    const fullNameVal = formData.full_name.trim();
+
+    if (!fullNameVal) {
+      setSaveError("Full name can't be empty.");
+      return;
+    }
+    if (!/^[A-Za-z][A-Za-z '\-]{1,48}$/.test(fullNameVal)) {
+      setSaveError(
+        "Full name should only contain letters, spaces, hyphens, or apostrophes (2–49 characters).",
+      );
+      return;
+    }
+
+    if (!usernameVal) {
+      setSaveError("Username can't be empty.");
+      return;
+    }
+    if (usernameVal.length < 3 || usernameVal.length > 20) {
+      setSaveError("Username must be between 3 and 20 characters.");
+      return;
+    }
+    if (!/^[A-Za-z]/.test(usernameVal)) {
+      setSaveError("Username must start with a letter.");
+      return;
+    }
+    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(usernameVal)) {
+      setSaveError(
+        "Username can only contain letters, numbers, and underscores — no spaces or special characters.",
+      );
+      return;
+    }
+    if (/__/.test(usernameVal)) {
+      setSaveError("Username can't contain consecutive underscores.");
+      return;
+    }
+    if (usernameVal.endsWith("_")) {
+      setSaveError("Username can't end with an underscore.");
+      return;
+    }
+
+    if (!formData.department.trim()) {
+      setSaveError("Department can't be empty.");
+      return;
+    }
+    // ───────────────────────────────────────────────────────────────────────
+
     try {
       setSaveError(null);
       setIsSaving(true);
-      await onUpdateProfile(formData);
+      await onUpdateProfile({
+        ...formData,
+        full_name: fullNameVal,
+        user_name: usernameVal,
+        department: formData.department.trim(),
+      });
       setIsEditing(false);
     } catch (err) {
       console.error("Failed to save profile:", err.message);
       setSaveError(err.message || "Failed to save. Please try again.");
-      // Keep isEditing=true so the user can correct the field
     } finally {
       setIsSaving(false);
     }
@@ -364,7 +423,8 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
   ];
 
   const toneClasses = {
-    green: "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-300",
+    green:
+      "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-300",
     blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300",
     sky: "bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-300",
   };
@@ -575,8 +635,20 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
                           value={formData[key]}
                           onChange={(e) => {
                             setSaveError(null);
-                            setFormData({ ...formData, [key]: e.target.value });
+                            let val = e.target.value;
+                            // For username: strip disallowed characters on the fly
+                            if (key === "user_name") {
+                              val = val.replace(/[^A-Za-z0-9_]/g, "");
+                            }
+                            setFormData({ ...formData, [key]: val });
                           }}
+                          maxLength={
+                            key === "user_name"
+                              ? 20
+                              : key === "full_name"
+                                ? 49
+                                : undefined
+                          }
                           className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-600/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                           placeholder={placeholder}
                         />
