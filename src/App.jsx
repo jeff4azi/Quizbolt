@@ -88,6 +88,11 @@ function App() {
   const [questions, setQuestions] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
   const [isDarkMode, setIsDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem("darkModePreference");
+      if (saved !== null) return JSON.parse(saved);
+    } catch {}
+    // Fall back to OS preference if nothing saved yet
     return (
       window.matchMedia &&
       window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -443,6 +448,9 @@ function App() {
     } else {
       document.documentElement.classList.remove("dark");
     }
+    try {
+      localStorage.setItem("darkModePreference", JSON.stringify(isDarkMode));
+    } catch {}
   }, [isDarkMode]);
 
   useEffect(() => {
@@ -627,13 +635,18 @@ function App() {
       // Determine next values, falling back to existing profile data
       const nextFullName = full_name ?? userProfile?.full_name ?? "";
       // Always store usernames in lowercase
-      const nextUserName = (user_name ?? userProfile?.user_name ?? "").toLowerCase();
+      const nextUserName = (
+        user_name ??
+        userProfile?.user_name ??
+        ""
+      ).toLowerCase();
       const nextDepartment = department ?? userProfile?.department ?? "";
 
       // If the username is changing, verify it's not already taken by someone else
       if (
         nextUserName &&
-        nextUserName.toLowerCase() !== (userProfile?.user_name ?? "").toLowerCase()
+        nextUserName.toLowerCase() !==
+          (userProfile?.user_name ?? "").toLowerCase()
       ) {
         const { count: takenCount } = await withTimeout(
           supabase
@@ -782,347 +795,347 @@ function App() {
         <AuthProvider>
           <InAppNotificationProvider>
             <Routes>
-            <Route
-              path="/login"
-              element={
-                <GuestRoute>
-                  <Login />
-                </GuestRoute>
-              }
-            />
-            <Route
-              path="/signup"
-              element={
-                <GuestRoute>
-                  <SignUp />
-                </GuestRoute>
-              }
-            />
-            <Route path="/landing" element={<LandingPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/faq" element={<FAQPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route
-              path="/reset-password"
-              element={
-                <GuestRoute>
-                  <ResetPassword />
-                </GuestRoute>
-              }
-            />
-            <Route
-              path="/update-password"
-              element={
-                <GuestRoute>
-                  <UpdatePassword />
-                </GuestRoute>
-              }
-            />
-            <Route
-              path="/confirm-email"
-              element={
-                <GuestRoute>
-                  <ConfirmEmailScreen />
-                </GuestRoute>
-              }
-            />
-            <Route
-              path="/onboarding"
-              element={
-                <OnboardingRoute>
-                  <OnboardingScreen onProfileReady={refreshAppProfile} />
-                </OnboardingRoute>
-              }
-            />
-            <Route
-              path="/"
-              element={
-                localStorage.getItem("visited") === "true" ? (
+              <Route
+                path="/login"
+                element={
+                  <GuestRoute>
+                    <Login />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/signup"
+                element={
+                  <GuestRoute>
+                    <SignUp />
+                  </GuestRoute>
+                }
+              />
+              <Route path="/landing" element={<LandingPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/faq" element={<FAQPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route
+                path="/reset-password"
+                element={
+                  <GuestRoute>
+                    <ResetPassword />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/update-password"
+                element={
+                  <GuestRoute>
+                    <UpdatePassword />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/confirm-email"
+                element={
+                  <GuestRoute>
+                    <ConfirmEmailScreen />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/onboarding"
+                element={
+                  <OnboardingRoute>
+                    <OnboardingScreen onProfileReady={refreshAppProfile} />
+                  </OnboardingRoute>
+                }
+              />
+              <Route
+                path="/"
+                element={
+                  localStorage.getItem("visited") === "true" ? (
+                    <ProtectedRoute>
+                      {withDesktop(<Home {...props} />)}
+                    </ProtectedRoute>
+                  ) : (
+                    <Navigate to="/landing" replace />
+                  )
+                }
+              />
+              <Route
+                path="/choose-course"
+                element={
                   <ProtectedRoute>
-                    {withDesktop(<Home {...props} />)}
+                    {withDesktop(<ChooseCourseScreen {...props} />)}
                   </ProtectedRoute>
-                ) : (
-                  <Navigate to="/landing" replace />
-                )
-              }
-            />
-            <Route
-              path="/choose-course"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(<ChooseCourseScreen {...props} />)}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/bookmarks"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(<BookMark {...props} />)}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/history"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(<HistoryScreen {...props} />)}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/leaderboard"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(
-                    <LeaderboardScreen
-                      courses={availableCourses}
-                      isPremium={isPremium}
-                      userProfile={userProfile}
-                    />,
-                  )}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/u/:username"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(
-                    <ProfilePage
-                      userProfile={userProfile}
-                      courses={availableCourses}
-                    />,
-                  )}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/messages"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(<ConversationList />)}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/messages/:username"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(<ChatView />)}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(
-                    <Profile
-                      userProfile={userProfile}
-                      isPremium={isPremium}
-                      onUpdateProfile={handleUpdateProfile}
-                    />,
-                  )}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/referral-dashboard"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(<ReferralDashboard isPremium={isPremium} />)}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/submit-review"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(<SubmitReview userProfile={userProfile} />)}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(
-                    <SettingsScreen
-                      userProfile={userProfile}
-                      isPremium={isPremium}
-                      onLogout={handleLogout}
-                      isDarkMode={isDarkMode}
-                      toggleDarkMode={() => setIsDarkMode((prev) => !prev)}
-                      autoAdvance={autoAdvance}
-                      toggleAutoAdvance={() => setAutoAdvance((prev) => !prev)}
-                      shuffleOptions={shuffleOptions}
-                      toggleShuffleOptions={() =>
-                        setShuffleOptions((prev) => !prev)
-                      }
-                      unlimitedHints={unlimitedHints}
-                      toggleUnlimitedHints={() =>
-                        setUnlimitedHints((prev) => !prev)
-                      }
-                      showPagination={showPagination}
-                      toggleShowPagination={() =>
-                        setShowPagination((prev) => !prev)
-                      }
-                      deleteImage={deleteImage}
-                    />,
-                  )}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/exam"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(
-                    hasActiveExamState ? (
-                      <ExamScreen {...props} />
-                    ) : (
-                      <RouteStateFallback
-                        title="No exam in progress"
-                        message="Choose a course first so QuizBolt can prepare the right questions for you."
-                      />
-                    ),
-                  )}
-                </ProtectedRoute>
-              }
-            />
+                }
+              />
+              <Route
+                path="/bookmarks"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(<BookMark {...props} />)}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/history"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(<HistoryScreen {...props} />)}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(
+                      <LeaderboardScreen
+                        courses={availableCourses}
+                        isPremium={isPremium}
+                        userProfile={userProfile}
+                      />,
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/u/:username"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(
+                      <ProfilePage
+                        userProfile={userProfile}
+                        courses={availableCourses}
+                      />,
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/messages"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(<ConversationList />)}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/messages/:username"
+                element={
+                  <ProtectedRoute>{withDesktop(<ChatView />)}</ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(
+                      <Profile
+                        userProfile={userProfile}
+                        isPremium={isPremium}
+                        onUpdateProfile={handleUpdateProfile}
+                      />,
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/referral-dashboard"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(<ReferralDashboard isPremium={isPremium} />)}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/submit-review"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(<SubmitReview userProfile={userProfile} />)}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(
+                      <SettingsScreen
+                        userProfile={userProfile}
+                        isPremium={isPremium}
+                        onLogout={handleLogout}
+                        isDarkMode={isDarkMode}
+                        toggleDarkMode={() => setIsDarkMode((prev) => !prev)}
+                        autoAdvance={autoAdvance}
+                        toggleAutoAdvance={() =>
+                          setAutoAdvance((prev) => !prev)
+                        }
+                        shuffleOptions={shuffleOptions}
+                        toggleShuffleOptions={() =>
+                          setShuffleOptions((prev) => !prev)
+                        }
+                        unlimitedHints={unlimitedHints}
+                        toggleUnlimitedHints={() =>
+                          setUnlimitedHints((prev) => !prev)
+                        }
+                        showPagination={showPagination}
+                        toggleShowPagination={() =>
+                          setShowPagination((prev) => !prev)
+                        }
+                        deleteImage={deleteImage}
+                      />,
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/exam"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(
+                      hasActiveExamState ? (
+                        <ExamScreen {...props} />
+                      ) : (
+                        <RouteStateFallback
+                          title="No exam in progress"
+                          message="Choose a course first so QuizBolt can prepare the right questions for you."
+                        />
+                      ),
+                    )}
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/results"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(
-                    hasResultState ? (
-                      <ResultScreen {...props} />
-                    ) : (
-                      <RouteStateFallback
-                        title="No result available"
-                        message="Submit an exam first, then your score and review options will appear here."
-                      />
-                    ),
-                  )}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/review-answers"
-              element={
-                <ProtectedRoute
-                  stateCheck={answers.length > 0 && questions.length > 0}
-                >
-                  {withDesktop(<ReviewAnswers {...props} />)}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/premium"
-              element={
-                <ProtectedRoute
-                  stateCheck={answers.length > 0 && questions.length > 0}
-                >
-                  {withDesktop(
-                    <PremiumPage
-                      {...props}
-                      onActivatePremium={handlePremiumActivation}
-                    />,
-                  )}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/upload-profile-pic"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(<UploadProfilePic {...props} />)}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/flashcards"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(
-                    <FlashcardsScreen
-                      courses={availableCourses}
-                      coursesLoading={coursesLoading}
-                      isPremium={isPremium}
-                    />,
-                  )}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/match"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(
-                    <MatchScreen
-                      courses={availableCourses}
-                      coursesLoading={coursesLoading}
-                      isPremium={isPremium}
-                    />,
-                  )}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/match-result"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(<MatchResultScreen />)}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/test"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(
-                    <TestModeScreen
-                      courses={availableCourses}
-                      coursesLoading={coursesLoading}
-                      isPremium={isPremium}
-                      userProfile={userProfile}
-                    />,
-                  )}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/test-leaderboard"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(
-                    <TestLeaderboardScreen
-                      courses={availableCourses}
-                      isPremium={isPremium}
-                      userProfile={userProfile}
-                    />,
-                  )}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/test-result"
-              element={
-                <ProtectedRoute>
-                  {withDesktop(<TestResultScreen />)}
-                </ProtectedRoute>
-              }
-            />
-            {/* Advertiser self-serve stats — no nav link, URL only */}
-            <Route path="/ad-stats" element={<AdStatsPage />} />
-            {/* Catch-all 404 route */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </InAppNotificationProvider>
-      </AuthProvider>
+              <Route
+                path="/results"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(
+                      hasResultState ? (
+                        <ResultScreen {...props} />
+                      ) : (
+                        <RouteStateFallback
+                          title="No result available"
+                          message="Submit an exam first, then your score and review options will appear here."
+                        />
+                      ),
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/review-answers"
+                element={
+                  <ProtectedRoute
+                    stateCheck={answers.length > 0 && questions.length > 0}
+                  >
+                    {withDesktop(<ReviewAnswers {...props} />)}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/premium"
+                element={
+                  <ProtectedRoute
+                    stateCheck={answers.length > 0 && questions.length > 0}
+                  >
+                    {withDesktop(
+                      <PremiumPage
+                        {...props}
+                        onActivatePremium={handlePremiumActivation}
+                      />,
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/upload-profile-pic"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(<UploadProfilePic {...props} />)}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/flashcards"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(
+                      <FlashcardsScreen
+                        courses={availableCourses}
+                        coursesLoading={coursesLoading}
+                        isPremium={isPremium}
+                      />,
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/match"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(
+                      <MatchScreen
+                        courses={availableCourses}
+                        coursesLoading={coursesLoading}
+                        isPremium={isPremium}
+                      />,
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/match-result"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(<MatchResultScreen />)}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/test"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(
+                      <TestModeScreen
+                        courses={availableCourses}
+                        coursesLoading={coursesLoading}
+                        isPremium={isPremium}
+                        userProfile={userProfile}
+                      />,
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/test-leaderboard"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(
+                      <TestLeaderboardScreen
+                        courses={availableCourses}
+                        isPremium={isPremium}
+                        userProfile={userProfile}
+                      />,
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/test-result"
+                element={
+                  <ProtectedRoute>
+                    {withDesktop(<TestResultScreen />)}
+                  </ProtectedRoute>
+                }
+              />
+              {/* Advertiser self-serve stats — no nav link, URL only */}
+              <Route path="/ad-stats" element={<AdStatsPage />} />
+              {/* Catch-all 404 route */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </InAppNotificationProvider>
+        </AuthProvider>
       )}
       <SpeedInsights />
     </Router>
