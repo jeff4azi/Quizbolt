@@ -14,6 +14,9 @@ const QuizResultCard = ({
   data,
   interactive = true,
   onAcceptChallenge = null,
+  // Optional node (time + delivery ticks) rendered inside the card, bottom-right,
+  // over a WhatsApp-style scrim. Only passed when the card is shown in a chat.
+  meta = null,
 }) => {
   const navigate = useNavigate();
 
@@ -207,6 +210,13 @@ const QuizResultCard = ({
           </button>
         )}
       </div>
+
+      {/* ── 5. Chat meta (time + ticks) — WhatsApp-style floating pill ────── */}
+      {meta && (
+        <div className="absolute bottom-2.5 right-4 flex items-center gap-1 text-[9px] font-semibold text-white/90 bg-black/20 backdrop-blur-md px-2 py-0.5 rounded-full pointer-events-none border border-white/10 shadow-sm">
+          {meta}
+        </div>
+      )}
     </div>
   );
 };

@@ -948,33 +948,29 @@ const ChatView = () => {
                               `/choose-course?course=${encodeURIComponent(course)}`,
                             );
                           }}
-                        />
-                        <div
-                          className={`flex items-center gap-1 mt-0.5 px-2 text-[10px] font-medium select-none ${
-                            isMe
-                              ? "justify-end text-slate-400"
-                              : "justify-start text-slate-400"
-                          }`}
-                        >
-                          <span>{formatMessageTime(msg.timestamp)}</span>
-                          {isMe && (
-                            <span className="inline-flex items-center shrink-0">
-                              {msg.status === "sent" ? (
-                                <IoCheckmark
-                                  size={14}
-                                  className="text-slate-400"
-                                  title="Sent"
-                                />
-                              ) : (
-                                <IoCheckmarkDone
-                                  size={15}
-                                  className="text-sky-500"
-                                  title="Delivered / Read"
-                                />
+                          meta={
+                            <>
+                              <span>{formatMessageTime(msg.timestamp)}</span>
+                              {isMe && (
+                                <span className="inline-flex items-center shrink-0">
+                                  {msg.status === "sent" ? (
+                                    <IoCheckmark
+                                      size={12}
+                                      className="text-white/85"
+                                      title="Sent"
+                                    />
+                                  ) : (
+                                    <IoCheckmarkDone
+                                      size={13}
+                                      className="text-sky-300"
+                                      title="Delivered / Read"
+                                    />
+                                  )}
+                                </span>
                               )}
-                            </span>
-                          )}
-                        </div>
+                            </>
+                          }
+                        />
                       </div>
                       </SwipeToReply>
                     ) : (
