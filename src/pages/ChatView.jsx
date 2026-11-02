@@ -311,35 +311,39 @@ const ChatSkeleton = ({ onBack }) => {
       </header>
 
       {/* Messages Feed Skeleton */}
-      <div className="flex-1 overflow-hidden p-4 sm:p-6 pb-28 sm:pb-36 space-y-3">
+      <div className="flex-1 overflow-hidden p-4 sm:p-6 pb-28 sm:pb-36 flex flex-col">
         {/* Date separator pill in center */}
-        <div className="flex justify-center my-2">
+        <div className="flex justify-center my-4">
           <div className="h-5 w-20 rounded-full bg-slate-200/80 dark:bg-slate-800/80 animate-pulse" />
         </div>
 
-        {/* Staggered message bubbles */}
-        <div className="flex justify-start">
+        {/* Burst clustering demo */}
+        {/* Them: Burst Start */}
+        <div className="flex justify-start mt-1">
           <div className="h-10 w-44 rounded-2xl rounded-tl-xs bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 animate-pulse shadow-xs" />
         </div>
-
-        <div className="flex justify-start">
-          <div className="h-16 w-64 rounded-2xl rounded-tl-xs bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 animate-pulse shadow-xs" />
+        {/* Them: Burst Continuation */}
+        <div className="flex justify-start mt-0.5">
+          <div className="h-16 w-64 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 animate-pulse shadow-xs" />
         </div>
 
-        <div className="flex justify-end">
+        {/* Me: Single Message (New Burst) */}
+        <div className="flex justify-end mt-3">
           <div className="h-11 w-52 rounded-2xl rounded-tr-xs bg-blue-500/25 dark:bg-blue-600/30 animate-pulse shadow-xs" />
         </div>
 
-        <div className="flex justify-start">
+        {/* Them: Single Message (New Burst) */}
+        <div className="flex justify-start mt-3">
           <div className="h-10 w-36 rounded-2xl rounded-tl-xs bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 animate-pulse shadow-xs" />
         </div>
 
-        <div className="flex justify-end">
+        {/* Me: Burst Start */}
+        <div className="flex justify-end mt-3">
           <div className="h-14 w-60 rounded-2xl rounded-tr-xs bg-blue-500/25 dark:bg-blue-600/30 animate-pulse shadow-xs" />
         </div>
-
-        <div className="flex justify-end">
-          <div className="h-9 w-28 rounded-2xl rounded-tr-xs bg-blue-500/25 dark:bg-blue-600/30 animate-pulse shadow-xs" />
+        {/* Me: Burst Continuation */}
+        <div className="flex justify-end mt-0.5">
+          <div className="h-9 w-28 rounded-2xl bg-blue-500/25 dark:bg-blue-600/30 animate-pulse shadow-xs" />
         </div>
       </div>
 
