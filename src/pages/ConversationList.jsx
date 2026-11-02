@@ -36,6 +36,31 @@ const formatTimeAgo = (dateStr) => {
   return `${diffDays}d`;
 };
 
+/* ─── ConversationsSkeleton (shown while loading main messages) ────────────── */
+const ConversationsSkeleton = () => {
+  return (
+    <div className="rounded-3xl bg-white dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-700/40 overflow-hidden shadow-sm">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div
+          key={i}
+          className="px-4 py-3.5 sm:px-5 flex items-center justify-between gap-3.5 animate-pulse"
+        >
+          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+            <div className="size-12 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-center gap-2">
+                <div className="h-3.5 w-32 bg-slate-200 dark:bg-slate-700 rounded-md" />
+                <div className="h-2.5 w-10 bg-slate-200/60 dark:bg-slate-700/60 rounded-md" />
+              </div>
+              <div className="h-3 w-48 bg-slate-200/60 dark:bg-slate-700/60 rounded-md mt-1.5" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const ConversationList = () => {
   useDocumentTitle("Messages | QuizBolt");
   const navigate = useNavigate();
@@ -435,12 +460,7 @@ const ConversationList = () => {
             </h2>
 
             {loading ? (
-              <div className="py-12 text-center bg-white dark:bg-slate-800/40 rounded-3xl border border-slate-200/70 dark:border-slate-800/60 p-6 shadow-sm">
-                <div className="size-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin mx-auto mb-3" />
-                <p className="text-xs text-slate-400">
-                  Loading your conversations...
-                </p>
-              </div>
+              <ConversationsSkeleton />
             ) : filteredActive.length === 0 ? (
               <div className="py-12 text-center bg-white dark:bg-slate-800/40 rounded-3xl border border-slate-200/70 dark:border-slate-800/60 p-6 shadow-sm">
                 <div className="size-12 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 mx-auto mb-3">
