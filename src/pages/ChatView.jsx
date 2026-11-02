@@ -78,6 +78,138 @@ const isMobileDevice = () => {
   return isTouch && isSmallScreen;
 };
 
+/* ─── SwipeToReply wrapper ────────────────────────────────────────────────── */
+const SWIPE_THRESHOLD = 60;
+const SWIPE_MAX = 72;
+
+const SwipeToReply = ({ onReply, disabled = false, className = "", children }) => {
+  const bubbleRef = useRef(null);
+  const iconRef = useRef(null);
+  const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
+  const triggered = useRef(false);
+  const isScrolling = useRef(null);
+  // True right after a swipe fired, so the trailing tap doesn't toggle selection
+  const didSwipe = useRef(false);
+
+  const applyShift = (x) => {
+    if (!bubbleRef.current) return;
+    bubbleRef.current.style.transition = "none";
+    bubbleRef.current.style.transform = `translateX(${x}px)`;
+    if (iconRef.current) {
+      iconRef.current.style.opacity = Math.min(1, x / SWIPE_THRESHOLD);
+      iconRef.current.style.transform = `translateY(-50%) scale(${0.7 + 0.3 * Math.min(1, x / SWIPE_THRESHOLD)})`;
+    }
+  };
+
+  const springBack = () => {
+    if (!bubbleRef.current) return;
+    bubbleRef.current.style.transition =
+      "transform 0.28s cubic-bezier(0.25, 1, 0.5, 1)";
+    bubbleRef.current.style.transform = "translateX(0px)";
+    if (iconRef.current) {
+      iconRef.current.style.transition = "opacity 0.28s, transform 0.28s";
+      iconRef.current.style.opacity = "0";
+      iconRef.current.style.transform = "translateY(-50%) scale(0.7)";
+    }
+    triggered.current = false;
+    isScrolling.current = null;
+  };
+
+  const onTouchStart = (e) => {
+    if (disabled || e.touches.length !== 1) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    triggered.current = false;
+    isScrolling.current = null;
+    didSwipe.current = false;
+    // Clear any lingering transition so next move is instant
+    if (bubbleRef.current) bubbleRef.current.style.transition = "none";
+  };
+
+  const onTouchMove = (e) => {
+    if (disabled || touchStartX.current === null) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = e.touches[0].clientY - touchStartY.current;
+
+    if (
+      isScrolling.current === null &&
+      (Math.abs(dx) > 5 || Math.abs(dy) > 5)
+    ) {
+      isScrolling.current = Math.abs(dy) > Math.abs(dx);
+    }
+    if (isScrolling.current) return;
+    if (dx <= 0) return;
+
+    // Rubber-band past max
+    const clamped = dx <= SWIPE_MAX ? dx : SWIPE_MAX + (dx - SWIPE_MAX) * 0.15;
+
+    applyShift(clamped);
+
+    if (!triggered.current && dx >= SWIPE_THRESHOLD) {
+      triggered.current = true;
+      if (navigator.vibrate) navigator.vibrate(30);
+    }
+  };
+
+  const onTouchEnd = () => {
+    if (disabled) return;
+    if (triggered.current) {
+      didSwipe.current = true;
+      onReply();
+    }
+    springBack();
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  // Swallow the synthetic tap that can follow a swipe so it doesn't select the bubble
+  const onClickCapture = (e) => {
+    if (didSwipe.current) {
+      e.stopPropagation();
+      didSwipe.current = false;
+    }
+  };
+
+  return (
+    <div
+      className={`relative flex min-w-0 ${className}`}
+      style={{ touchAction: "pan-y" }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={springBack}
+      onClickCapture={onClickCapture}
+    >
+      {/* Reply icon, revealed from behind the bubble as it slides right */}
+      <div
+        ref={iconRef}
+        className="absolute left-0 top-1/2 z-0 pointer-events-none"
+        style={{
+          opacity: 0,
+          transform: "translateY(-50%) scale(0.7)",
+          willChange: "opacity, transform",
+        }}
+        aria-hidden="true"
+      >
+        <div className="size-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center shadow-sm">
+          <FiCornerUpLeft
+            size={14}
+            className="text-slate-600 dark:text-slate-300"
+          />
+        </div>
+      </div>
+      <div
+        ref={bubbleRef}
+        className="relative z-10 flex min-w-0"
+        style={{ willChange: "transform" }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
 /* ─── ReplyQuote (the small tinted box inside a bubble) ───────────────────── */
 const ReplyQuote = ({ replyToText, replyToSender, isMe, onClick }) => {
   if (!replyToText) return null;
@@ -677,7 +809,7 @@ const ChatView = () => {
 
         {/* ── MESSAGES FEED ─────────────────────────────────────────────────── */}
         <div
-          className="flex-1 overflow-y-auto p-4 sm:p-6 pb-28 sm:pb-36 space-y-1.5"
+          className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 pb-28 sm:pb-36 space-y-1.5"
           onClick={() => setSelectedMsgId(null)}
         >
           {messages.length === 0 ? (
@@ -779,6 +911,10 @@ const ChatView = () => {
                         </span>
                       </div>
                     ) : isQuizResultPayload(msg.text) ? (
+                      <SwipeToReply
+                        onReply={() => startReply(msg)}
+                        className="max-w-full"
+                      >
                       <div
                         onClick={(e) => {
                           e.stopPropagation();
@@ -840,7 +976,12 @@ const ChatView = () => {
                           )}
                         </div>
                       </div>
+                      </SwipeToReply>
                     ) : (
+                      <SwipeToReply
+                        onReply={() => startReply(msg)}
+                        className="max-w-[85%] sm:max-w-md"
+                      >
                       <div
                         onClick={(e) => {
                           e.stopPropagation();
@@ -848,7 +989,7 @@ const ChatView = () => {
                             prev === msg.id ? null : msg.id,
                           );
                         }}
-                        className={`relative max-w-[85%] sm:max-w-md px-3.5 pt-2.5 pb-2 rounded-2xl text-xs sm:text-sm shadow-sm leading-relaxed cursor-pointer select-text transition-all ${
+                        className={`relative px-3.5 pt-2.5 pb-2 rounded-2xl text-xs sm:text-sm shadow-sm leading-relaxed cursor-pointer select-text transition-all ${
                           isMe
                             ? "bg-blue-600 text-white rounded-tr-xs shadow-sm dark:shadow-none"
                             : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-tl-xs border border-slate-200/70 dark:border-slate-700/60"
@@ -903,6 +1044,7 @@ const ChatView = () => {
                           )}
                         </span>
                       </div>
+                      </SwipeToReply>
                     )}
 
                     {/* For 'them' messages: Reply button appears on the right when tapped */}
