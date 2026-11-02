@@ -924,7 +924,7 @@ const ChatView = () => {
                         }}
                         className={`flex flex-col gap-1 cursor-pointer transition-all ${
                           isSelected
-                            ? "ring-2 ring-blue-400/80 rounded-3xl p-1"
+                            ? "ring-2 ring-blue-400/80 rounded-[2.75rem] p-1"
                             : ""
                         }`}
                       >
