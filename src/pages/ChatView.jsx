@@ -82,6 +82,9 @@ const isMobileDevice = () => {
 const SWIPE_THRESHOLD = 60;
 const SWIPE_MAX = 72;
 
+/** WhatsApp-like limit for unsending messages: 24 hours */
+const MESSAGE_DELETE_LIMIT = 24 * 60 * 60 * 1000;
+
 const SwipeToReply = ({ onReply, disabled = false, className = "", children }) => {
   const bubbleRef = useRef(null);
   const iconRef = useRef(null);
@@ -524,6 +527,19 @@ const ChatView = () => {
 
   const handleDeleteMessage = useCallback((msg) => {
     if (!msg?.id || msg.sender !== "me") return;
+
+    // Verify time limit (WhatsApp-like)
+    const timeDiff = Date.now() - new Date(msg.timestamp).getTime();
+    if (timeDiff > MESSAGE_DELETE_LIMIT) {
+      setChatFeedbackModal({
+        isOpen: true,
+        title: "Limit Exceeded",
+        message:
+          "You can only unsend messages within 24 hours of sending them.",
+      });
+      return;
+    }
+
     setSelectedMsgId(null);
     setMsgToDelete(msg);
   }, []);
@@ -831,6 +847,11 @@ const ChatView = () => {
               const isMe = msg.sender === "me";
               const isSelected = selectedMsgId === msg.id;
               const isDeleted = isDeletedMessage(msg.text);
+              const canDelete =
+                isMe &&
+                !isDeleted &&
+                Date.now() - new Date(msg.timestamp).getTime() <
+                  MESSAGE_DELETE_LIMIT;
               const currentDateKey = getMessageDateKey(msg.timestamp);
               const prevDateKey =
                 index > 0
@@ -860,19 +881,21 @@ const ChatView = () => {
                     {/* For 'me' messages: Action buttons (Delete / Reply) appear on the left when tapped */}
                     {isMe && isSelected && !isDeleted && (
                       <div className="flex items-center gap-1 shrink-0 animate-in fade-in zoom-in-75 duration-150">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteMessage(msg);
-                          }}
-                          disabled={deletingMsgId === msg.id}
-                          title="Unsend message"
-                          aria-label="Unsend message"
-                          className="size-8 rounded-full bg-white dark:bg-slate-800 text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-700 shadow-md flex items-center justify-center transition-all active:scale-90 disabled:opacity-50"
-                        >
-                          <FiTrash2 size={14} />
-                        </button>
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMessage(msg);
+                            }}
+                            disabled={deletingMsgId === msg.id}
+                            title="Unsend message"
+                            aria-label="Unsend message"
+                            className="size-8 rounded-full bg-white dark:bg-slate-800 text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-700 shadow-md flex items-center justify-center transition-all active:scale-90 disabled:opacity-50"
+                          >
+                            <FiTrash2 size={14} />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={(e) => {
