@@ -23,6 +23,7 @@ import {
 } from "react-icons/fi";
 import { FaCrown, FaTrophy } from "react-icons/fa";
 import flashCardIcon from "../images/flash-card.webp";
+import Logo from "../images/Logo";
 
 const FREE_CARD_LIMIT = 20;
 
@@ -323,9 +324,7 @@ const SetupScreen = ({ course, isPremium, onBack, onStart }) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            
-          </div>
+          <div className="flex items-center gap-2 shrink-0"></div>
         </div>
       </div>
 
@@ -340,7 +339,8 @@ const SetupScreen = ({ course, isPremium, onBack, onStart }) => {
                     Topics to Study
                   </h2>
                   <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                    {selectedSections.size} of {allSectionsList.length} topics selected
+                    {selectedSections.size} of {allSectionsList.length} topics
+                    selected
                   </p>
                 </div>
 
@@ -458,8 +458,8 @@ const SetupScreen = ({ course, isPremium, onBack, onStart }) => {
                       locked
                         ? "border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 opacity-60 cursor-not-allowed"
                         : isSelected
-                        ? "border-violet-400 dark:border-violet-400/60 bg-violet-100/60 dark:bg-violet-500/20 shadow-sm shadow-violet-500/15"
-                        : "border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-violet-300 dark:hover:border-violet-500/40"
+                          ? "border-violet-400 dark:border-violet-400/60 bg-violet-100/60 dark:bg-violet-500/20 shadow-sm shadow-violet-500/15"
+                          : "border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-violet-300 dark:hover:border-violet-500/40"
                     }`}
                   >
                     <div
@@ -467,8 +467,8 @@ const SetupScreen = ({ course, isPremium, onBack, onStart }) => {
                         locked
                           ? "bg-slate-100 dark:bg-slate-800 text-slate-400"
                           : isSelected
-                          ? "bg-violet-500 text-white shadow-sm shadow-violet-500/25"
-                          : "bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
+                            ? "bg-violet-500 text-white shadow-sm shadow-violet-500/25"
+                            : "bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
                       }`}
                     >
                       <Icon className="size-5" />
@@ -560,7 +560,11 @@ const SetupScreen = ({ course, isPremium, onBack, onStart }) => {
                 <div className="flex flex-wrap gap-1.5">
                   {[
                     { key: "all", label: "All Formats" },
-                    { key: "objective", label: "Objective", disabled: !hasObjective },
+                    {
+                      key: "objective",
+                      label: "Objective",
+                      disabled: !hasObjective,
+                    },
                     { key: "fib", label: "FIB", disabled: !hasFib },
                     {
                       key: "theory",
@@ -642,7 +646,8 @@ const SetupScreen = ({ course, isPremium, onBack, onStart }) => {
             <div className="flex items-center gap-2">
               <FiClock className="size-4 text-violet-600 dark:text-violet-400 shrink-0" />
               <span>
-                Est. Duration: ~{estimatedMinutes} min{estimatedMinutes !== 1 ? "s" : ""}
+                Est. Duration: ~{estimatedMinutes} min
+                {estimatedMinutes !== 1 ? "s" : ""}
               </span>
             </div>
             <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400">
@@ -681,7 +686,6 @@ const SetupScreen = ({ course, isPremium, onBack, onStart }) => {
     </div>
   );
 };
-
 
 // ─── Session Complete Screen ──────────────────────────────────────────────────
 const SessionCompleteScreen = ({
@@ -786,7 +790,6 @@ const StudySession = ({
     });
     advance();
   };
-
 
   // Swipe left = next, swipe right = prev (only when not flipped and revealed)
   const handleTouchStart = (e) => {
@@ -910,8 +913,10 @@ const StudySession = ({
               />
             </div>
           </div>
-        </div>) : <div className="h-30" />
-      }
+        </div>
+      ) : (
+        <div className="h-30" />
+      )}
 
       {/* Focus mode exit button */}
       {focusMode && (
@@ -1076,7 +1081,9 @@ const FlashcardsScreen = ({ courses, coursesLoading, isPremium }) => {
 
         // Fetch each requested type
         if (types.includes("objective")) {
-          const totalCourseSections = Object.keys(selectedCourse.sectionCounts || {}).length;
+          const totalCourseSections = Object.keys(
+            selectedCourse.sectionCounts || {},
+          ).length;
           const hasSpecificSections =
             sections &&
             sections.length > 0 &&
@@ -1218,16 +1225,21 @@ const FlashcardsScreen = ({ courses, coursesLoading, isPremium }) => {
   // ── phase: loading ──
   if (phase === "loading") {
     return (
-      <div className="min-h-[100dvh] bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-full bg-violet-500/10 animate-ping" />
-            <div className="relative size-16 rounded-3xl bg-white dark:bg-slate-800 border border-violet-100 dark:border-slate-700 flex items-center justify-center shadow-lg">
-              <FiLoader className="size-8 text-violet-600 animate-spin" />
-            </div>
-          </div>
-          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-            Preparing your cards...
+      <div className="flex h-[100dvh] flex-col items-center justify-center bg-[#0F172A]">
+        {/* Bar animation — violet accent */}
+        <div className="flex gap-1.5">
+          <div className="h-8 w-1.5 animate-[loading_1s_ease-in-out_infinite] rounded-full bg-violet-600"></div>
+          <div className="h-8 w-1.5 animate-[loading_1s_ease-in-out_0.1s_infinite] rounded-full bg-violet-500"></div>
+          <div className="h-8 w-1.5 animate-[loading_1s_ease-in-out_0.2s_infinite] rounded-full bg-violet-400"></div>
+        </div>
+        <h2 className="mt-6 text-sm font-bold tracking-widest text-slate-400 uppercase">
+          Preparing Cards
+        </h2>
+        {/* Bottom branding */}
+        <div className="absolute bottom-10 flex flex-col items-center gap-1 opacity-30">
+          <Logo className="h-6 w-auto" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-white">
+            Quiz Bolt⚡
           </p>
         </div>
       </div>

@@ -28,6 +28,7 @@ import { FaCrown, FaTrophy } from "react-icons/fa";
 import { withTimeout } from "../utils/withTimeout";
 import { gradeTheoryAnswer, parseKeywords } from "../utils/theoryGrader";
 import { gradeFibAnswer, parseFibAnswers } from "../utils/fibGrader";
+import Logo from "../images/Logo";
 const FREE_QUESTION_LIMIT = 11;
 
 // ─── Premium gate overlay ─────────────────────────────────────────────────────
@@ -77,9 +78,7 @@ const shuffle = (arr) => {
 
 // Theory grading handled by ../utils/theoryGrader.js
 
-
 // FIB grading handled by ../utils/fibGrader.js
-
 
 const isTheory = (q) => q?.type === "theory" || Array.isArray(q?.keywords);
 const isFib = (q) => q?.type === "fib" || Array.isArray(q?.answers);
@@ -169,10 +168,11 @@ const SectionDropdown = ({ sections, selected, onSelect }) => {
 
       {open && (
         <div
-          className={`absolute z-[80] w-full max-h-64 overflow-y-auto rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl shadow-slate-900/10 py-1.5 animate-in fade-in ${dropUp
+          className={`absolute z-[80] w-full max-h-64 overflow-y-auto rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl shadow-slate-900/10 py-1.5 animate-in fade-in ${
+            dropUp
               ? "bottom-full mb-2 slide-in-from-bottom-1"
               : "top-full mt-2 slide-in-from-top-1"
-            } duration-150`}
+          } duration-150`}
         >
           {options.map((opt) => {
             const isActive = selected === opt.key;
@@ -184,10 +184,11 @@ const SectionDropdown = ({ sections, selected, onSelect }) => {
                   onSelect(opt.key);
                   setOpen(false);
                 }}
-                className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm font-semibold text-left transition-colors ${isActive
+                className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm font-semibold text-left transition-colors ${
+                  isActive
                     ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10"
                     : "text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
-                  }`}
+                }`}
               >
                 <span className="truncate">{opt.label}</span>
                 {isActive && <FiCheck className="size-4 shrink-0" />}
@@ -314,10 +315,11 @@ const QuestionCountPicker = ({
                         onSelectSection(null);
                       }
                     }}
-                    className={`relative py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 ${isActive
+                    className={`relative py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 ${
+                      isActive
                         ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
                         : "text-slate-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50"
-                      } ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}
+                    } ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}
                   >
                     {label}
                     {isLocked && (
@@ -352,10 +354,11 @@ const QuestionCountPicker = ({
                         key={key ?? "all"}
                         type="button"
                         onClick={() => onSelectDifficulty(key)}
-                        className={`px-4 py-2 rounded-full text-xs font-bold border transition-all duration-200 ${isActive
+                        className={`px-4 py-2 rounded-full text-xs font-bold border transition-all duration-200 ${
+                          isActive
                             ? "bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-600/20"
                             : "bg-white dark:bg-slate-800/60 border-gray-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-300 dark:hover:border-slate-600"
-                          }`}
+                        }`}
                       >
                         {label}
                       </button>
@@ -421,17 +424,20 @@ const QuestionCountPicker = ({
                     key={count}
                     onClick={() => (locked ? null : onSelect(num))}
                     disabled={locked}
-                    className={`group relative flex items-center gap-3 px-5 py-4 rounded-2xl border transition-all duration-200 active:scale-[0.97] ${isAll ? "col-span-2" : ""
-                      } ${locked
+                    className={`group relative flex items-center gap-3 px-5 py-4 rounded-2xl border transition-all duration-200 active:scale-[0.97] ${
+                      isAll ? "col-span-2" : ""
+                    } ${
+                      locked
                         ? "border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/40 opacity-60 cursor-not-allowed"
                         : "border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/5"
-                      }`}
+                    }`}
                   >
                     <div
-                      className={`size-10 shrink-0 rounded-xl flex items-center justify-center ${locked
+                      className={`size-10 shrink-0 rounded-xl flex items-center justify-center ${
+                        locked
                           ? "bg-gray-100 dark:bg-slate-700"
                           : "bg-blue-50 dark:bg-blue-500/10"
-                        }`}
+                      }`}
                     >
                       <Icon
                         className={`size-5 ${locked ? "text-slate-400" : "text-blue-600 dark:text-blue-400"}`}
@@ -483,7 +489,11 @@ const TestModeScreen = ({
   // phase: "pick" | "count" | "test" | "done"
   const [phase, setPhase] = useState("pick");
   const [selectedCourse, setSelectedCourse] = useState(null);
-  useDocumentTitle(selectedCourse?.id || selectedCourse?.code ? `${selectedCourse.id || selectedCourse.code} Weekly Test | QuizBolt` : "Weekly Test | QuizBolt");
+  useDocumentTitle(
+    selectedCourse?.id || selectedCourse?.code
+      ? `${selectedCourse.id || selectedCourse.code} Weekly Test | QuizBolt`
+      : "Weekly Test | QuizBolt",
+  );
   const [questionCount, setQuestionCount] = useState(null); // eslint-disable-line no-unused-vars
   const [questionType, setQuestionType] = useState("all"); // "all" | "objective" | "theory" | "fib"
   const [selectedDifficulty, setSelectedDifficulty] = useState(null); // null (all) | "Easy" | "Medium" | "Hard"
@@ -557,7 +567,9 @@ const TestModeScreen = ({
 
   // Update viewport tier on resize
   useEffect(() => {
-    const desktopQuery = window.matchMedia("(min-width: 640px), (min-width: 1024px)");
+    const desktopQuery = window.matchMedia(
+      "(min-width: 640px), (min-width: 1024px)",
+    );
     const handleChange = () => setViewportTier(getViewportTier());
     setViewportTier(getViewportTier());
     desktopQuery.addEventListener("change", handleChange);
@@ -570,88 +582,93 @@ const TestModeScreen = ({
   }, [currentIndex]);
 
   // ── fetch questions ──
-  const fetchQuestions = useCallback(async (course, count, type, difficulty, section) => {
-    setLoadingQ(true);
-    setErrorQ(null);
-    try {
-      const base = `${API_BASE_URL}${course.questionsEndpoint || `/courses/${course.id}/questions`}`;
-      let questionsData = [];
+  const fetchQuestions = useCallback(
+    async (course, count, type, difficulty, section) => {
+      setLoadingQ(true);
+      setErrorQ(null);
+      try {
+        const base = `${API_BASE_URL}${course.questionsEndpoint || `/courses/${course.id}/questions`}`;
+        let questionsData = [];
 
-      // Build query params helper
-      const buildUrl = (baseUrl, params = {}) => {
-        const url = new URL(baseUrl, window.location.origin);
-        Object.entries(params).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            url.searchParams.append(key, value);
+        // Build query params helper
+        const buildUrl = (baseUrl, params = {}) => {
+          const url = new URL(baseUrl, window.location.origin);
+          Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              url.searchParams.append(key, value);
+            }
+          });
+          return url.toString();
+        };
+
+        if (type === "all") {
+          // Fetch all types, only apply difficulty/section to objective
+          const [objRes, thyRes, fibRes] = await Promise.all([
+            fetch(buildUrl(base, { difficulty, section })),
+            fetch(buildUrl(base, { type: "theory" })),
+            fetch(buildUrl(base, { type: "fib" })),
+          ]);
+          const [objData, thyData, fibData] = await Promise.all([
+            objRes.json(),
+            thyRes.json(),
+            fibRes.json(),
+          ]);
+          const objective = objRes.ok && Array.isArray(objData) ? objData : [];
+          const theory =
+            thyRes.ok && Array.isArray(thyData)
+              ? thyData.map((q) => ({ ...q, type: "theory" }))
+              : [];
+          const fib =
+            fibRes.ok && Array.isArray(fibData)
+              ? fibData.map((q) => ({ ...q, type: "fib" }))
+              : [];
+          questionsData = [...objective, ...theory, ...fib];
+        } else if (type === "objective") {
+          const res = await fetch(buildUrl(base, { difficulty, section }));
+          if (res.ok) {
+            const data = await res.json();
+            questionsData = Array.isArray(data) ? data : [];
           }
-        });
-        return url.toString();
-      };
+        } else if (type === "theory") {
+          const res = await fetch(buildUrl(base, { type: "theory" }));
+          if (res.ok) {
+            const data = await res.json();
+            questionsData = Array.isArray(data)
+              ? data.map((q) => ({ ...q, type: "theory" }))
+              : [];
+          }
+        } else if (type === "fib") {
+          const res = await fetch(buildUrl(base, { type: "fib" }));
+          if (res.ok) {
+            const data = await res.json();
+            questionsData = Array.isArray(data)
+              ? data.map((q) => ({ ...q, type: "fib" }))
+              : [];
+          }
+        }
 
-      if (type === "all") {
-        // Fetch all types, only apply difficulty/section to objective
-        const [objRes, thyRes, fibRes] = await Promise.all([
-          fetch(buildUrl(base, { difficulty, section })),
-          fetch(buildUrl(base, { type: "theory" })),
-          fetch(buildUrl(base, { type: "fib" })),
-        ]);
-        const [objData, thyData, fibData] = await Promise.all([
-          objRes.json(),
-          thyRes.json(),
-          fibRes.json(),
-        ]);
-        const objective = objRes.ok && Array.isArray(objData) ? objData : [];
-        const theory =
-          thyRes.ok && Array.isArray(thyData)
-            ? thyData.map((q) => ({ ...q, type: "theory" }))
-            : [];
-        const fib =
-          fibRes.ok && Array.isArray(fibData)
-            ? fibData.map((q) => ({ ...q, type: "fib" }))
-            : [];
-        questionsData = [...objective, ...theory, ...fib];
-      } else if (type === "objective") {
-        const res = await fetch(buildUrl(base, { difficulty, section }));
-        if (res.ok) {
-          const data = await res.json();
-          questionsData = Array.isArray(data) ? data : [];
-        }
-      } else if (type === "theory") {
-        const res = await fetch(buildUrl(base, { type: "theory" }));
-        if (res.ok) {
-          const data = await res.json();
-          questionsData = Array.isArray(data)
-            ? data.map((q) => ({ ...q, type: "theory" }))
-            : [];
-        }
-      } else if (type === "fib") {
-        const res = await fetch(buildUrl(base, { type: "fib" }));
-        if (res.ok) {
-          const data = await res.json();
-          questionsData = Array.isArray(data)
-            ? data.map((q) => ({ ...q, type: "fib" }))
-            : [];
-        }
+        const all = shuffle([...questionsData]);
+        if (all.length === 0)
+          throw new Error("No questions found for this course.");
+        const picked = all.slice(0, count).map((q) => ({
+          ...q,
+          options: Array.isArray(q.options)
+            ? shuffle([...q.options])
+            : undefined,
+        }));
+        setQuestions(picked);
+        setAnswers(new Array(picked.length).fill(undefined));
+        setAnswered(new Array(picked.length).fill(false));
+        setCurrentIndex(0);
+        setCurrentInput(undefined);
+      } catch (err) {
+        setErrorQ(err.message || "Failed to load questions.");
+      } finally {
+        setLoadingQ(false);
       }
-
-      const all = shuffle([...questionsData]);
-      if (all.length === 0)
-        throw new Error("No questions found for this course.");
-      const picked = all.slice(0, count).map((q) => ({
-        ...q,
-        options: Array.isArray(q.options) ? shuffle([...q.options]) : undefined,
-      }));
-      setQuestions(picked);
-      setAnswers(new Array(picked.length).fill(undefined));
-      setAnswered(new Array(picked.length).fill(false));
-      setCurrentIndex(0);
-      setCurrentInput(undefined);
-    } catch (err) {
-      setErrorQ(err.message || "Failed to load questions.");
-    } finally {
-      setLoadingQ(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const handleCourseSelect = (course) => {
     setSelectedCourse(course);
@@ -663,7 +680,13 @@ const TestModeScreen = ({
   const handleCountSelect = (count) => {
     setQuestionCount(count);
     setPhase("test");
-    fetchQuestions(selectedCourse, count, questionType, selectedDifficulty, selectedSection);
+    fetchQuestions(
+      selectedCourse,
+      count,
+      questionType,
+      selectedDifficulty,
+      selectedSection,
+    );
   };
 
   // ── answer submission for current question ──
@@ -715,13 +738,13 @@ const TestModeScreen = ({
     answeredIndices.length === 0
       ? null
       : Math.round(
-        (answeredIndices.reduce(
-          (acc, i) => acc + gradeQuestion(questions[i], answers[i]),
-          0,
-        ) /
-          answeredIndices.length) *
-        100,
-      );
+          (answeredIndices.reduce(
+            (acc, i) => acc + gradeQuestion(questions[i], answers[i]),
+            0,
+          ) /
+            answeredIndices.length) *
+            100,
+        );
 
   const ringColor =
     accuracyPercent === null
@@ -735,8 +758,7 @@ const TestModeScreen = ({
   const RING_RADIUS = 16;
   const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
   const ringDashoffset =
-    RING_CIRCUMFERENCE -
-    ((accuracyPercent ?? 0) / 100) * RING_CIRCUMFERENCE;
+    RING_CIRCUMFERENCE - ((accuracyPercent ?? 0) / 100) * RING_CIRCUMFERENCE;
 
   // ── save result and navigate ──
   const handleFinish = async () => {
@@ -849,16 +871,21 @@ const TestModeScreen = ({
   // ── loading ──
   if (loadingQ || (!currentQuestion && !errorQ)) {
     return (
-      <div className="min-h-[100dvh] bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-full bg-blue-500/10 animate-ping" />
-            <div className="relative size-16 rounded-3xl bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 flex items-center justify-center shadow-lg">
-              <FiLoader className="size-8 text-blue-600 animate-spin" />
-            </div>
-          </div>
-          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-            Preparing your test...
+      <div className="flex h-[100dvh] flex-col items-center justify-center bg-[#0F172A]">
+        {/* Bar animation — blue accent */}
+        <div className="flex gap-1.5">
+          <div className="h-8 w-1.5 animate-[loading_1s_ease-in-out_infinite] rounded-full bg-blue-600"></div>
+          <div className="h-8 w-1.5 animate-[loading_1s_ease-in-out_0.1s_infinite] rounded-full bg-blue-500"></div>
+          <div className="h-8 w-1.5 animate-[loading_1s_ease-in-out_0.2s_infinite] rounded-full bg-blue-400"></div>
+        </div>
+        <h2 className="mt-6 text-sm font-bold tracking-widest text-slate-400 uppercase">
+          Preparing Test
+        </h2>
+        {/* Bottom branding */}
+        <div className="absolute bottom-10 flex flex-col items-center gap-1 opacity-30">
+          <Logo className="h-6 w-auto" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-white">
+            Quiz Bolt⚡
           </p>
         </div>
       </div>
@@ -1169,8 +1196,8 @@ const TestModeScreen = ({
                             typeof group === "object" && group?.primary
                               ? group.primary
                               : Array.isArray(group)
-                              ? group[0]
-                              : group,
+                                ? group[0]
+                                : group,
                           )
                           .join(", ")}`}
                     </p>

@@ -6,6 +6,7 @@ import CoursePicker from "../components/CoursePicker";
 import MatchBox from "../components/MatchBox";
 import { FiChevronLeft, FiRefreshCw, FiClock } from "react-icons/fi";
 import matchIcon from "../images/match.webp";
+import Logo from "../images/Logo";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 
 // ─── constants ───────────────────────────────────────────────────────────────
@@ -58,7 +59,11 @@ const MatchScreen = ({ courses, coursesLoading }) => {
   // ── phase: "pick" | "play" | "done" ──
   const [phase, setPhase] = useState("pick");
   const [selectedCourse, setSelectedCourse] = useState(null);
-  useDocumentTitle(selectedCourse?.id || selectedCourse?.code ? `${selectedCourse.id || selectedCourse.code} Match Mode | QuizBolt` : "Match Mode | QuizBolt");
+  useDocumentTitle(
+    selectedCourse?.id || selectedCourse?.code
+      ? `${selectedCourse.id || selectedCourse.code} Match Mode | QuizBolt`
+      : "Match Mode | QuizBolt",
+  );
 
   // ── questions pool ──
   const [allQuestions, setAllQuestions] = useState([]);
@@ -279,17 +284,21 @@ const MatchScreen = ({ courses, coursesLoading }) => {
   // ─────────────────────────────────────────────────────────────────────────
   if (loadingQ) {
     return (
-      <div className="min-h-[100dvh] bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="size-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center animate-pulse">
-            <img
-              src={matchIcon}
-              alt="Match"
-              className="w-8 h-8 object-contain"
-            />
-          </div>
-          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-            Setting up the game...
+      <div className="flex h-[100dvh] flex-col items-center justify-center bg-[#0F172A]">
+        {/* Bar animation — emerald accent */}
+        <div className="flex gap-1.5">
+          <div className="h-8 w-1.5 animate-[loading_1s_ease-in-out_infinite] rounded-full bg-emerald-600"></div>
+          <div className="h-8 w-1.5 animate-[loading_1s_ease-in-out_0.1s_infinite] rounded-full bg-emerald-500"></div>
+          <div className="h-8 w-1.5 animate-[loading_1s_ease-in-out_0.2s_infinite] rounded-full bg-emerald-400"></div>
+        </div>
+        <h2 className="mt-6 text-sm font-bold tracking-widest text-slate-400 uppercase">
+          Setting Up Game
+        </h2>
+        {/* Bottom branding */}
+        <div className="absolute bottom-10 flex flex-col items-center gap-1 opacity-30">
+          <Logo className="h-6 w-auto" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-white">
+            Quiz Bolt⚡
           </p>
         </div>
       </div>
