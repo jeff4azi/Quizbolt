@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import {
   FaChevronDown,
   FaCrown,
@@ -64,8 +70,8 @@ const CourseDropdown = ({ options, selected, onSelect }) => {
       {open && (
         <div
           className={`absolute z-[80] w-full max-h-64 overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl shadow-slate-900/10 py-1.5 animate-in fade-in ${
-            dropUp 
-              ? "bottom-full mb-2 slide-in-from-bottom-1" 
+            dropUp
+              ? "bottom-full mb-2 slide-in-from-bottom-1"
               : "top-full mt-2 slide-in-from-top-1"
           } duration-150`}
         >
@@ -110,15 +116,12 @@ const getCurrentWeekStartIso = () => {
     0,
     0,
     0,
-    0
+    0,
   );
   return weekStart.toISOString();
 };
 
-const TestLeaderboardScreen = ({
-  courses,
-  userProfile,
-}) => {
+const TestLeaderboardScreen = ({ courses, userProfile }) => {
   useDocumentTitle("Weekly Test Leaderboard | QuizBolt");
   const navigate = useNavigate();
   const location = useLocation();
@@ -164,16 +167,18 @@ const TestLeaderboardScreen = ({
       const { data: attemptsData, error: attemptsError } = await withTimeout(
         supabase
           .from("test_attempts")
-          .select("id, user_id, course_id, score, total_questions, created_at, university, profiles!test_attempts_user_id_fkey(full_name, user_name, year, college, is_premium, avatar_url, department)")
+          .select(
+            "id, user_id, course_id, score, total_questions, created_at, university, profiles!test_attempts_user_id_fkey(full_name, user_name, year, college, is_premium, avatar_url, department)",
+          )
           .gte("created_at", weekStartIso),
         15000,
-        "Loading leaderboard took too long. Please try again."
+        "Loading leaderboard took too long. Please try again.",
       );
 
       if (attemptsError) {
         console.error(
           "Failed to load test leaderboard attempts:",
-          attemptsError.message
+          attemptsError.message,
         );
         setAttempts([]);
         setProfiles({});
@@ -181,12 +186,10 @@ const TestLeaderboardScreen = ({
         return;
       }
 
-      const safeAttempts = (attemptsData || []).map(
-        (a) => ({
-          ...a,
-          profiles: a.profiles || null
-        })
-      );
+      const safeAttempts = (attemptsData || []).map((a) => ({
+        ...a,
+        profiles: a.profiles || null,
+      }));
 
       const bestByUser = new Map();
       safeAttempts.forEach((attempt) => {
@@ -216,7 +219,7 @@ const TestLeaderboardScreen = ({
             avatar_url: p.avatar_url,
             isPremium: p.is_premium === true,
             department: p.department,
-            university: userProfile?.university?.trim()
+            university: userProfile?.university?.trim(),
           };
         }
       });
@@ -224,7 +227,7 @@ const TestLeaderboardScreen = ({
     } catch (err) {
       console.error("Test leaderboard fetch error:", err.message);
       setError(
-        "We couldn't load the test leaderboard right now. Please try again shortly."
+        "We couldn't load the test leaderboard right now. Please try again shortly.",
       );
       setAttempts([]);
       setProfiles({});
@@ -253,7 +256,7 @@ const TestLeaderboardScreen = ({
       seen.add(id);
       deduped.push({
         id,
-        label: c.name || c.title || c.code || "Course"
+        label: c.name || c.title || c.code || "Course",
       });
     });
 
@@ -275,13 +278,13 @@ const TestLeaderboardScreen = ({
 
     if (selectedCourseId !== "all") {
       filteredAttempts = filteredAttempts.filter(
-        (a) => a.course_id === selectedCourseId
+        (a) => a.course_id === selectedCourseId,
       );
     }
 
     if (questionCountFilter !== "all") {
       filteredAttempts = filteredAttempts.filter(
-        (a) => Number(a.total_questions) === questionCountFilter
+        (a) => Number(a.total_questions) === questionCountFilter,
       );
     }
 
@@ -308,16 +311,14 @@ const TestLeaderboardScreen = ({
         university: a.university,
         avatarUrl: profile.avatar_url || null,
         isPremium: profile.isPremium === true,
-        department: profile.department
+        department: profile.department,
       };
     });
 
     const levelFilteredEntries =
       levelFilter === "all"
         ? entries
-        : entries.filter((entry) =>
-            normalizeLevel(entry.year) === levelFilter
-          );
+        : entries.filter((entry) => normalizeLevel(entry.year) === levelFilter);
 
     levelFilteredEntries.sort((a, b) => b.bestPercent - a.bestPercent);
 
@@ -329,14 +330,14 @@ const TestLeaderboardScreen = ({
     universityFilter,
     userProfile,
     questionCountFilter,
-    levelFilter
+    levelFilter,
   ]);
 
   const formatTime = () => "—";
 
   const leaderboardUserIds = useMemo(
     () => leaderboardEntries.map((e) => e.userId).filter(Boolean),
-    [leaderboardEntries]
+    [leaderboardEntries],
   );
   const { isOnline, onlineCount } = usePresence(leaderboardUserIds);
 
@@ -356,7 +357,7 @@ const TestLeaderboardScreen = ({
             <div>
               <h1 className="text-xl font-black tracking-tight flex items-center gap-2">
                 Weekly Test Leaderboard
-                <FaTrophy className="text-amber-400" />
+                
               </h1>
               <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400 dark:text-slate-500">
                 Resets every Sunday
@@ -367,7 +368,7 @@ const TestLeaderboardScreen = ({
           <div className="flex items-center gap-2">
             {onlineCount > 0 && (
               <div
-                className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold shadow-2xs"
+                className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold shadow-2xs whitespace-nowrap"
                 title={`${onlineCount} ${onlineCount === 1 ? "scholar" : "scholars"} online right now`}
               >
                 <span className="relative flex size-2 shrink-0">
@@ -375,11 +376,10 @@ const TestLeaderboardScreen = ({
                   <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
                 </span>
                 <span className="hidden sm:inline">
-                  {onlineCount} {onlineCount === 1 ? "scholar" : "scholars"} online
+                  {onlineCount} {onlineCount === 1 ? "scholar" : "scholars"}{" "}
+                  online
                 </span>
-                <span className="sm:hidden">
-                  {onlineCount} online
-                </span>
+                <span className="sm:hidden">{onlineCount} online</span>
               </div>
             )}
           </div>
@@ -395,7 +395,12 @@ const TestLeaderboardScreen = ({
                   key={level}
                   type="button"
                   onClick={() => setLevelFilter(level)}
-                  className={"flex-1 px-2 sm:px-5 py-2 rounded-xl text-[11px] sm:text-xs font-black transition-all whitespace-nowrap " + (levelFilter === level ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200")}
+                  className={
+                    "flex-1 px-2 sm:px-5 py-2 rounded-xl text-[11px] sm:text-xs font-black transition-all whitespace-nowrap " +
+                    (levelFilter === level
+                      ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200")
+                  }
                 >
                   {level === "all" ? "All Levels" : level}
                 </button>
@@ -455,8 +460,10 @@ const TestLeaderboardScreen = ({
                     const courseMatch = (courses || []).find(
                       (c) =>
                         (c.id ?? c.course_id) === entry.bestCourseId ||
-                        c.name?.toLowerCase() === entry.bestCourseId?.toLowerCase() ||
-                        c.code?.toLowerCase() === entry.bestCourseId?.toLowerCase()
+                        c.name?.toLowerCase() ===
+                          entry.bestCourseId?.toLowerCase() ||
+                        c.code?.toLowerCase() ===
+                          entry.bestCourseId?.toLowerCase(),
                     );
                     setSheetProfile({
                       id: entry.userId,
@@ -538,15 +545,20 @@ const TestLeaderboardScreen = ({
                     {
                       key: "mine",
                       label: "My University",
-                      icon: FaUniversity
+                      icon: FaUniversity,
                     },
-                    { key: "all", label: "Global", icon: FaGlobeAfrica }
+                    { key: "all", label: "Global", icon: FaGlobeAfrica },
                   ].map(({ key, label, icon: Icon }) => (
                     <button
                       key={key}
                       type="button"
                       onClick={() => setUniversityFilter(key)}
-                      className={"h-12 rounded-2xl border text-xs font-black flex items-center justify-center gap-2 transition-all " + (universityFilter === key ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200 dark:shadow-none" : "bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300")}
+                      className={
+                        "h-12 rounded-2xl border text-xs font-black flex items-center justify-center gap-2 transition-all " +
+                        (universityFilter === key
+                          ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200 dark:shadow-none"
+                          : "bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300")
+                      }
                     >
                       <Icon className="text-sm" />
                       {label}
@@ -565,7 +577,12 @@ const TestLeaderboardScreen = ({
                       key={count}
                       type="button"
                       onClick={() => setQuestionCountFilter(count)}
-                      className={"h-11 rounded-2xl border text-xs font-black transition-all " + (questionCountFilter === count ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200 dark:shadow-none" : "bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300")}
+                      className={
+                        "h-11 rounded-2xl border text-xs font-black transition-all " +
+                        (questionCountFilter === count
+                          ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200 dark:shadow-none"
+                          : "bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300")
+                      }
                     >
                       {count === "all" ? "All" : count}
                     </button>
@@ -622,7 +639,7 @@ const TestLeaderboardRow = ({
   bestPercent,
   isCurrentUser = false,
   isOnline = false,
-  onClick
+  onClick,
 }) => {
   const isTop1 = rank === 1;
   const isTop2 = rank === 2;
@@ -648,7 +665,12 @@ const TestLeaderboardRow = ({
 
   return (
     <div
-      className={"group relative flex items-center justify-between p-4 rounded-[1.8rem] shadow-sm hover:shadow-xl transition-all duration-300 active:scale-[0.98] cursor-pointer " + (isCurrentUser ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-400 dark:border-blue-600 shadow-lg shadow-blue-200/40 dark:shadow-blue-900/20" : "bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 hover:shadow-slate-200/40 dark:hover:shadow-none")}
+      className={
+        "group relative flex items-center justify-between p-4 rounded-[1.8rem] shadow-sm hover:shadow-xl transition-all duration-300 active:scale-[0.98] cursor-pointer " +
+        (isCurrentUser
+          ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-400 dark:border-blue-600 shadow-lg shadow-blue-200/40 dark:shadow-blue-900/20"
+          : "bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 hover:shadow-slate-200/40 dark:hover:shadow-none")
+      }
       onClick={onClick}
     >
       {isCurrentUser && (
@@ -669,7 +691,10 @@ const TestLeaderboardRow = ({
       <div className="flex items-center gap-4 min-w-0">
         <div className="flex items-center gap-3 shrink-0">
           <div
-            className={"size-10 rounded-2xl flex items-center justify-center font-black text-sm " + badgeBg}
+            className={
+              "size-10 rounded-2xl flex items-center justify-center font-black text-sm " +
+              badgeBg
+            }
           >
             {badgeIcon ? badgeIcon : <span>#{rank}</span>}
           </div>
@@ -689,7 +714,12 @@ const TestLeaderboardRow = ({
         </div>
         <div className="min-w-0">
           <p
-            className={"font-black truncate flex items-center gap-1.5 " + (isCurrentUser ? "text-blue-700 dark:text-blue-400" : "text-slate-900 dark:text-white")}
+            className={
+              "font-black truncate flex items-center gap-1.5 " +
+              (isCurrentUser
+                ? "text-blue-700 dark:text-blue-400"
+                : "text-slate-900 dark:text-white")
+            }
           >
             {fullName?.trim()?.split(/\s+/)?.[0] || "Scholar"}
             {isPremium && (
@@ -703,7 +733,12 @@ const TestLeaderboardRow = ({
             )}
           </p>
           <p
-            className={"text-[11px] font-medium truncate " + (isCurrentUser ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500")}
+            className={
+              "text-[11px] font-medium truncate " +
+              (isCurrentUser
+                ? "text-blue-600 dark:text-blue-400"
+                : "text-slate-400 dark:text-slate-500")
+            }
           >
             {userName
               ? `@${userName.length > 12 ? userName.slice(0, 12) + "..." : userName} • `
@@ -715,12 +750,22 @@ const TestLeaderboardRow = ({
 
       <div className="text-right">
         <p
-          className={"text-xs font-semibold text-center " + (isCurrentUser ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500")}
+          className={
+            "text-xs font-semibold text-center " +
+            (isCurrentUser
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-slate-400 dark:text-slate-500")
+          }
         >
           Best
         </p>
         <p
-          className={"text-lg font-bold " + (isCurrentUser ? "text-blue-700 dark:text-blue-300" : "text-slate-800 dark:text-slate-100")}
+          className={
+            "text-lg font-bold " +
+            (isCurrentUser
+              ? "text-blue-700 dark:text-blue-300"
+              : "text-slate-800 dark:text-slate-100")
+          }
         >
           {bestPercent}%
         </p>
