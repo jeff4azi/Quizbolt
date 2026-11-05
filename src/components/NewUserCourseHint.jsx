@@ -21,7 +21,12 @@ export const isNewUserHintVisible = (isNew) => {
 // Uses an SVG mask to punch a transparent hole around the target element.
 // Each instance gets a unique mask ID to avoid conflicts when both variants
 // are mounted during the FORCE_VISIBLE_PREVIEW development phase.
-const SpotlightOverlay = ({ targetRef, onDismiss, shape = "rounded", maskId }) => {
+const SpotlightOverlay = ({
+  targetRef,
+  onDismiss,
+  shape = "rounded",
+  maskId,
+}) => {
   const [hole, setHole] = useState(null);
 
   useEffect(() => {
@@ -52,9 +57,12 @@ const SpotlightOverlay = ({ targetRef, onDismiss, shape = "rounded", maskId }) =
   return createPortal(
     <svg
       className="fixed inset-0 w-full h-full"
-      style={{ zIndex: 49, pointerEvents: "all" }}
+      style={{ zIndex: 55, pointerEvents: "all" }}
       onClick={onDismiss}
-      onTouchEnd={(e) => { e.preventDefault(); onDismiss(); }}
+      onTouchEnd={(e) => {
+        e.preventDefault();
+        onDismiss();
+      }}
     >
       <defs>
         <mask id={maskId}>
@@ -98,7 +106,7 @@ const SpotlightOverlay = ({ targetRef, onDismiss, shape = "rounded", maskId }) =
         />
       )}
     </svg>,
-    document.body
+    document.body,
   );
 };
 
@@ -106,7 +114,7 @@ const SpotlightOverlay = ({ targetRef, onDismiss, shape = "rounded", maskId }) =
 const Card = ({ cardRef, children, className = "" }) => (
   <div
     ref={cardRef}
-    className={`relative bg-[#1b2c54] border border-white/10 rounded-2xl shadow-2xl p-5 ${className}`}
+    className={`relative bg-white dark:bg-[#1b2c54] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-5 ${className}`}
   >
     {children}
   </div>
@@ -115,17 +123,31 @@ const Card = ({ cardRef, children, className = "" }) => (
 // ─── Shared card content ─────────────────────────────────────────────────────
 const CardContent = ({ isMobile, onDismiss }) => (
   <>
-    <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">
+    <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-1">
       Quick tip
     </p>
-    <h3 className="text-[15px] font-black text-white leading-snug">
+    <h3 className="text-[15px] font-black text-slate-900 dark:text-white leading-snug">
       Select a course to get started
     </h3>
-    <p className="mt-2 text-[13px] text-slate-400 leading-relaxed">
-      {isMobile
-        ? <>Tap <span className="text-white font-semibold">Courses</span> below to pick a subject and begin your first test.</>
-        : <>Click <span className="text-white font-semibold">Courses</span> to choose a subject and unlock past questions, flashcards &amp; rankings.</>
-      }
+    <p className="mt-2 text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed">
+      {isMobile ? (
+        <>
+          Tap{" "}
+          <span className="text-slate-900 dark:text-white font-semibold">
+            Courses
+          </span>{" "}
+          below to pick a subject and begin your first test.
+        </>
+      ) : (
+        <>
+          Click{" "}
+          <span className="text-slate-900 dark:text-white font-semibold">
+            Courses
+          </span>{" "}
+          to choose a subject and unlock past questions, flashcards &amp;
+          rankings.
+        </>
+      )}
     </p>
     <button
       type="button"
@@ -161,7 +183,11 @@ const NewUserCourseHint = ({
   const [visible, setVisible] = useState(() => {
     if (FORCE_VISIBLE_PREVIEW) return true;
     if (!isNew) return false;
-    try { return localStorage.getItem(HINT_KEY) !== "1"; } catch { return true; }
+    try {
+      return localStorage.getItem(HINT_KEY) !== "1";
+    } catch {
+      return true;
+    }
   });
 
   // Mobile: caret pixel offset so the arrow points at the target
@@ -189,7 +215,10 @@ const NewUserCourseHint = ({
     update();
     const t = setTimeout(update, 150);
     window.addEventListener("resize", update);
-    return () => { clearTimeout(t); window.removeEventListener("resize", update); };
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("resize", update);
+    };
   }, [variant, targetRef, isDesktop]);
 
   // Desktop position — card floats right of the sidebar
@@ -219,7 +248,11 @@ const NewUserCourseHint = ({
     // not whether the user can dismiss it during preview.
     setVisible(false);
     if (!FORCE_VISIBLE_PREVIEW) {
-      try { localStorage.setItem(HINT_KEY, "1"); } catch { /* ignore */ }
+      try {
+        localStorage.setItem(HINT_KEY, "1");
+      } catch {
+        /* ignore */
+      }
     }
     onDismiss?.();
   };
@@ -242,8 +275,8 @@ const NewUserCourseHint = ({
 
         {/* Card floats above the bottom nav */}
         <div
-          className="fixed inset-x-0 bottom-[92px] z-50 px-4 flex justify-center pointer-events-none"
-          style={{ zIndex: 50 }}
+          className="fixed inset-x-0 bottom-[92px] px-4 flex justify-center pointer-events-none"
+          style={{ zIndex: 56 }}
         >
           <div className="pointer-events-auto w-full max-w-sm animate-in fade-in slide-in-from-bottom-3 duration-300">
             <Card cardRef={popoverRef}>
@@ -251,7 +284,7 @@ const NewUserCourseHint = ({
 
               {/* Downward caret — points at the Courses nav icon */}
               <div
-                className="absolute -bottom-[7px] w-3.5 h-3.5 bg-[#1b2c54] border-r border-b border-white/10"
+                className="absolute -bottom-[7px] w-3.5 h-3.5 bg-white dark:bg-[#1b2c54] border-r border-b border-slate-200 dark:border-white/10"
                 style={{
                   left: caretOffset != null ? `${caretOffset}px` : "30%",
                   transform: "translateX(-50%) rotate(45deg)",
@@ -261,7 +294,7 @@ const NewUserCourseHint = ({
           </div>
         </div>
       </>,
-      document.body
+      document.body,
     );
   }
 
@@ -281,7 +314,7 @@ const NewUserCourseHint = ({
       {/* Card floats to the right of the sidebar Courses button */}
       <div
         className="fixed pointer-events-none animate-in fade-in slide-in-from-left-3 duration-300"
-        style={{ top: desktopPos.top, left: desktopPos.left, zIndex: 50 }}
+        style={{ top: desktopPos.top, left: desktopPos.left, zIndex: 56 }}
       >
         <div className="pointer-events-auto">
           <Card className="w-72">
@@ -289,14 +322,14 @@ const NewUserCourseHint = ({
 
             {/* Leftward caret — points at the sidebar Courses button */}
             <div
-              className="absolute -left-[7px] top-[28px] w-3.5 h-3.5 bg-[#1b2c54] border-l border-b border-white/10"
+              className="absolute -left-[7px] top-[28px] w-3.5 h-3.5 bg-white dark:bg-[#1b2c54] border-l border-b border-slate-200 dark:border-white/10"
               style={{ transform: "rotate(45deg)" }}
             />
           </Card>
         </div>
       </div>
     </>,
-    document.body
+    document.body,
   );
 };
 
