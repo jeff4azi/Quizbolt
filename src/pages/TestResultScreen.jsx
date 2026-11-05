@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { FiChevronLeft, FiChevronRight, FiRefreshCw } from "react-icons/fi";
@@ -6,6 +6,7 @@ import { FaCrown, FaMedal, FaTrophy } from "react-icons/fa";
 import Avatar from "../components/Avatar";
 import testIcon from "../images/test.webp";
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import { usePresence } from "../hooks/usePresence";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const rankBadge = (rank) => {
@@ -64,6 +65,13 @@ const TestResultScreen = () => {
   const [myUserId, setMyUserId] = useState(null);
   const [myRank, setMyRank] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+
+  // Collect user IDs from the leaderboard to track online presence
+  const leaderboardUserIds = useMemo(
+    () => leaderboard.map((r) => r.user_id).filter(Boolean),
+    [leaderboard],
+  );
+  const { isOnline } = usePresence(leaderboardUserIds);
 
   useEffect(() => {
     if (!courseId) navigate("/test", { replace: true });
@@ -216,8 +224,8 @@ const TestResultScreen = () => {
                 <div className="flex items-center gap-2">
                   <FaTrophy className="text-yellow-300 size-4 shrink-0" />
                   <p className="text-sm font-black">
-                    You ranked <span className="text-yellow-300">#{myRank}</span>{" "}
-                    this week
+                    You ranked{" "}
+                    <span className="text-yellow-300">#{myRank}</span> this week
                   </p>
                 </div>
                 <span className="text-[11px] font-bold text-white/80 group-hover:text-white flex items-center gap-0.5 shrink-0">
@@ -301,10 +309,18 @@ const TestResultScreen = () => {
                   return (
                     <div
                       key={row.user_id}
+                      onClick={() => {
+                        const un = row.profiles?.user_name;
+                        if (un) navigate(`/u/${un}`);
+                      }}
                       className={`flex items-center gap-3 p-4 rounded-[1.8rem] border transition-all ${
+                        row.profiles?.user_name
+                          ? "cursor-pointer active:scale-[0.99]"
+                          : ""
+                      } ${
                         isMe
                           ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
-                          : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800"
+                          : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700"
                       }`}
                     >
                       <div
@@ -315,15 +331,17 @@ const TestResultScreen = () => {
 
                       <button
                         type="button"
-                        onClick={() =>
-                          setPreviewUrl(row.profiles?.avatar_url || null)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewUrl(row.profiles?.avatar_url || null);
+                        }}
                         className="shrink-0 rounded-full active:scale-90 transition-transform"
                       >
                         <Avatar
                           avatarUrl={row.profiles?.avatar_url}
                           size="sm"
                           lazy
+                          isOnline={isOnline(row.user_id)}
                           className={
                             isMe
                               ? "ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 ring-offset-blue-50 dark:ring-offset-slate-900"
