@@ -1011,7 +1011,11 @@ const HistoryScreen = ({
       <div className="fixed top-0 left-0 opacity-0 pointer-events-none">
         {sharingResultPayload && (
           <div ref={shareRef}>
-            <QuizResultCard data={sharingResultPayload} interactive={false} />
+            <QuizResultCard
+              data={sharingResultPayload}
+              interactive={false}
+              className="!rounded-none"
+            />
           </div>
         )}
       </div>
