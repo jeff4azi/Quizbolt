@@ -157,18 +157,6 @@ const TestResultScreen = () => {
               </p>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => navigate("/test-leaderboard")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:border-amber-300 dark:hover:border-amber-500/40 text-slate-700 dark:text-slate-200 text-xs font-bold active:scale-95 transition-all shrink-0"
-            title="View Full Test Leaderboard"
-          >
-            <FaTrophy className="text-amber-500 size-3.5" />
-            <span className="text-[11px] font-black uppercase tracking-wider">
-              Leaderboard
-            </span>
-          </button>
         </div>
       </div>
 
@@ -255,21 +243,11 @@ const TestResultScreen = () => {
 
           {/* Weekly Leaderboard */}
           <div>
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <div className="flex items-center gap-2">
-                <FaTrophy className="text-amber-400 size-4 shrink-0" />
-                <h2 className="text-sm font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                  This Week&apos;s Leaderboard
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate("/test-leaderboard")}
-                className="group inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-              >
-                <span>Full Board</span>
-                <FiChevronRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </button>
+            <div className="flex items-center gap-2 mb-3">
+              <FaTrophy className="text-amber-400 size-4 shrink-0" />
+              <h2 className="text-sm font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                This Week&apos;s Leaderboard
+              </h2>
             </div>
 
             {loadingLB ? (
@@ -282,16 +260,8 @@ const TestResultScreen = () => {
                 ))}
               </div>
             ) : leaderboard.length === 0 ? (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 text-center text-sm text-slate-400 space-y-3">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 text-center text-sm text-slate-400">
                 <p>No attempts this week yet. You&apos;re first!</p>
-                <button
-                  type="button"
-                  onClick={() => navigate("/test-leaderboard")}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  <span>Check other courses on leaderboard</span>
-                  <FiChevronRight className="size-3" />
-                </button>
               </div>
             ) : (
               <div className="space-y-2">
