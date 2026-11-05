@@ -1015,6 +1015,11 @@ const HistoryScreen = ({
               data={sharingResultPayload}
               interactive={false}
               className="!rounded-none"
+              ringTrackColor={
+                document.documentElement.classList.contains("dark")
+                  ? "#1f2937" /* gray-800 — matches dark:text-gray-800 */
+                  : "#e2e8f0" /* slate-200 — matches text-slate-200 */
+              }
             />
           </div>
         )}

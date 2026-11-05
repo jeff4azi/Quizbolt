@@ -18,6 +18,9 @@ const QuizResultCard = ({
   // over a WhatsApp-style scrim. Only passed when the chat is shown in a chat.
   meta = null,
   className = "",
+  // Explicit ring track color — pass a hex string when rendering off-screen for
+  // image export so html-to-image doesn't fall back to light-mode currentColor.
+  ringTrackColor = null,
 }) => {
   const navigate = useNavigate();
 
@@ -123,8 +126,10 @@ const QuizResultCard = ({
               cx="80"
               cy="80"
               r="70"
-              stroke="currentColor"
-              className="text-slate-200 dark:text-gray-800"
+              stroke={ringTrackColor || "currentColor"}
+              className={
+                ringTrackColor ? undefined : "text-slate-200 dark:text-gray-800"
+              }
               strokeWidth="10"
               fill="transparent"
             />
