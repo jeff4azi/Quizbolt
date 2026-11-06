@@ -148,6 +148,8 @@ export const useMessaging = (username = null) => {
             department: existingInList.department,
             year: existingInList.year,
             is_premium: existingInList.isPremium,
+            is_system: existingInList.isSystem,
+            is_verified: existingInList.isVerified,
           });
           activeConnRef.current = existingInList;
         }
@@ -354,6 +356,8 @@ export const useMessaging = (username = null) => {
           department: targetProfile.department || "General Studies",
           year: targetProfile.year || 1,
           isPremium: Boolean(targetProfile.is_premium),
+          isSystem: Boolean(targetProfile.is_system),
+          isVerified: Boolean(targetProfile.is_verified),
           connectionState: "none",
           unread: false,
           unreadCount: 0,

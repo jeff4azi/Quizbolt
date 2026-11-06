@@ -15,7 +15,7 @@ import {
   FiX,
   FiTrash2,
 } from "react-icons/fi";
-import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
+import { IoCheckmark, IoCheckmarkDone, IoCheckmarkCircle } from "react-icons/io5";
 import { FaCrown } from "react-icons/fa";
 import Avatar from "../components/Avatar";
 import { useMessaging } from "../hooks/useMessaging";
@@ -431,6 +431,14 @@ const ChatView = () => {
   const isPremium = currentConv?.isPremium ?? profileInfo?.is_premium ?? false;
   const partnerUserId = currentConv?.userId || profileInfo?.id || null;
 
+  // The QuizBolt official channel is one-way: no composer, no request actions.
+  const isSystemChat = Boolean(
+    currentConv?.isSystem || profileInfo?.is_system,
+  );
+  const isVerifiedChat = Boolean(
+    currentConv?.isVerified || profileInfo?.is_verified,
+  );
+
   const { isOnline } = usePresence(partnerUserId ? [partnerUserId] : []);
   const userIsOnline = partnerUserId ? isOnline(partnerUserId) : false;
 
@@ -715,11 +723,23 @@ const ChatView = () => {
                   <h1 className="text-sm font-black text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {displayName}
                   </h1>
+                  {isVerifiedChat && (
+                    <IoCheckmarkCircle
+                      size={15}
+                      className="text-sky-500 shrink-0"
+                      title="Verified account"
+                      aria-label="Verified account"
+                    />
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-400">
                   <span>@{username}</span>
                   <span>•</span>
-                  {userIsOnline ? (
+                  {isSystemChat ? (
+                    <span className="text-sky-500 font-semibold">
+                      Official account
+                    </span>
+                  ) : userIsOnline ? (
                     <span className="text-emerald-500 font-bold flex items-center gap-1">
                       <span className="size-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
                       Online
@@ -811,19 +831,21 @@ const ChatView = () => {
                     </button>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setReportModalOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition text-left"
-                  >
-                    <FiFlag className="size-4 shrink-0" />
-                    <span>Report @{username}</span>
-                  </button>
+                  {!isSystemChat && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setReportModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition text-left"
+                    >
+                      <FiFlag className="size-4 shrink-0" />
+                      <span>Report @{username}</span>
+                    </button>
+                  )}
 
-                  {connectionState !== "blocked" && (
+                  {!isSystemChat && connectionState !== "blocked" && (
                     <button
                       type="button"
                       onClick={handleBlockUser}
@@ -1289,55 +1311,66 @@ const ChatView = () => {
                 </div>
               )}
 
-            {/* ── FLOATING COMPOSER CAPSULE ───────────────────────────────────── */}
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 shadow-2xl rounded-3xl p-1.5 transition-all">
-              {/* Floating Reply Bar inside the pill */}
-              <ReplyBar
-                replyingTo={replyingTo}
-                displayName={displayName}
-                onCancel={() => {
-                  setReplyingTo(null);
-                  setSelectedMsgId(null);
-                }}
-              />
+            {/* ── READ-ONLY NOTE (official channel) ───────────────────────────── */}
+            {isSystemChat && (
+              <div className="bg-slate-500/10 dark:bg-slate-800/60 backdrop-blur-xl border border-slate-300/40 dark:border-slate-700/60 px-4 py-3 rounded-2xl text-center shadow-lg">
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  This is an official QuizBolt channel — replies are turned off.
+                </p>
+              </div>
+            )}
 
-              {/* Textarea + Send button */}
-              <div className="flex items-end gap-2">
-                <textarea
-                  ref={inputRef}
-                  rows={1}
-                  value={input}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                    if (e.target.value.trim()) notifyTyping();
+            {/* ── FLOATING COMPOSER CAPSULE ───────────────────────────────────── */}
+            {!isSystemChat && (
+              <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 shadow-2xl rounded-3xl p-1.5 transition-all">
+                {/* Floating Reply Bar inside the pill */}
+                <ReplyBar
+                  replyingTo={replyingTo}
+                  displayName={displayName}
+                  onCancel={() => {
+                    setReplyingTo(null);
+                    setSelectedMsgId(null);
                   }}
-                  onKeyDown={handleKeyDown}
-                  disabled={isComposerDisabled || isSending}
-                  placeholder={
-                    isComposerDisabled
-                      ? "Composer locked pending accept..."
-                      : connectionState === "none"
-                        ? "Send your one message request to connect..."
-                        : "Type a message..."
-                  }
-                  className="flex-1 min-h-[42px] max-h-[120px] px-3.5 py-2.5 bg-transparent text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto leading-relaxed no-scrollbar"
-                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 />
 
-                <button
-                  type="button"
-                  onClick={handleSend}
-                  disabled={isComposerDisabled || !input.trim() || isSending}
-                  aria-label="Send message"
-                  className="size-10 rounded-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 flex items-center justify-center transition-all shadow-md active:scale-95 shrink-0 self-end m-0.5"
-                >
-                  <FiSend size={15} />
-                </button>
+                {/* Textarea + Send button */}
+                <div className="flex items-end gap-2">
+                  <textarea
+                    ref={inputRef}
+                    rows={1}
+                    value={input}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      if (e.target.value.trim()) notifyTyping();
+                    }}
+                    onKeyDown={handleKeyDown}
+                    disabled={isComposerDisabled || isSending}
+                    placeholder={
+                      isComposerDisabled
+                        ? "Composer locked pending accept..."
+                        : connectionState === "none"
+                          ? "Send your one message request to connect..."
+                          : "Type a message..."
+                    }
+                    className="flex-1 min-h-[42px] max-h-[120px] px-3.5 py-2.5 bg-transparent text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto leading-relaxed no-scrollbar"
+                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleSend}
+                    disabled={isComposerDisabled || !input.trim() || isSending}
+                    aria-label="Send message"
+                    className="size-10 rounded-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 flex items-center justify-center transition-all shadow-md active:scale-95 shrink-0 self-end m-0.5"
+                  >
+                    <FiSend size={15} />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Desktop hint */}
-            {!isMobile && input.length > 0 && (
+            {!isSystemChat && !isMobile && input.length > 0 && (
               <p className="text-center text-[10px] text-slate-400 dark:text-slate-500 select-none">
                 Enter to send · Shift+Enter for new line
               </p>

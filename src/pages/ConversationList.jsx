@@ -10,7 +10,7 @@ import {
   FiCheck,
   FiSend,
 } from "react-icons/fi";
-import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
+import { IoCheckmark, IoCheckmarkDone, IoCheckmarkCircle } from "react-icons/io5";
 import { FaCrown } from "react-icons/fa";
 import Avatar from "../components/Avatar";
 import { useMessaging } from "../hooks/useMessaging";
@@ -108,9 +108,15 @@ const ConversationList = () => {
   const requests = conversations.filter(
     (c) => c.connectionState === "request_received",
   );
-  const activeChats = conversations.filter(
-    (c) => c.connectionState !== "request_received",
-  );
+  // An unread announcement pins the QuizBolt channel to the top of the list.
+  // Once it's read it drops back into normal recency order (sort is stable).
+  const activeChats = conversations
+    .filter((c) => c.connectionState !== "request_received")
+    .sort((a, b) => {
+      const aPinned = a.isSystem && a.unreadCount > 0 ? 1 : 0;
+      const bPinned = b.isSystem && b.unreadCount > 0 ? 1 : 0;
+      return bPinned - aPinned;
+    });
 
   const filterChats = (list) => {
     if (!search.trim()) return list;
@@ -511,15 +517,25 @@ const ConversationList = () => {
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <p
-                              className={`text-sm truncate ${
-                                hasUnread
-                                  ? "font-black text-slate-900 dark:text-white"
-                                  : "font-bold text-slate-800 dark:text-slate-100"
-                              }`}
-                            >
-                              {conv.fullName}
-                            </p>
+                            <div className="flex items-center gap-1 min-w-0">
+                              <p
+                                className={`text-sm truncate ${
+                                  hasUnread
+                                    ? "font-black text-slate-900 dark:text-white"
+                                    : "font-bold text-slate-800 dark:text-slate-100"
+                                }`}
+                              >
+                                {conv.fullName}
+                              </p>
+                              {conv.isVerified && (
+                                <IoCheckmarkCircle
+                                  size={14}
+                                  className="text-sky-500 shrink-0"
+                                  title="Verified account"
+                                  aria-label="Verified account"
+                                />
+                              )}
+                            </div>
                             <span
                               className={`text-[11px] shrink-0 ${
                                 hasUnread

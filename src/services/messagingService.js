@@ -31,7 +31,7 @@ export const fetchProfileByUsernameOrId = async (identifier) => {
     const { data: byUsername } = await supabase
       .from("profiles")
       .select(
-        "id, full_name, user_name, avatar_url, university, department, year, is_premium",
+        "id, full_name, user_name, avatar_url, university, department, year, is_premium, is_system, is_verified",
       )
       .ilike("user_name", clean)
       .maybeSingle();
@@ -43,7 +43,7 @@ export const fetchProfileByUsernameOrId = async (identifier) => {
       const { data: byId } = await supabase
         .from("profiles")
         .select(
-          "id, full_name, user_name, avatar_url, university, department, year, is_premium",
+          "id, full_name, user_name, avatar_url, university, department, year, is_premium, is_system, is_verified",
         )
         .eq("id", clean)
         .maybeSingle();
@@ -72,6 +72,7 @@ export const searchUsers = async (query, currentUserId = null, limit = 25) => {
       .select(
         "id, full_name, user_name, avatar_url, university, department, year, is_premium",
       )
+      .eq("is_system", false)
       .or(`user_name.ilike.%${clean}%,full_name.ilike.%${clean}%`)
       .order("user_name", { ascending: true })
       .limit(limit);
@@ -519,7 +520,7 @@ export const getMyConnections = async (myId) => {
   const { data: profiles, error: profErr } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, user_name, avatar_url, university, department, year, is_premium",
+      "id, full_name, user_name, avatar_url, university, department, year, is_premium, is_system, is_verified",
     )
     .in("id", otherUserIds);
 
@@ -529,26 +530,27 @@ export const getMyConnections = async (myId) => {
 
   const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
-  // Batch fetch recent messages for all connections to get last activity & unread count
+  // Batch fetch the last few messages per connection + unread counts.
+  // Bounded by design: an unbounded pull hits PostgREST's 1000-row cap and
+  // silently drops the newest messages once a user has enough history.
   const connectionIds = conns.map((c) => c.id);
-  const { data: messages, error: msgErr } = await supabase
-    .from("messages")
-    .select(
-      "id, connection_id, sender_id, text, status, created_at, reply_to_id",
-    )
-    .in("connection_id", connectionIds)
-    .order("created_at", { ascending: true });
+  const { data: messages, error: msgErr } = await supabase.rpc(
+    "get_connection_summaries",
+    { p_connection_ids: connectionIds, p_per_connection: 2 },
+  );
 
   if (msgErr) {
-    console.error("Error fetching messages for connections:", msgErr);
+    console.error("Error fetching connection summaries:", msgErr);
   }
 
   const msgsByConn = new Map();
+  const unreadByConn = new Map();
   (messages || []).forEach((m) => {
     if (!msgsByConn.has(m.connection_id)) {
       msgsByConn.set(m.connection_id, []);
     }
     msgsByConn.get(m.connection_id).push(m);
+    unreadByConn.set(m.connection_id, m.unread_count || 0);
   });
 
   // Construct UI conversation models
@@ -565,10 +567,10 @@ export const getMyConnections = async (myId) => {
       effectiveState = isRequester ? "request_sent" : "request_received";
     }
 
-    // Count unread messages (sent by them, status != 'read')
-    const unreadCount = connMsgs.filter(
-      (m) => m.sender_id !== myId && m.status !== "read",
-    ).length;
+    // Count unread messages (sent by them, status != 'read') — aggregated
+    // server-side by get_connection_summaries so the count stays correct
+    // regardless of how much history each connection holds.
+    const unreadCount = unreadByConn.get(c.id) || 0;
 
     // Quick id→row map for reply preview text within this connection's msgs
     const connMsgMap = new Map(connMsgs.map((m) => [m.id, m]));
@@ -602,6 +604,8 @@ export const getMyConnections = async (myId) => {
       department: profile.department || "General Studies",
       year: profile.year || 1,
       isPremium: Boolean(profile.is_premium),
+      isSystem: Boolean(profile.is_system),
+      isVerified: Boolean(profile.is_verified),
       connectionState: effectiveState,
       rawState: c.state,
       isRequester,
@@ -627,7 +631,7 @@ export const getMessages = async (connectionId, myId, limit = 50) => {
       "id, connection_id, sender_id, text, status, created_at, reply_to_id",
     )
     .eq("connection_id", connectionId)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) {
@@ -635,7 +639,9 @@ export const getMessages = async (connectionId, myId, limit = 50) => {
     return [];
   }
 
-  const rows = data || [];
+  // Fetched newest-first (so `limit` keeps the latest messages, not the
+  // oldest), then flipped back to chronological order for display.
+  const rows = (data || []).slice().reverse();
 
   // Build a quick id→text/sender map for quote preview
   const idMap = new Map(
