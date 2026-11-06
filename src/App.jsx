@@ -65,7 +65,7 @@ function App() {
 
   const REFERRAL_STORAGE_KEY = "quizbolt_referral_code";
 
-  // Capture referral code from URL (e.g. https://quizbolt.site?ref=QB-T4LD)
+  // Capture referral code from URL (e.g. https://quizbolt.net?ref=QB-T4LD)
   // so it survives the redirect to /landing.
   try {
     const params = new URLSearchParams(window.location.search);

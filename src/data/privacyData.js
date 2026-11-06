@@ -261,7 +261,7 @@ export const PRIVACY_SECTIONS = [
     ],
     bullets: [
       "WhatsApp: +234 701 558 5397 — this is our primary support channel.",
-      "Email: support@quizbolt.site — for detailed requests and legal correspondence.",
+      "Email: support@quizbolt.net — for detailed requests and legal correspondence.",
       "In-app: Settings -> Report a problem opens a WhatsApp message with your issue.",
     ],
     paragraphsAfter: [

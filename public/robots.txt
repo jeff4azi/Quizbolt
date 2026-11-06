@@ -41,4 +41,4 @@ Disallow: /confirm-email
 Disallow: /ad-stats
 
 # ── Sitemap ─────────────────────────────────────────────────────────────────
-Sitemap: https://quizbolt.site/sitemap.xml
+Sitemap: https://quizbolt.net/sitemap.xml

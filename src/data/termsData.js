@@ -241,8 +241,8 @@ export const TERMS_SECTIONS = [
     ],
     bullets: [
       "WhatsApp: +234 701 558 5397 (primary support channel).",
-      "Email: support@quizbolt.site (for longer-form enquiries, legal notices, or attachment-heavy reports).",
-      "Our official WhatsApp Channel and social profiles (Instagram, X, TikTok, YouTube, LinkedIn, Facebook) as linked in the footer of quizbolt.site.",
+      "Email: support@quizbolt.net (for longer-form enquiries, legal notices, or attachment-heavy reports).",
+      "Our official WhatsApp Channel and social profiles (Instagram, X, TikTok, YouTube, LinkedIn, Facebook) as linked in the footer of quizbolt.net.",
     ],
     paragraphsAfter: [
       "If you are contacting us regarding an alleged intellectual property infringement, a breach of the Acceptable Use Policy, or an account suspension appeal, please include your username, the affected university, a detailed description, and any supporting evidence (screenshots, receipts, timestamps). Doing so will help us resolve your enquiry faster.",

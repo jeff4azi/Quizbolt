@@ -407,7 +407,7 @@ const FAQPage = () => {
                   Contact WhatsApp
                 </a>
                 <a
-                  href="mailto:support@quizbolt.site"
+                  href="mailto:support@quizbolt.net"
                   className="group/btn inline-flex items-center gap-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-8 py-4 rounded-2xl font-black text-base hover:bg-blue-50 dark:hover:bg-slate-800 transition-all active:scale-95 border border-slate-100 dark:border-slate-800"
                 >
                   <FaEnvelope className="text-base group-hover/btn:scale-110 transition-transform" />
@@ -550,10 +550,10 @@ const FAQPage = () => {
                 <FaWhatsapp className="text-green-500" /> +234 701 558 5397
               </a>
               <a
-                href="mailto:support@quizbolt.site"
+                href="mailto:support@quizbolt.net"
                 className="flex items-center gap-3 text-sm font-bold text-slate-500 dark:text-gray-400 hover:text-blue-600 transition-colors"
               >
-                <FaEnvelope className="text-blue-500" /> support@quizbolt.site
+                <FaEnvelope className="text-blue-500" /> support@quizbolt.net
               </a>
             </div>
           </div>

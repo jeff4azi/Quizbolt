@@ -393,7 +393,7 @@ export const FAQ_ITEMS = [
     category: "support",
     question: "How do I contact support?",
     answer:
-      "The fastest way is via WhatsApp — you'll find the number on the Contact page. You can also email support@quizbolt.site. We prioritize urgent issues like payment activation and aim to respond as quickly as possible.",
+      "The fastest way is via WhatsApp — you'll find the number on the Contact page. You can also email support@quizbolt.net. We prioritize urgent issues like payment activation and aim to respond as quickly as possible.",
   },
   {
     id: 50,

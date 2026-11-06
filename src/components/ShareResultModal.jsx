@@ -220,7 +220,7 @@ const ShareResultModal = ({
       : questionType === "fib"
         ? "fib"
         : null;
-  const challengeUrl = `https://quizbolt.site/choose-course?course=${encodeURIComponent(
+  const challengeUrl = `https://quizbolt.net/choose-course?course=${encodeURIComponent(
     courseId || courseName,
   )}${typeParam ? `&type=${typeParam}` : ""}`;
 

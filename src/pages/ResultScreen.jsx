@@ -736,7 +736,7 @@ const ResultScreen = ({
             <p className="text-[10px] text-slate-400 font-medium mt-1">
               Challenge yourself at{" "}
               <span className="text-blue-600 dark:text-blue-400 font-bold">
-                quizbolt.site
+                quizbolt.net
               </span>
             </p>
           </div>

@@ -3,7 +3,7 @@
 
   <!-- Root / Home (Public Landing) -->
   <url>
-    <loc>https://quizbolt.site/</loc>
+    <loc>https://quizbolt.net/</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -11,7 +11,7 @@
 
   <!-- Dedicated Landing Page -->
   <url>
-    <loc>https://quizbolt.site/landing</loc>
+    <loc>https://quizbolt.net/landing</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
@@ -19,7 +19,7 @@
 
   <!-- About QuizBolt -->
   <url>
-    <loc>https://quizbolt.site/about</loc>
+    <loc>https://quizbolt.net/about</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -27,7 +27,7 @@
 
   <!-- Frequently Asked Questions -->
   <url>
-    <loc>https://quizbolt.site/faq</loc>
+    <loc>https://quizbolt.net/faq</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -35,7 +35,7 @@
 
   <!-- Sign Up / Registration -->
   <url>
-    <loc>https://quizbolt.site/signup</loc>
+    <loc>https://quizbolt.net/signup</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -43,7 +43,7 @@
 
   <!-- Sign In / Login -->
   <url>
-    <loc>https://quizbolt.site/login</loc>
+    <loc>https://quizbolt.net/login</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -51,7 +51,7 @@
 
   <!-- Terms of Service -->
   <url>
-    <loc>https://quizbolt.site/terms</loc>
+    <loc>https://quizbolt.net/terms</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -59,7 +59,7 @@
 
   <!-- Privacy Policy -->
   <url>
-    <loc>https://quizbolt.site/privacy</loc>
+    <loc>https://quizbolt.net/privacy</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>

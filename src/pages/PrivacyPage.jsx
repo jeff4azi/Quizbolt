@@ -435,10 +435,10 @@ const PrivacyPage = () => {
                 <FaWhatsapp className="text-green-500" /> +234 701 558 5397
               </a>
               <a
-                href="mailto:support@quizbolt.site"
+                href="mailto:support@quizbolt.net"
                 className="flex items-center gap-3 text-sm font-bold text-slate-500 dark:text-gray-400 hover:text-blue-600 transition-colors"
               >
-                <FaEnvelope className="text-blue-500" /> support@quizbolt.site
+                <FaEnvelope className="text-blue-500" /> support@quizbolt.net
               </a>
             </div>
           </div>
