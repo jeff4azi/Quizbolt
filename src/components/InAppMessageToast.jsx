@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiX } from "react-icons/fi";
+import { IoCheckmarkCircle } from "react-icons/io5";
 import { FaCrown } from "react-icons/fa";
 import Avatar from "./Avatar";
 import {
@@ -168,6 +169,14 @@ const InAppMessageToast = ({
           <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
             {notification.fullName || notification.username || "Scholar"}
           </p>
+          {notification.isVerified && (
+            <IoCheckmarkCircle
+              size={13}
+              className="text-sky-500 shrink-0"
+              title="Verified account"
+              aria-label="Verified account"
+            />
+          )}
           <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 truncate">
             @{notification.username}
           </span>

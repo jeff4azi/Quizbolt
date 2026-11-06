@@ -119,6 +119,7 @@ export const InAppNotificationProvider = ({ children }) => {
             fullName: topUnread.fullName,
             avatarUrl: topUnread.avatarUrl,
             isPremium: topUnread.isPremium,
+            isVerified: topUnread.isVerified,
             isRequest,
             text:
               lastMsg?.text ||
@@ -170,6 +171,7 @@ export const InAppNotificationProvider = ({ children }) => {
         fullName: conv.fullName,
         avatarUrl: conv.avatarUrl,
         isPremium: conv.isPremium,
+        isVerified: conv.isVerified,
         isRequest,
         text:
           lastMsg?.text ||
