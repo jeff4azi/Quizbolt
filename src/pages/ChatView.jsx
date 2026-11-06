@@ -14,6 +14,7 @@ import {
   FiCornerUpLeft,
   FiX,
   FiTrash2,
+  FiExternalLink,
 } from "react-icons/fi";
 import { IoCheckmark, IoCheckmarkDone, IoCheckmarkCircle } from "react-icons/io5";
 import { FaCrown } from "react-icons/fa";
@@ -76,6 +77,67 @@ const isMobileDevice = () => {
   const isTouch = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
   const isSmallScreen = window.innerWidth <= 768;
   return isTouch && isSmallScreen;
+};
+
+/* ─── Link detection for message bubbles ─────────────────────────────────── */
+const URL_REGEX =
+  /((?:https?:\/\/|www\.)[^\s<>"']+|\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.(?:com|net|org|io|co|app|dev|edu|gov|ng|uk|us|ca|au|za|gh|ke|site|xyz|info|biz|me|tv|ai|online|store|blog|link|so|gg|to)(?:\/[^\s<>"']*)?)/gi;
+
+/** Strip punctuation that usually trails a URL in prose */
+const stripTrailingPunctuation = (value) =>
+  value.replace(/[.,!?;:)\]}'"”’]+$/, "");
+
+/** Turn detected text into a safe absolute http(s) URL */
+const toSafeHref = (value) =>
+  /^https?:\/\//i.test(value) ? value : `https://${value}`;
+
+/** Split message text into plain strings and clickable link spans */
+const renderMessageText = (text, { isMe, onLinkClick }) => {
+  if (!text) return text;
+  const nodes = [];
+  const re = new RegExp(URL_REGEX.source, "gi");
+  let cursor = 0;
+  let match;
+
+  while ((match = re.exec(text)) !== null) {
+    const linkText = stripTrailingPunctuation(match[0]);
+    // Ignore short/odd matches (e.g. "e.g.") — keep them as plain text
+    if (linkText.length < 4) continue;
+
+    const start = match.index;
+    if (start > cursor) nodes.push(text.slice(cursor, start));
+
+    const href = toSafeHref(linkText);
+    nodes.push(
+      <span
+        key={`msg-link-${start}`}
+        role="link"
+        tabIndex={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          onLinkClick(href);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+            onLinkClick(href);
+          }
+        }}
+        className={`underline underline-offset-2 break-words cursor-pointer transition-colors ${
+          isMe
+            ? "text-blue-50 decoration-blue-100/70 hover:decoration-blue-50"
+            : "text-blue-600 dark:text-blue-400 decoration-blue-400/50 hover:decoration-blue-600 dark:hover:decoration-blue-300"
+        }`}
+      >
+        {linkText}
+      </span>,
+    );
+    cursor = start + linkText.length;
+  }
+
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return nodes;
 };
 
 /* ─── SwipeToReply wrapper ────────────────────────────────────────────────── */
@@ -393,6 +455,7 @@ const ChatView = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [pendingLink, setPendingLink] = useState(null); // external URL awaiting confirmation
   const [kbHeight, setKbHeight] = useState(0);
   const menuRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -1118,7 +1181,10 @@ const ChatView = () => {
                         )}
 
                         <p className="whitespace-pre-wrap break-words inline font-medium">
-                          {msg.text}
+                          {renderMessageText(msg.text, {
+                            isMe,
+                            onLinkClick: setPendingLink,
+                          })}
                         </p>
 
                         {/* Inline timestamp & status ticks */}
@@ -1443,6 +1509,29 @@ const ChatView = () => {
           confirmText="Yes, block user"
           cancelText="Cancel"
           danger={true}
+        />
+
+        {/* ── EXTERNAL LINK CONFIRMATION ─────────────────────────────────────── */}
+        <ConfirmOverlay
+          isOpen={Boolean(pendingLink)}
+          onClose={() => setPendingLink(null)}
+          onConfirm={() => {
+            if (pendingLink) {
+              window.open(pendingLink, "_blank", "noopener,noreferrer");
+            }
+          }}
+          title="Open Link?"
+          message={
+            <span>
+              You're about to leave QuizBolt and open this link in a new tab:
+              <span className="mt-2 block font-bold break-all text-slate-700 dark:text-slate-200">
+                {pendingLink}
+              </span>
+            </span>
+          }
+          confirmText="Open link"
+          cancelText="Cancel"
+          icon={<FiExternalLink size={30} />}
         />
 
         {/* ── FEEDBACK / ALERT MODAL ─────────────────────────────────────────── */}
