@@ -1031,9 +1031,11 @@ const ChatView = () => {
                           data={parseQuizResultPayload(msg.text)}
                           isMe={isMe}
                           interactive={true}
-                          onAcceptChallenge={(course) => {
+                          onAcceptChallenge={(course, type) => {
                             navigate(
-                              `/choose-course?course=${encodeURIComponent(course)}`,
+                              `/choose-course?course=${encodeURIComponent(course)}${
+                                type ? `&type=${type}` : ""
+                              }`,
                             );
                           }}
                           className={

@@ -152,6 +152,26 @@ const ChooseCourseScreen = ({
     setSelectedQuestionCount,
   ]);
 
+  // If a share/challenge link deep-links to an exam type, preselect it too.
+  // Objective ("obj") is the implicit default when no type is provided.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location?.search || "");
+      const rawType = (params.get("type") || "").toLowerCase();
+      if (!rawType) return; // keep the app default (objective)
+      const nextType =
+        rawType === "theory" || rawType === "thy"
+          ? "theory"
+          : rawType === "fib"
+            ? "fib"
+            : "objective";
+      // setQuestionType also guards non-premium users out of theory.
+      setQuestionType(nextType);
+    } catch {
+      // ignore
+    }
+  }, [location?.search, setQuestionType]);
+
   /* ----------------------------- GROUP COURSES ------------------------------ */
   const groupedCourses = useMemo(() => {
     return filteredCourses.reduce((acc, course) => {

@@ -212,9 +212,17 @@ const ShareResultModal = ({
   };
 
   // 5. External Sharing Handlers
+  // Preserve the exam mode in the link so the challenge opens in the same mode.
+  // Objective ("obj") is the default, so it needs no param.
+  const typeParam =
+    questionType === "theory" || questionType === "thy"
+      ? "theory"
+      : questionType === "fib"
+        ? "fib"
+        : null;
   const challengeUrl = `https://quizbolt.site/choose-course?course=${encodeURIComponent(
     courseId || courseName,
-  )}`;
+  )}${typeParam ? `&type=${typeParam}` : ""}`;
 
   const getShareText = () =>
     `🎯 I scored ${scorePercentage}% in ${courseName} on QuizBolt!\n"${caption}"\n\nCan you beat my score? Take the challenge:\n${challengeUrl}`;

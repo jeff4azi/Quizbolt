@@ -59,13 +59,25 @@ const QuizResultCard = ({
   const typeLabel =
     questionType === "theory" ? "thy" : questionType === "fib" ? "fib" : "obj";
 
+  // Exam mode for the challenge link — objective ("obj") is the default.
+  const typeParam =
+    questionType === "theory" || questionType === "thy"
+      ? "theory"
+      : questionType === "fib"
+        ? "fib"
+        : null;
+
   const handleChallengeClick = (e) => {
     e.stopPropagation();
+    const targetCourse = courseId || courseName;
     if (onAcceptChallenge) {
-      onAcceptChallenge(courseId || courseName);
+      onAcceptChallenge(targetCourse, typeParam);
     } else {
-      const targetCourse = courseId || courseName;
-      navigate(`/choose-course?course=${encodeURIComponent(targetCourse)}`);
+      navigate(
+        `/choose-course?course=${encodeURIComponent(targetCourse)}${
+          typeParam ? `&type=${typeParam}` : ""
+        }`,
+      );
     }
   };
 
