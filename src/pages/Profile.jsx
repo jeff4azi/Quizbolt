@@ -107,7 +107,7 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
 
         const { data, error } = await supabase
           .from("premium_access")
-          .select("expires_at, reason, granted_at, active")
+          .select("expires_at, reason, granted_at, active, cancelled_at")
           .eq("user_id", user.id)
           .order("expires_at", { ascending: false })
           .limit(1)
@@ -227,12 +227,17 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
 
     const now = new Date();
     const hasAccessRecord = premiumAccess !== false;
+    const isAccessCancelled =
+      hasAccessRecord &&
+      !premiumAccess.active &&
+      Boolean(premiumAccess.cancelled_at);
     const isAccessActive =
       hasAccessRecord &&
       premiumAccess.active &&
       new Date(premiumAccess.expires_at) > now;
     const isAccessExpired =
       hasAccessRecord &&
+      !isAccessCancelled &&
       (!premiumAccess.active || new Date(premiumAccess.expires_at) <= now);
 
     if (isAccessActive) {
@@ -243,6 +248,17 @@ const Profile = ({ userProfile, isPremium, onUpdateProfile }) => {
           undefined,
           { day: "numeric", month: "short", year: "numeric" },
         )}`,
+        note: premiumAccess.reason,
+      };
+    }
+
+    if (isAccessCancelled) {
+      // Revoked by an admin. Deliberately NOT shown as "expired": the grant was
+      // cancelled while its original expiry date is still in the future.
+      return {
+        tone: "cancelled",
+        label: "Premium Cancelled",
+        value: "Access removed",
         note: premiumAccess.reason,
       };
     }
