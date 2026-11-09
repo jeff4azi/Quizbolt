@@ -108,8 +108,12 @@ const ShareResultModal = ({
     getMyConnections(currentUserId)
       .then((list) => {
         if (!isMounted) return;
-        // Only accepted connections can be directly shared to
-        const accepted = list.filter((c) => c.connectionState === "accepted");
+        // Only accepted connections can be directly shared to.
+        // Exclude the QuizBolt official (system) account — it only broadcasts
+        // announcements and can't receive shared quizzes/challenges.
+        const accepted = list.filter(
+          (c) => c.connectionState === "accepted" && !c.isSystem,
+        );
         setConnections(accepted);
       })
       .catch((err) => {
