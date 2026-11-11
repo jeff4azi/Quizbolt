@@ -7,6 +7,7 @@ export const RenderMathText = ({ text, courseId }) => {
   if (
     typeof courseId !== "string" ||
     (!courseId.toUpperCase().startsWith("MTH") &&
+      !courseId.toUpperCase().startsWith("BIO") &&
       !courseId.toUpperCase().startsWith("PHY") &&
       !courseId.toUpperCase().startsWith("COS") &&
       !courseId.toUpperCase().startsWith("CSM") &&
