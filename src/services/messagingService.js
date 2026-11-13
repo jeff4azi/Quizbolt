@@ -192,8 +192,10 @@ export const sendFirstMessage = async (
         const result = await res.json();
         return result.message || null;
       }
+      const detail = await res.text().catch(() => "");
       console.warn(
-        "Edge function send-message returned non-200, falling back to direct insert",
+        `Edge function send-message returned ${res.status}, falling back to direct insert:`,
+        detail,
       );
     }
   } catch (err) {
@@ -269,8 +271,10 @@ export const sendMessage = async (
         const result = await res.json();
         return result.message || null;
       }
+      const detail = await res.text().catch(() => "");
       console.warn(
-        "Edge function send-message returned non-200, falling back to direct insert",
+        `Edge function send-message returned ${res.status}, falling back to direct insert:`,
+        detail,
       );
     }
   } catch (err) {
