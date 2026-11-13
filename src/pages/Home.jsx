@@ -54,7 +54,7 @@ import {
   buildLeaderboardEntries,
   compareLeaderboardEntries,
 } from "../utils/leaderboardRanking";
-import { isSubscribedToPush, getCachedNotificationsEnabled } from "../lib/push";
+import { getPushState, reconcilePush } from "../lib/push";
 
 const getCurrentDayStartIso = () => {
   const now = new Date();
@@ -255,9 +255,7 @@ const Home = ({
 
   // Notification reminder card state
   const [showNotificationCard, setShowNotificationCard] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(() =>
-    getCachedNotificationsEnabled(),
-  );
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   useEffect(() => {
     if (isInStandaloneMode) return;
@@ -307,20 +305,28 @@ const Home = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Check notification subscription and dismissal status
+  // Check notification subscription and dismissal status.
+  // getPushState() is a pure read — it never tears down an existing
+  // subscription, so simply opening Home can no longer switch push off.
   useEffect(() => {
     async function checkNotificationStatus() {
-      const subscribed = await isSubscribedToPush();
+      const state = await getPushState();
+      const subscribed =
+        state.supported && state.permission === "granted" && state.intent;
       setNotificationsEnabled(subscribed);
 
-      if (!subscribed) {
-        const dismissedUntil = parseInt(
-          localStorage.getItem("notificationCardDismissedUntil") || "0",
-          10,
-        );
-        if (Date.now() >= dismissedUntil) {
-          setShowNotificationCard(true);
-        }
+      if (subscribed) {
+        // Keep the registered endpoint fresh (also repairs rotated endpoints).
+        reconcilePush();
+        return;
+      }
+
+      const dismissedUntil = parseInt(
+        localStorage.getItem("notificationCardDismissedUntil") || "0",
+        10,
+      );
+      if (Date.now() >= dismissedUntil) {
+        setShowNotificationCard(true);
       }
     }
     checkNotificationStatus();

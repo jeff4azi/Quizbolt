@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   FiAlertTriangle,
@@ -32,10 +32,12 @@ import { API_BASE_URL } from "../apiConfig";
 import { supabase } from "../supabaseClient";
 import { clearExamSession } from "../utils/examSessionStorage";
 import {
-  subscribeToPush,
-  isSubscribedToPush,
-  unsubscribeFromPush,
-  getCachedNotificationsEnabled,
+  enablePush,
+  disablePush,
+  getPushState,
+  reconcilePush,
+  getSubscribedDevices,
+  removeDevice,
 } from "../lib/push";
 import { useInAppNotifications } from "../context/InAppNotificationContext";
 
@@ -127,6 +129,25 @@ const SectionLabel = ({ title, description }) => (
   </div>
 );
 
+const formatLastSeen = (value) => {
+  if (!value) return "unknown";
+  const then = new Date(value).getTime();
+  if (Number.isNaN(then)) return "unknown";
+
+  const minutes = Math.floor((Date.now() - then) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days}d ago`;
+
+  return new Date(value).toLocaleDateString();
+};
+
 const SettingsScreen = ({
   isPremium,
   onLogout,
@@ -160,10 +181,10 @@ const SettingsScreen = ({
     message: "",
   });
   const [isDeleting, setIsDeleting] = useState(false);
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(() =>
-    getCachedNotificationsEnabled(),
-  );
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] =
+    useState(false);
   const [isUpdatingPush, setIsUpdatingPush] = useState(false);
+  const [subscribedDevices, setSubscribedDevices] = useState([]);
   const [highlightNotifications, setHighlightNotifications] = useState(false);
   const notificationsSectionRef = useRef(null);
   const { inAppPopupsEnabled, toggleInAppPopups } = useInAppNotifications();
@@ -204,13 +225,34 @@ const SettingsScreen = ({
     }
   };
 
-  useEffect(() => {
-    async function checkSubscription() {
-      const subscribed = await isSubscribedToPush();
-      setPushNotificationsEnabled(subscribed);
+  const loadSubscribedDevices = useCallback(async () => {
+    try {
+      setSubscribedDevices(await getSubscribedDevices());
+    } catch (err) {
+      console.warn("Failed to load subscribed devices:", err);
     }
-    checkSubscription();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPush() {
+      // Self-heal first so the toggle reflects reality: re-registers a rotated
+      // endpoint, or clears intent if the permission was revoked outside the app.
+      await reconcilePush();
+      const state = await getPushState();
+      if (!active) return;
+      setPushNotificationsEnabled(
+        state.supported && state.permission === "granted" && state.intent,
+      );
+      await loadSubscribedDevices();
+    }
+
+    loadPush();
+    return () => {
+      active = false;
+    };
+  }, [loadSubscribedDevices]);
 
   // Handle highlight from query param
   useEffect(() => {
@@ -240,18 +282,55 @@ const SettingsScreen = ({
       setIsUpdatingPush(true);
 
       if (pushNotificationsEnabled) {
-        await unsubscribeFromPush();
+        await disablePush();
         setPushNotificationsEnabled(false);
       } else {
-        await subscribeToPush();
+        await enablePush();
         setPushNotificationsEnabled(true);
       }
+
+      await loadSubscribedDevices();
     } catch (err) {
       console.error("Push toggle failed:", err);
       setSettingsFeedback({
         isOpen: true,
         title: "Notification Error",
-        message: "Failed to update notification preferences. Please try again.",
+        message:
+          err?.message ||
+          "Failed to update notification preferences. Please try again.",
+      });
+
+      // Re-sync the toggle with what actually happened.
+      const state = await getPushState();
+      setPushNotificationsEnabled(
+        state.supported && state.permission === "granted" && state.intent,
+      );
+    } finally {
+      setIsUpdatingPush(false);
+    }
+  };
+
+  const handleRemoveDevice = async (device) => {
+    if (isUpdatingPush) return;
+
+    try {
+      setIsUpdatingPush(true);
+
+      if (device.isThisDevice) {
+        // Turning off this device is the same as disabling push here.
+        await disablePush();
+        setPushNotificationsEnabled(false);
+      } else {
+        await removeDevice(device.id);
+      }
+
+      await loadSubscribedDevices();
+    } catch (err) {
+      console.error("Remove device failed:", err);
+      setSettingsFeedback({
+        isOpen: true,
+        title: "Failed to Remove Device",
+        message: "Something went wrong. Please try again.",
       });
     } finally {
       setIsUpdatingPush(false);
@@ -507,6 +586,50 @@ const SettingsScreen = ({
                 onClick={toggleInAppPopups}
               />
             </SettingRow>
+
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-2">
+                <FiSmartphone size={13} className="text-slate-400" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Registered devices
+                </span>
+              </div>
+
+              {subscribedDevices.length === 0 ? (
+                <p className="mt-2 text-xs font-medium text-slate-400 dark:text-slate-500">
+                  No devices are set up for reminders yet.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {subscribedDevices.map((device) => (
+                    <li
+                      key={device.id}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 px-3 py-2.5"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                          {device.device_label ||
+                            device.platform ||
+                            "Unknown device"}
+                        </p>
+                        <p className="text-xs font-medium text-slate-400">
+                          {device.isThisDevice ? "This device · " : ""}
+                          Last active {formatLastSeen(device.last_seen_at)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDevice(device)}
+                        disabled={isUpdatingPush}
+                        className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </section>
 

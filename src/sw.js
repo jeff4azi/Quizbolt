@@ -88,6 +88,23 @@ self.addEventListener('push', (event) => {
   )
 })
 
+// Push subscription rotation/expiry handler.
+// The service worker cannot read the auth session (it lives in localStorage),
+// so it cannot re-register on its own. It notifies any open client, which
+// re-registers through reconcilePush(). If no client is open, the next app load
+// reconciles instead — which is why the load-time reconcile is the real safety net.
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'push-subscription-changed' })
+        })
+      })
+  )
+})
+
 // Notification click handler
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()

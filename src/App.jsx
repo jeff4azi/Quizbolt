@@ -34,6 +34,7 @@ import PremiumPage from "./pages/PremiumPage";
 import LandingPage from "./pages/LandingPage";
 import Profile from "./pages/Profile";
 import SettingsScreen from "./pages/SettingsScreen";
+import { reconcilePush, detachDeviceOnLogout } from "./lib/push";
 import { AuthProvider } from "./context/AuthContext";
 import "katex/dist/katex.min.css";
 import LeaderboardScreen from "./pages/LeaderboardScreen";
@@ -379,6 +380,34 @@ function App() {
     };
   }, [loadProfileAndCourses]);
 
+  // Keep this device's push subscription registered for the signed-in user.
+  // Non-destructive by design: it only ever re-registers the current endpoint
+  // (repairing rotations/expiry). It never unsubscribes on error or while offline.
+  useEffect(() => {
+    const userId = userProfile?.id;
+    if (!userId) return;
+
+    reconcilePush();
+
+    const handleResume = () => {
+      if (document.visibilityState === "visible") reconcilePush();
+    };
+    const handleOnline = () => reconcilePush();
+    const handleSwMessage = (event) => {
+      if (event.data?.type === "push-subscription-changed") reconcilePush();
+    };
+
+    document.addEventListener("visibilitychange", handleResume);
+    window.addEventListener("online", handleOnline);
+    navigator.serviceWorker?.addEventListener?.("message", handleSwMessage);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleResume);
+      window.removeEventListener("online", handleOnline);
+      navigator.serviceWorker?.removeEventListener?.("message", handleSwMessage);
+    };
+  }, [userProfile?.id]);
+
   useEffect(() => {
     if (sessionRestoredRef.current) return;
     setHasRetaken(false); // every time new questions are loaded
@@ -579,6 +608,17 @@ function App() {
   const handleLogout = async () => {
     try {
       trackLogout();
+
+      // Detach this device only — the account's other devices keep receiving
+      // push. Must run before signOut() so the request is still authenticated.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const logoutUserId = session?.user?.id ?? userProfile?.id ?? null;
+      if (logoutUserId) {
+        await detachDeviceOnLogout(logoutUserId);
+      }
+
       await supabase.auth.signOut();
       setUserProfile(null);
       setAvailableCourses([]);
@@ -587,27 +627,27 @@ function App() {
       setResults({ correct: 0, wrong: 0, answered: 0 });
       setIsNew(true); // reset so next login re-derives from Supabase
 
-      // Clear all localStorage data except bookmarked questions and visited status
+      // Clear user-scoped localStorage, but preserve device identity and push
+      // intent. Wiping quizbolt_device_id would give this install a new identity
+      // on next login (duplicate device rows), and wiping the intent key would
+      // stop push from auto-restoring when the same user signs back in.
       try {
-        // Save certain items temporarily
-        const visitedStatus = localStorage.getItem("visited");
-        const notificationsEnabled = localStorage.getItem(
-          "quizbolt_notifications_enabled",
-        );
+        const preserved = {};
+        for (const key of Object.keys(localStorage)) {
+          if (
+            key === "visited" ||
+            key === "quizbolt_device_id" ||
+            key.startsWith("quizbolt_notifications_enabled")
+          ) {
+            preserved[key] = localStorage.getItem(key);
+          }
+        }
 
-        // Clear all localStorage
         localStorage.clear();
 
-        // Restore saved items
-        if (visitedStatus) {
-          localStorage.setItem("visited", visitedStatus);
-        }
-        if (notificationsEnabled) {
-          localStorage.setItem(
-            "quizbolt_notifications_enabled",
-            notificationsEnabled,
-          );
-        }
+        Object.entries(preserved).forEach(([key, value]) => {
+          if (value !== null) localStorage.setItem(key, value);
+        });
       } catch (err) {
         console.error("Failed to clear localStorage on logout:", err);
       }
